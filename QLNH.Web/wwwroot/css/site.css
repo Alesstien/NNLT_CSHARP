@@ -1,0 +1,4 @@
+.bg-brand { background-color: #b3261e; }
+.card-mon:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transition: .2s; }
+.price { color: #b3261e; font-weight: 700; }
+.hero { background: linear-gradient(135deg,#b3261e,#e8590c); color:#fff; border-radius:1rem; padding:3rem 1.5rem; }

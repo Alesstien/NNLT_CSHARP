@@ -1,0 +1,19 @@
+@model List<MonAn>
+@{ ViewData["Title"] = "Thực đơn"; var dms = (List<DanhMuc>)ViewBag.DanhMucs; int? sel = ViewBag.DanhMucId; }
+<h3 class="mb-3">Thực đơn</h3>
+<form method="get" class="row g-2 mb-4">
+  <div class="col-12 col-md-4"><input name="q" value="@ViewBag.Q" class="form-control" placeholder="Tên món, mô tả..." /></div>
+  <div class="col-6 col-md-3">
+    <select name="danhMucId" class="form-select">
+      <option value="">-- Tất cả danh mục --</option>
+      @foreach (var d in dms) { <option value="@d.Id" selected="@(sel == d.Id)">@d.TenDanhMuc</option> }
+    </select>
+  </div>
+  <div class="col-3 col-md-2"><input name="giaTu" value="@ViewBag.GiaTu" type="number" min="0" class="form-control" placeholder="Giá từ" /></div>
+  <div class="col-3 col-md-2"><input name="giaDen" value="@ViewBag.GiaDen" type="number" min="0" class="form-control" placeholder="Giá đến" /></div>
+  <div class="col-12 col-md-1"><button class="btn btn-danger w-100">Lọc</button></div>
+</form>
+@if (!Model.Any()) { <div class="alert alert-warning">Không tìm thấy món phù hợp.</div> }
+<div class="row g-3">
+  @foreach (var m in Model) { <div class="col-12 col-sm-6 col-lg-4"><partial name="_MonCard" model="m" /></div> }
+</div>

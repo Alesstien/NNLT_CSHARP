@@ -1,0 +1,12 @@
+@model DatBan
+@{ ViewData["Title"] = "Đặt bàn"; }
+<h3>Đặt bàn trực tuyến</h3>
+<div class="row"><div class="col-md-6">
+<form asp-action="Create" method="post">
+  <div class="mb-3"><label class="form-label">Họ tên</label><input asp-for="TenKhach" class="form-control" /><span asp-validation-for="TenKhach" class="text-danger"></span></div>
+  <div class="mb-3"><label class="form-label">Số điện thoại</label><input asp-for="SoDienThoai" class="form-control" /><span asp-validation-for="SoDienThoai" class="text-danger"></span></div>
+  <div class="mb-3"><label class="form-label">Ngày giờ</label><input asp-for="NgayGio" type="datetime-local" class="form-control" /><span asp-validation-for="NgayGio" class="text-danger"></span></div>
+  <div class="mb-3"><label class="form-label">Số người</label><input asp-for="SoNguoi" type="number" min="1" max="50" class="form-control" /><span asp-validation-for="SoNguoi" class="text-danger"></span></div>
+  <div class="mb-3"><label class="form-label">Ghi chú</label><textarea asp-for="GhiChu" class="form-control" rows="2"></textarea></div>
+  <button class="btn btn-danger">Gửi yêu cầu đặt bàn</button>
+</form></div></div>

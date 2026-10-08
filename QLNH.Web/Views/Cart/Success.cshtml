@@ -1,0 +1,7 @@
+@model int
+@{ ViewData["Title"] = "Đặt món thành công"; }
+<div class="text-center py-5">
+  <h2 class="text-success">✔ Đặt món thành công!</h2>
+  <p>Mã đơn hàng của bạn: <strong>#@Model</strong>. Nhà hàng sẽ liên hệ xác nhận sớm nhất.</p>
+  <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+</div>
