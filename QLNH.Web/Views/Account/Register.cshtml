@@ -1,0 +1,36 @@
+@model QLNH_Web.ViewModels.RegisterVM
+@{ ViewData["Title"] = "Đăng ký"; }
+
+<div class="container py-5" style="max-width:480px">
+    <h2 class="mb-4 text-center">Đăng ký tài khoản</h2>
+    <form asp-action="Register" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+        <div class="mb-3">
+            <label asp-for="HoTen" class="form-label"></label>
+            <input asp-for="HoTen" class="form-control" autocomplete="name" />
+            <span asp-validation-for="HoTen" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" autocomplete="email" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="SoDienThoai" class="form-label"></label>
+            <input asp-for="SoDienThoai" class="form-control" autocomplete="tel" />
+            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="MatKhau" class="form-label"></label>
+            <input asp-for="MatKhau" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="MatKhau" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="NhapLaiMatKhau" class="form-label"></label>
+            <input asp-for="NhapLaiMatKhau" class="form-control" autocomplete="new-password" />
+            <span asp-validation-for="NhapLaiMatKhau" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Đăng ký</button>
+        <p class="text-center mt-3">Đã có tài khoản? <a asp-action="Login">Đăng nhập</a></p>
+    </form>
+</div>
