@@ -1,21 +1,59 @@
 @using Microsoft.AspNetCore.Identity
 @using QLNH_Web.Models
+@using Microsoft.EntityFrameworkCore
 @inject UserManager<AppUser> UserManager
+@inject QLNH_Web.Data.AuthDbContext Db
 
-<ul class="navbar-nav">
+<style>
+    .auth-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: 12px; }
+    .auth-btn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 20px; border-radius: 999px;
+                font: 700 14px/1 'Inter','Segoe UI',system-ui,sans-serif; text-decoration: none; border: 1.5px solid transparent;
+                cursor: pointer; transition: .2s; white-space: nowrap; }
+    .auth-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .auth-login { color: #f5d77a; border-color: #d4af37; background: rgba(212,175,55,.10); }
+    .auth-login:hover { background: rgba(212,175,55,.25); color: #fff3c4; transform: translateY(-1px); }
+    .auth-register { color: #1a1204; background: linear-gradient(135deg,#f59e0b,#f8dc7c); border-color: #f59e0b;
+                     animation: authGlow 2.4s infinite; }
+    .auth-register:hover { transform: translateY(-1px) scale(1.03); color: #1a1204; filter: brightness(1.08); }
+    .auth-admin { color: #fff; background: #7c3aed; border-color: #7c3aed; }
+    .auth-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+    .auth-admin:hover { background: #6d28d9; color: #fff; }
+    .auth-hello { display: inline-flex; align-items: center; gap: 8px; color: #f3f4f6; font: 500 14px 'Inter','Segoe UI',sans-serif; }
+    .auth-avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+                   background: linear-gradient(135deg,#f59e0b,#f8dc7c); color: #1a1204; font-weight: 800; }
+    .auth-box form { margin: 0; }
+    @@keyframes authGlow {
+        0% { box-shadow: 0 0 0 0 rgba(245,158,11,.55); }
+        70% { box-shadow: 0 0 0 12px rgba(245,158,11,0); }
+        100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+    }
+</style>
+
+<div class="auth-box">
 @if (User.Identity?.IsAuthenticated == true)
 {
     var u = await UserManager.GetUserAsync(User);
-    <li class="nav-item"><span class="nav-link">Xin chào, @(u?.HoTen ?? User.Identity!.Name)</span></li>
-    <li class="nav-item">
-        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-            <button type="submit" class="btn btn-link nav-link">Đăng xuất</button>
-        </form>
-    </li>
+    var ten = string.IsNullOrWhiteSpace(u?.HoTen) ? (User.Identity!.Name ?? "") : u!.HoTen;
+    var chuCai = ten.Length > 0 ? ten.Substring(0, 1).ToUpper() : "?";
+    <span class="auth-hello"><span class="auth-avatar">@chuCai</span> Xin chào, <b>@ten</b></span>
+    if (User.IsInRole("Admin"))
+    {
+        var choDuyet = await Db.DatBans.CountAsync(d => d.TrangThai == TrangThaiDatBan.ChoDuyet);
+        <a class="auth-btn auth-admin" asp-controller="Admin" asp-action="Reservations">Quản trị@if (choDuyet > 0) { <span class="auth-badge">@choDuyet</span> }</a>
+    }
+    <form asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="auth-btn auth-login">Đăng xuất</button>
+    </form>
 }
 else
 {
-    <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login">Đăng nhập</a></li>
-    <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register">Đăng ký</a></li>
+    <a class="auth-btn auth-login" asp-controller="Account" asp-action="Login">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
+        Đăng nhập
+    </a>
+    <a class="auth-btn auth-register" asp-controller="Account" asp-action="Register">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        Đăng ký
+    </a>
 }
-</ul>
+</div>

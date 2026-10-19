@@ -9,11 +9,15 @@
     <span class="badge bg-secondary">@Model.DanhMuc?.TenDanhMuc</span>
     <p class="mt-3">@Model.MoTa</p>
     <p class="fs-3 price">@Model.Gia.ToString("N0") đ</p>
-    <form asp-controller="Cart" asp-action="Add" method="post" class="d-flex gap-2" style="max-width:260px">
-      <input type="hidden" name="id" value="@Model.Id" />
-      <input type="number" name="soLuong" value="1" min="1" max="50" class="form-control" />
-      <button class="btn btn-danger text-nowrap">Thêm vào giỏ</button>
-    </form>
+  <form asp-controller="Cart" asp-action="Add" method="post" class="d-inline">
+    <!-- Truyền ID của món ăn -->
+    <input type="hidden" name="id" value="@Model.Id" />
+    <!-- Số lượng mặc định là 1 -->
+    <input type="hidden" name="soLuong" value="1" />
+    
+    <!-- Nút bấm thêm vào giỏ -->
+    <button type="submit" class="btn btn-danger btn-sm">+ Thêm</button>
+</form>
   </div>
 </div>
 @if (lq.Any())

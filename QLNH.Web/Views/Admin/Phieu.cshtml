@@ -1,0 +1,113 @@
+@model QLNH_Web.Models.DatBan
+@using QLNH_Web.Models
+@{
+    Layout = "_AuraLayout";
+    ViewData["Title"] = "Phiếu đặt chỗ " + Model.MaDatBan;
+    var cls = Model.TrangThai switch
+    {
+        TrangThaiDatBan.DaXacNhan => "st-ok",
+        TrangThaiDatBan.DaHuy => "st-cancel",
+        TrangThaiDatBan.HoanThanh => "st-done",
+        _ => "st-wait"
+    };
+    string TenPt(string m) => m switch { "THE" => "THẺ VISA / MASTERCARD", "" => "—", _ => m };
+    string TenChe(string c) => c switch { CheDo.Ba30 => "Đặt cọc 30% hóa đơn", CheDo.Tra100 => "Thanh toán 100% trọn gói", _ => "Cọc cố định giữ bàn" };
+}
+<main class="wrap">
+    <p><a class="back-link" asp-action="Reservations"><svg class="ic"><use href="#i-left"/></svg> Danh sách đơn đặt bàn</a></p>
+    @if (TempData["Msg"] is string okMsg) { <div class="flash ok">@okMsg</div> }
+    @if (TempData["Err"] is string errMsg) { <div class="flash err">@errMsg</div> }
+
+    <div id="p3">
+        <section class="card done">
+            <div class="done-ic"><svg class="ic"><use href="#i-check"/></svg></div>
+            <span class="pill-ok">@(Model.DaThanhToanCoc ? "KHÁCH ĐÃ XÁC NHẬN CỌC" : "CHƯA ĐẶT CỌC")</span>
+            <h2 class="done-title">PHIẾU ĐẶT CHỖ</h2>
+            <p class="muted">Trạng thái đơn: <span class="status @cls">@Model.TrangThai</span></p>
+
+            <div class="vcard">
+                <dl>
+                    <dt>Mã Đặt Bàn VIP:</dt><dd class="code">@Model.MaDatBan</dd>
+                    <dt>Khách hàng:</dt><dd>@Model.HoTen (@Model.SoDienThoai)</dd>
+                    <dt>Email:</dt><dd>@Model.Email</dd>
+                    <dt>Thời gian đón khách:</dt><dd>@Model.NgayGio.ToString("HH:mm") - Ngày @Model.NgayGio.ToString("yyyy-MM-dd")</dd>
+                    <dt>Khu vực &amp; Số khách:</dt><dd class="amber">@Model.KhuVuc?.Ten (@Model.SoKhach Khách)</dd>
+                    <dt>Dịp đặc biệt:</dt><dd>@(string.IsNullOrEmpty(Model.DipDacBiet) ? "—" : Model.DipDacBiet)</dd>
+                    <dt>Ghi chú của khách:</dt><dd>@(string.IsNullOrEmpty(Model.GhiChu) ? "—" : Model.GhiChu)</dd>
+                </dl>
+                <div class="vcard-qr"><div class="qr" id="qr"></div><small>Quét khi khách check-in</small></div>
+            </div>
+
+            <h4 class="sub">MÓN ĐẶT TRƯỚC:</h4>
+            @if (!Model.Mons.Any())
+            {
+                <p class="muted" style="text-align:left">Khách không đặt món trước.</p>
+            }
+            else
+            {
+                <table class="kv">
+                    @foreach (var m in Model.Mons)
+                    {
+                        <tr><td>@m.TenMon (@m.DonGia.ToString("N0") ₫ x @m.SoLuong)</td><td>@((m.DonGia * m.SoLuong).ToString("N0")) ₫</td></tr>
+                    }
+                </table>
+            }
+
+            <h4 class="sub">CHI TIẾT HÓA ĐƠN &amp; THANH TOÁN CỌC:</h4>
+            <table class="kv">
+                <tr><td>Tiền thực đơn đã chọn</td><td>@Model.TongMon.ToString("N0") ₫</td></tr>
+                @if (Model.PhuThuKhuVuc > 0) { <tr><td>Phụ thu khu vực</td><td>@Model.PhuThuKhuVuc.ToString("N0") ₫</td></tr> }
+                <tr><td>Thuế VAT (8%)</td><td>@Model.Vat.ToString("N0") ₫</td></tr>
+                <tr><td>Phí phục vụ tiêu chuẩn (5%)</td><td>@Model.PhiPhucVu.ToString("N0") ₫</td></tr>
+                @if (Model.GiamGia > 0) { <tr><td>Ưu đãi (@Model.MaUuDai)</td><td class="green">− @Model.GiamGia.ToString("N0") ₫</td></tr> }
+                <tr><td><b>Tổng hóa đơn ước tính</b></td><td class="gold">@Model.TongHoaDon.ToString("N0") ₫</td></tr>
+                <tr><td>Chế độ đặt cọc</td><td>@TenChe(Model.CheDoCoc)</td></tr>
+                <tr><td>Số tiền cọc khách đã thanh toán</td><td class="green">@Model.TienCoc.ToString("N0") ₫</td></tr>
+                <tr><td>Số tiền còn lại thanh toán tại nhà hàng</td><td>@Model.ConLai.ToString("N0") ₫</td></tr>
+                <tr><td>Phương thức thanh toán cọc</td><td>@TenPt(Model.PhuongThucThanhToan)@(Model.NganHang != null ? " · " + Model.NganHang : "")</td></tr>
+                <tr><td>Mã giao dịch / nội dung chuyển khoản</td><td>@(string.IsNullOrEmpty(Model.MaGiaoDich) ? "—" : Model.MaGiaoDich) / @Model.MaDatBan</td></tr>
+                <tr><td>Thời điểm khách xác nhận cọc</td><td>@(Model.NgayThanhToan?.ToString("HH:mm dd/MM/yyyy") ?? "—")</td></tr>
+                <tr><td>Tài khoản đặt bàn</td><td>@(Model.User?.Email ?? "—")</td></tr>
+                @if (!string.IsNullOrEmpty(Model.LyDoHuy)) { <tr><td>Lý do hủy</td><td>@Model.LyDoHuy</td></tr> }
+            </table>
+            <p class="note">Đối chiếu giao dịch ngân hàng / ví (số tiền và nội dung chuyển khoản = mã đặt bàn) trước khi bấm Xác nhận.</p>
+
+            <div class="actions center no-print">
+                <button type="button" class="btn-ghost" onclick="window.print()"><svg class="ic"><use href="#i-print"/></svg> In phiếu</button>
+                @if (Model.TrangThai == TrangThaiDatBan.ChoDuyet)
+                {
+                    <form asp-action="Duyet" asp-route-id="@Model.Id" method="post" style="margin:0">
+                        <input type="hidden" name="phieu" value="true" />
+                        <button class="btn-ok" type="submit">Xác nhận đơn</button>
+                    </form>
+                }
+                @if (Model.TrangThai == TrangThaiDatBan.DaXacNhan)
+                {
+                    <form asp-action="HoanThanh" asp-route-id="@Model.Id" method="post" style="margin:0">
+                        <input type="hidden" name="phieu" value="true" />
+                        <button class="btn-ok" type="submit">Đánh dấu hoàn thành</button>
+                    </form>
+                }
+                @if (Model.TrangThai == TrangThaiDatBan.ChoDuyet || Model.TrangThai == TrangThaiDatBan.DaXacNhan)
+                {
+                    <form asp-action="Huy" asp-route-id="@Model.Id" method="post" style="margin:0" onsubmit="this.lyDo.value = prompt('Lý do hủy (có thể bỏ trống):') ?? ''; return true;">
+                        <input type="hidden" name="phieu" value="true" />
+                        <input type="hidden" name="lyDo" />
+                        <button class="btn-ghost danger" type="submit">Hủy đơn</button>
+                    </form>
+                }
+            </div>
+        </section>
+    </div>
+</main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+</svg>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        try { new QRCode(document.getElementById('qr'), { text: '@Model.MaDatBan', width: 130, height: 130, colorDark: '#0a0d14', colorLight: '#ffffff' }); } catch (e) { }
+    </script>
+}

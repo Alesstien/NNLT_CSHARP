@@ -40,9 +40,11 @@ public class OrderForm : Form
         btnRemove.Click += (_, _) => BoMon();
         addBar.Controls.AddRange(new Control[] { new Label { Text = "Món", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, cboMon, new Label { Text = "SL", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, numSl, btnAdd, btnRemove });
 
-        var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 46, Padding = new Padding(6), FlowDirection = FlowDirection.RightToLeft };
-        var btnSave = new Button { Text = "Lưu đơn", Width = 100, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        var btnCancel = new Button { Text = "Huỷ", Width = 80 };
+        // FIX LỖI CHỮ KHUYẾT: Tăng Height của FlowLayoutPanel và Height của 2 nút bấm lên 35
+        var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 50, Padding = new Padding(6), FlowDirection = FlowDirection.RightToLeft };
+        var btnSave = new Button { Text = "Lưu đơn", Width = 100, Height = 35, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+        var btnCancel = new Button { Text = "Huỷ", Width = 80, Height = 35 };
+        
         btnSave.Click += (_, _) => Luu();
         btnCancel.Click += (_, _) => DialogResult = DialogResult.Cancel;
         bottom.Controls.AddRange(new Control[] { btnSave, btnCancel, lblTong });

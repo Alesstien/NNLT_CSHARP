@@ -1,0 +1,74 @@
+@model List<QLNH_Web.Models.DatBan>
+@using QLNH_Web.Models
+@{
+    Layout = "_AuraLayout";
+    ViewData["Title"] = "Đặt bàn của tôi";
+    string Badge(string tt) => tt switch
+    {
+        TrangThaiDatBan.DaXacNhan => "st-ok",
+        TrangThaiDatBan.DaHuy => "st-cancel",
+        TrangThaiDatBan.HoanThanh => "st-done",
+        _ => "st-wait"
+    };
+}
+@Html.AntiForgeryToken()
+<main class="wrap">
+    <section class="hero small">
+        <h1>Đặt bàn của tôi</h1>
+        <p>Theo dõi trạng thái các lần đặt bàn</p>
+    </section>
+
+    @if (!Model.Any())
+    {
+        <section class="card empty">
+            <p>Bạn chưa có đơn đặt bàn nào.</p>
+            <a class="btn-main" asp-action="Index">Đặt bàn ngay</a>
+        </section>
+    }
+    else
+    {
+        foreach (var d in Model)
+        {
+            var coTheHuy = (d.TrangThai == TrangThaiDatBan.ChoDuyet || d.TrangThai == TrangThaiDatBan.DaXacNhan) && d.NgayGio > DateTime.Now.AddHours(2);
+            <section class="card hist">
+                <div class="hist-head">
+                    <div>
+                        <div class="code">@d.MaDatBan</div>
+                        <div class="muted">@d.NgayGio.ToString("HH:mm dd/MM/yyyy") · @d.SoKhach khách · @d.KhuVuc?.Ten</div>
+                    </div>
+                    <span class="status @Badge(d.TrangThai)">@d.TrangThai</span>
+                </div>
+                <div class="hist-foot">
+                    <span class="muted">Tổng: <b>@d.TongHoaDon.ToString("N0") ₫</b> · Cọc: <b class="gold">@d.TienCoc.ToString("N0") ₫</b> · Còn lại: <b>@d.ConLai.ToString("N0") ₫</b> (@d.PhuongThucThanhToan)</span>
+                    @if (!string.IsNullOrEmpty(d.LyDoHuy)) { <span class="muted">Lý do hủy: @d.LyDoHuy</span> }
+                    <span class="hist-btns">
+                        <a class="btn-ghost sm" asp-action="Ve" asp-route-id="@d.MaDatBan">Xem vé</a>
+                        @if (coTheHuy)
+                        {
+                            <button type="button" class="btn-ghost sm danger" data-huy="@d.Id">Hủy đặt bàn</button>
+                        }
+                    </span>
+                </div>
+            </section>
+        }
+    }
+</main>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-huy]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                if (!confirm('Bạn chắc chắn muốn hủy đơn đặt bàn này?')) return;
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var r = await fetch('/api/dat-ban/' + btn.dataset.huy + '/huy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                    body: JSON.stringify({})
+                });
+                if (r.ok) { location.reload(); return; }
+                var j = await r.json().catch(function () { return {}; });
+                alert(j.loi || 'Không thể hủy đơn.');
+            });
+        });
+    </script>
+}

@@ -1,0 +1,90 @@
+@model List<QLNH_Web.Models.DatBan>
+@using QLNH_Web.Models
+@{
+    ViewData["Title"] = "Quản lý đặt bàn";
+    string cur = ViewBag.TrangThai as string ?? "";
+    string Badge(string tt) => tt switch
+    {
+        TrangThaiDatBan.DaXacNhan => "bg-success",
+        TrangThaiDatBan.DaHuy => "bg-secondary",
+        TrangThaiDatBan.HoanThanh => "bg-info text-dark",
+        _ => "bg-warning text-dark"
+    };
+}
+<div id="newBanner" class="alert alert-warning py-2" hidden>Có đơn đặt bàn mới hoặc vừa thay đổi. <a href="">Tải lại danh sách</a></div>
+<div class="alert alert-info py-2 small">Đối chiếu giao dịch ngân hàng / ví (mã giao dịch &amp; nội dung chuyển khoản = mã đặt bàn) trước khi bấm Xác nhận.</div>
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link" asp-action="Accounts">Tài khoản</a></li>
+    <li class="nav-item"><a class="nav-link active" asp-action="Reservations">Đơn đặt bàn</a></li>
+</ul>
+@if (TempData["Err"] is string err) { <div class="alert alert-danger">@err</div> }
+
+<div class="mb-3 d-flex flex-wrap gap-2">
+    <a class="btn btn-sm @(cur == "" ? "btn-dark" : "btn-outline-dark")" asp-action="Reservations">Tất cả</a>
+    @foreach (var t in TrangThaiDatBan.TatCa)
+    {
+        <a class="btn btn-sm @(cur == t ? "btn-dark" : "btn-outline-dark")" asp-action="Reservations" asp-route-trangThai="@t">@t</a>
+    }
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+    <thead class="table-light">
+        <tr><th>Mã</th><th>Khách</th><th>Thời gian</th><th>Khách / Khu vực</th><th>Thanh toán</th><th>Trạng thái</th><th></th></tr>
+    </thead>
+    <tbody>
+    @foreach (var d in Model)
+    {
+        <tr class="@(d.TrangThai == TrangThaiDatBan.ChoDuyet ? "table-warning" : "")">
+            <td><a asp-action="Phieu" asp-route-id="@d.Id"><b>@d.MaDatBan</b></a><br /><small class="text-muted">Tạo @d.NgayTao.ToString("dd/MM HH:mm")</small></td>
+            <td>@d.HoTen<br /><small>@d.SoDienThoai · @d.Email</small></td>
+            <td>@d.NgayGio.ToString("HH:mm dd/MM/yyyy")</td>
+            <td>@d.SoKhach khách<br /><small>@d.KhuVuc?.Ten</small>
+                @if (!string.IsNullOrEmpty(d.DipDacBiet)) { <br /><small class="text-muted">Dịp: @d.DipDacBiet</small> }
+                @if (!string.IsNullOrEmpty(d.GhiChu)) { <br /><small class="text-danger">Ghi chú: @d.GhiChu</small> }
+                @if (d.Mons.Any())
+                {
+                    <details><summary><small>@d.Mons.Sum(m => m.SoLuong) món đặt trước</small></summary>
+                        <ul class="mb-0 small">@foreach (var m in d.Mons) { <li>@m.SoLuong × @m.TenMon</li> }</ul>
+                    </details>
+                }
+            </td>
+            <td>Tổng: @d.TongHoaDon.ToString("N0") ₫<br />Cọc: <b>@d.TienCoc.ToString("N0") ₫</b> · Còn lại: @d.ConLai.ToString("N0") ₫
+                <br /><small>@d.PhuongThucThanhToan@(d.NganHang != null ? " · " + d.NganHang : "") · @d.MaGiaoDich</small>
+                @if (!string.IsNullOrEmpty(d.MaUuDai)) { <br /><small class="text-success">Mã @d.MaUuDai (−@d.GiamGia.ToString("N0") ₫)</small> }</td>
+            <td><span class="badge @Badge(d.TrangThai)">@d.TrangThai</span>
+                @if (!string.IsNullOrEmpty(d.LyDoHuy)) { <br /><small class="text-muted">@d.LyDoHuy</small> }</td>
+            <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" asp-action="Phieu" asp-route-id="@d.Id">Xem phiếu</a>
+                @if (d.TrangThai == TrangThaiDatBan.ChoDuyet)
+                {
+                    <form asp-action="Duyet" asp-route-id="@d.Id" method="post" class="d-inline"><button class="btn btn-sm btn-success">Xác nhận</button></form>
+                }
+                @if (d.TrangThai == TrangThaiDatBan.DaXacNhan)
+                {
+                    <form asp-action="HoanThanh" asp-route-id="@d.Id" method="post" class="d-inline"><button class="btn btn-sm btn-info">Hoàn thành</button></form>
+                }
+                @if (d.TrangThai == TrangThaiDatBan.ChoDuyet || d.TrangThai == TrangThaiDatBan.DaXacNhan)
+                {
+                    <form asp-action="Huy" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="this.lyDo.value = prompt('Lý do hủy (có thể bỏ trống):') ?? ''; return true;">
+                        <input type="hidden" name="lyDo" /><button class="btn btn-sm btn-outline-danger">Hủy</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Chưa có đơn đặt bàn nào.</td></tr> }
+    </tbody>
+</table>
+</div>
+
+<script>
+    (function () {
+        var n0 = @(ViewBag.ChoDuyet ?? 0);
+        setInterval(function () {
+            fetch('/Admin/DemChoDuyet', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+                if (j && j.n !== n0) { document.getElementById('newBanner').hidden = false; document.title = '(' + j.n + ') Đơn chờ duyệt'; }
+            }).catch(function () { });
+        }, 20000);
+    })();
+</script>

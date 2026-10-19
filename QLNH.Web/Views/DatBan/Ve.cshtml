@@ -1,0 +1,65 @@
+@model QLNH_Web.Models.DatBan
+@using QLNH_Web.Models
+@{
+    Layout = "_AuraLayout";
+    ViewData["Title"] = "Phiếu đặt chỗ " + Model.MaDatBan;
+    var cls = Model.TrangThai switch
+    {
+        TrangThaiDatBan.DaXacNhan => "st-ok",
+        TrangThaiDatBan.DaHuy => "st-cancel",
+        TrangThaiDatBan.HoanThanh => "st-done",
+        _ => "st-wait"
+    };
+    string TenPt(string m) => m switch { "VIETQR" => "VIETQR", "MOMO" => "MOMO", "VNPAY" => "VNPAY", "THE" => "THẺ VISA / MASTERCARD", _ => m };
+}
+<main class="wrap">
+    <div id="p3">
+        <section class="card done">
+            <div class="done-ic"><svg class="ic"><use href="#i-check"/></svg></div>
+            <span class="pill-ok">@(Model.DaThanhToanCoc ? "ĐÃ XÁC NHẬN CỌC" : "CHƯA ĐẶT CỌC")</span>
+            <h2 class="done-title">PHIẾU ĐẶT CHỖ</h2>
+            <p class="muted">Trạng thái đơn: <span class="status @cls">@Model.TrangThai</span></p>
+
+            <div class="vcard">
+                <dl>
+                    <dt>Mã Đặt Bàn VIP:</dt><dd class="code">@Model.MaDatBan</dd>
+                    <dt>Khách hàng:</dt><dd>@Model.HoTen (@Model.SoDienThoai)</dd>
+                    <dt>Thời gian đón khách:</dt><dd>@Model.NgayGio.ToString("HH:mm") - Ngày @Model.NgayGio.ToString("yyyy-MM-dd")</dd>
+                    <dt>Khu vực &amp; Số khách:</dt><dd class="amber">@Model.KhuVuc?.Ten (@Model.SoKhach Khách)</dd>
+                    @if (!string.IsNullOrEmpty(Model.DipDacBiet)) { <dt>Dịp đặc biệt:</dt><dd>@Model.DipDacBiet</dd> }
+                    @if (!string.IsNullOrEmpty(Model.GhiChu)) { <dt>Ghi chú:</dt><dd>@Model.GhiChu</dd> }
+                </dl>
+                <div class="vcard-qr"><div class="qr" id="qr"></div><small>Xuất trình cho Lễ tân khi tới</small></div>
+            </div>
+
+            @if (Model.Mons.Any())
+            {
+                <p class="muted" style="margin:0 0 6px">Món đặt trước:</p>
+                <ul class="plain" style="margin-bottom:14px">
+                    @foreach (var m in Model.Mons) { <li>@m.SoLuong × @m.TenMon</li> }
+                </ul>
+            }
+
+            <h4 class="sub">CHI TIẾT ĐẶT CỌC &amp; THANH TOÁN:</h4>
+            <div class="sum-row"><span>Tổng hóa đơn ước tính:</span><span>@Model.TongHoaDon.ToString("N0") ₫</span></div>
+            <div class="sum-row"><span>Số tiền cọc đã thanh toán:</span><span class="green">@Model.TienCoc.ToString("N0") ₫</span></div>
+            <div class="sum-row"><span>Số tiền còn lại thanh toán tại nhà hàng:</span><span class="strong">@Model.ConLai.ToString("N0") ₫</span></div>
+            <div class="sum-row"><span>Phương thức thanh toán cọc:</span><span class="strong">@TenPt(Model.PhuongThucThanhToan)</span></div>
+
+            <div class="actions center no-print">
+                <button type="button" class="btn-ghost" onclick="window.print()"><svg class="ic"><use href="#i-print"/></svg> In / Lưu Vé Đặt Chỗ</button>
+                <a class="btn-main" asp-action="LichSu">Đặt bàn của tôi</a>
+            </div>
+        </section>
+    </div>
+</main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+</svg>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        try { new QRCode(document.getElementById('qr'), { text: '@Model.MaDatBan', width: 130, height: 130, colorDark: '#0a0d14', colorLight: '#ffffff' }); } catch (e) { }
+    </script>
+}

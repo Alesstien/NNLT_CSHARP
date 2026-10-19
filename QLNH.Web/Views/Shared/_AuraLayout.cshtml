@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link href="~/css/aura.css" rel="stylesheet" asp-append-version="true" />
+</head>
+<body class="aura">
+<header class="aura-top">
+    <a class="aura-logo" asp-controller="Home" asp-action="Index">◆ AURA</a>
+    <nav class="aura-links">
+        <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+        <a asp-controller="Menu" asp-action="Index">Thực đơn</a>
+        <a asp-controller="DatBan" asp-action="Index">Đặt bàn</a>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-controller="DatBan" asp-action="LichSu">Đặt bàn của tôi</a>
+        }
+    </nav>
+    <partial name="_LoginPartial" />
+</header>
+@RenderBody()
+<div id="toast" class="toast" role="alert"></div>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

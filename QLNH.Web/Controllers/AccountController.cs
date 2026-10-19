@@ -10,6 +10,7 @@ namespace QLNH_Web.Controllers;
 public class AccountController : Controller
 {
     public const string RoleKhach = "KhachHang";
+    public const string RoleAdmin = "Admin";
     private readonly UserManager<AppUser> _users;
     private readonly SignInManager<AppUser> _signIn;
 
@@ -41,7 +42,8 @@ public class AccountController : Controller
             UserName = m.Email.Trim(),
             Email = m.Email.Trim(),
             PhoneNumber = sdt,
-            HoTen = m.HoTen.Trim()
+            HoTen = m.HoTen.Trim(),
+            LanDangNhapCuoi = DateTime.Now
         };
 
         var result = await _users.CreateAsync(user, m.MatKhau);
@@ -77,12 +79,19 @@ public class AccountController : Controller
         {
             var r = await _signIn.PasswordSignInAsync(user, m.MatKhau, m.NhoDangNhap, lockoutOnFailure: true);
             if (r.Succeeded)
+            {
+                user.LanDangNhapCuoi = DateTime.Now;
+                await _users.UpdateAsync(user);
                 return !string.IsNullOrEmpty(m.ReturnUrl) && Url.IsLocalUrl(m.ReturnUrl)
                     ? LocalRedirect(m.ReturnUrl)
                     : RedirectToAction("Index", "Home");
+            }
             if (r.IsLockedOut)
             {
-                ModelState.AddModelError("", "Tài khoản tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau 5 phút.");
+                var end = await _users.GetLockoutEndDateAsync(user);
+                ModelState.AddModelError("", end > DateTimeOffset.UtcNow.AddYears(50)
+                    ? "Tài khoản đã bị quản trị viên khóa. Vui lòng liên hệ nhà hàng."
+                    : "Tài khoản tạm khóa do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 5 phút.");
                 return View(m);
             }
         }

@@ -1,0 +1,54 @@
+@model List<QLNH_Web.ViewModels.AccountRow>
+@{ ViewData["Title"] = "Quản lý tài khoản"; }
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link active" asp-action="Accounts">Tài khoản</a></li>
+    <li class="nav-item"><a class="nav-link" asp-action="Reservations">Đơn đặt bàn</a></li>
+</ul>
+@if (TempData["Err"] is string err) { <div class="alert alert-danger">@err</div> }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Tài khoản khách hàng (@Model.Count)</h4>
+    <form method="get" class="d-flex gap-2">
+        <input name="q" value="@ViewBag.Q" class="form-control form-control-sm" placeholder="Tìm tên, email, SĐT..." />
+        <button class="btn btn-sm btn-primary">Tìm</button>
+    </form>
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+    <thead class="table-light">
+        <tr><th>Họ tên</th><th>Email</th><th>SĐT</th><th>Ngày đăng ký</th><th>Đăng nhập gần nhất</th><th>Số lần đặt bàn</th><th>Trạng thái</th><th></th></tr>
+    </thead>
+    <tbody>
+    @foreach (var a in Model)
+    {
+        <tr>
+            <td>@a.HoTen @if (a.LaAdmin) { <span class="badge bg-dark">Admin</span> }</td>
+            <td>@a.Email</td>
+            <td>@a.SoDienThoai</td>
+            <td>@a.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@(a.LanDangNhapCuoi?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+            <td>@a.SoLanDatBan</td>
+            <td>
+                @if (a.DaKhoa) { <span class="badge bg-danger">@a.TrangThai</span> }
+                else { <span class="badge bg-success">@a.TrangThai</span> }
+            </td>
+            <td class="text-end">
+                @if (!a.LaAdmin)
+                {
+                    if (a.DaKhoa)
+                    {
+                        <form asp-action="MoKhoa" asp-route-id="@a.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-success">Mở khóa</button></form>
+                    }
+                    else
+                    {
+                        <form asp-action="Khoa" asp-route-id="@a.Id" method="post" class="d-inline" onsubmit="return confirm('Khóa tài khoản này?');"><button class="btn btn-sm btn-outline-danger">Khóa</button></form>
+                    }
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>
