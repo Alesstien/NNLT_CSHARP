@@ -1,178 +1,173 @@
-/**
- * cart-fly.js  – Hiệu ứng ảnh bay vào giỏ hàng
- *
- *  Cách hoạt động:
- *  1. Lắng nghe click trên form.cart-add-form
- *  2. Clone ảnh món ăn, gán position:fixed tại vị trí ảnh gốc
- *  3. Animate clone bay về icon giỏ hàng (#cart-btn)
- *  4. Gửi AJAX (fetch) POST thêm vào giỏ trong nền
- *  5. Cập nhật counter badge trên nút giỏ hàng
- */
-
+```javascript
 (function () {
-    'use strict';
+    "use strict";
 
-    /* ─── CSS animation ─────────────────────────────────── */
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
-    .cart-fly-clone {
-        position: fixed;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 4px 20px rgba(0,0,0,.35);
-        pointer-events: none;
-        z-index: 9999;
-        transition: transform .7s cubic-bezier(.2,.8,.3,1),
-                    left .7s cubic-bezier(.2,.8,.3,1),
-                    top  .7s cubic-bezier(.2,.8,.3,1),
-                    width  .7s cubic-bezier(.2,.8,.3,1),
-                    height .7s cubic-bezier(.2,.8,.3,1),
-                    opacity .7s ease;
-    }
+        .cart-fly-clone {
+            position: fixed;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 4px 20px rgba(0,0,0,.35);
+            pointer-events: none;
+            z-index: 9999;
+            transition:
+                left .7s ease,
+                top .7s ease,
+                width .7s ease,
+                height .7s ease,
+                opacity .7s ease;
+        }
 
-    #cart-btn {
-        position: relative;
-        transition: transform .2s;
-    }
-    #cart-btn.cart-bounce {
-        animation: cartBounce .4s ease;
-    }
-    @keyframes cartBounce {
-        0%   { transform: scale(1); }
-        40%  { transform: scale(1.35); }
-        70%  { transform: scale(.9); }
-        100% { transform: scale(1); }
-    }
+        #cart-btn {
+            position: relative;
+        }
 
-    .cart-badge {
-        position: absolute;
-        top: -6px;
-        right: -8px;
-        background: #dc3545;
-        color: #fff;
-        border-radius: 50%;
-        font-size: .7rem;
-        min-width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 3px;
-        font-weight: 700;
-        pointer-events: none;
-        transition: transform .25s;
-    }
+        .cart-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            min-width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            font-weight: bold;
+        }
     `;
     document.head.appendChild(style);
 
-    /* ─── Helpers ────────────────────────────────────────── */
     function getCartBtn() {
-        return document.getElementById('cart-btn');
+        return document.getElementById("cart-btn");
     }
 
-    function getOrCreateBadge(btn) {
-        let badge = btn.querySelector('.cart-badge');
+    function updateBadge(button, count) {
+        if (!button) return;
+
+        let badge = button.querySelector(".cart-badge");
+
         if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'cart-badge';
-            badge.textContent = '0';
-            btn.style.position = 'relative';
-            btn.appendChild(badge);
+            badge = document.createElement("span");
+            badge.className = "cart-badge";
+            button.appendChild(badge);
         }
-        return badge;
+
+        badge.textContent = String(count);
     }
 
-    function incrementBadge(btn) {
-        const badge = getOrCreateBadge(btn);
-        const n = parseInt(badge.textContent || '0', 10);
-        badge.textContent = n + 1;
-        badge.style.transform = 'scale(1.4)';
-        setTimeout(() => { badge.style.transform = 'scale(1)'; }, 250);
+    function flyToCart(img, button) {
+        if (!img || !button) return;
 
-        btn.classList.remove('cart-bounce');
-        void btn.offsetWidth; // reflow
-        btn.classList.add('cart-bounce');
-        btn.addEventListener('animationend', () => btn.classList.remove('cart-bounce'), { once: true });
-    }
+        const rect = img.getBoundingClientRect();
+        const clone = document.createElement("img");
 
-    /* ─── Animation ──────────────────────────────────────── */
-    function flyToCart(imgSrc, startRect, cartBtn) {
-        const clone = document.createElement('img');
-        clone.src = imgSrc;
-        clone.className = 'cart-fly-clone';
+        clone.src = img.src;
+        clone.className = "cart-fly-clone";
 
-        const SIZE_START = Math.min(startRect.width, startRect.height, 120);
-        const SIZE_END = 30;
+        const size = Math.min(rect.width, rect.height, 120);
 
         Object.assign(clone.style, {
-            width:  SIZE_START + 'px',
-            height: SIZE_START + 'px',
-            left:   (startRect.left + startRect.width  / 2 - SIZE_START / 2) + 'px',
-            top:    (startRect.top  + startRect.height / 2 - SIZE_START / 2) + 'px',
-            opacity: '1',
+            width: size + "px",
+            height: size + "px",
+            left: (rect.left + rect.width / 2 - size / 2) + "px",
+            top: (rect.top + rect.height / 2 - size / 2) + "px",
+            opacity: "1"
         });
 
         document.body.appendChild(clone);
 
-        // Kích hoạt transition ở frame tiếp theo
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                const btnRect = cartBtn.getBoundingClientRect();
-                const destLeft = btnRect.left + btnRect.width  / 2 - SIZE_END / 2;
-                const destTop  = btnRect.top  + btnRect.height / 2 - SIZE_END / 2;
+                const target = button.getBoundingClientRect();
+                const endSize = 30;
 
                 Object.assign(clone.style, {
-                    left:    destLeft + 'px',
-                    top:     destTop  + 'px',
-                    width:   SIZE_END + 'px',
-                    height:  SIZE_END + 'px',
-                    opacity: '0',
+                    width: endSize + "px",
+                    height: endSize + "px",
+                    left: (target.left + target.width / 2 - endSize / 2) + "px",
+                    top: (target.top + target.height / 2 - endSize / 2) + "px",
+                    opacity: "0"
                 });
             });
         });
 
-        clone.addEventListener('transitionend', () => {
-            clone.remove();
-            incrementBadge(cartBtn);
-        }, { once: true });
+        setTimeout(() => clone.remove(), 850);
     }
 
-    /* ─── AJAX add to cart ───────────────────────────────── */
-    async function ajaxAdd(form) {
-        const data = new FormData(form);
+    async function ajaxAdd(form, button) {
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (submitButton) submitButton.disabled = true;
+
         try {
-            await fetch(form.action, {
-                method: 'POST',
-                body: data,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                redirect: 'manual', // không follow redirect
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/json"
+                },
+                credentials: "same-origin"
             });
-        } catch (_) { /* bỏ qua lỗi mạng */ }
+
+            const contentType = response.headers.get("content-type") || "";
+
+            if (!contentType.includes("application/json")) {
+                const body = await response.text();
+
+                console.error("Máy chủ không trả về JSON:", {
+                    status: response.status,
+                    response: body
+                });
+
+                alert(
+                    "Máy chủ trả về phản hồi không đúng định dạng. " +
+                    "Hãy mở F12 > Network > Add để kiểm tra."
+                );
+                return;
+            }
+
+            const result = await response.json();
+
+            if (!response.ok || result.success !== true) {
+                console.error("Lỗi thêm món:", response.status, result);
+                alert(result.message || "Không thể thêm món vào giỏ hàng.");
+                return;
+            }
+
+            updateBadge(button, result.cartCount);
+            alert(result.message || "Đã thêm món vào giỏ hàng!");
+        } catch (error) {
+            console.error("Lỗi kết nối hoặc xử lý phản hồi:", error);
+            alert("Có lỗi khi thêm món. Hãy mở F12 > Console để xem chi tiết.");
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+        }
     }
 
-    /* ─── Event delegation ───────────────────────────────── */
-    document.addEventListener('submit', function (e) {
-        const form = e.target.closest('form.cart-add-form');
+    document.addEventListener("submit", function (event) {
+        const form = event.target.closest("form.cart-add-form");
         if (!form) return;
 
-        const cartBtn = getCartBtn();
-        if (!cartBtn) return; // fallback: submit bình thường
+        const button = getCartBtn();
 
-        e.preventDefault();
+        // Không có nút giỏ hàng thì gửi form bình thường.
+        if (!button) return;
 
-        // Lấy ảnh từ card gần nhất hoặc .cart-item-img trong form
-        let img =
-            form.querySelector('img.cart-item-img') ||
-            form.closest('.card')?.querySelector('img') ||
-            form.closest('.row')?.querySelector('img') ||
-            null;
+        event.preventDefault();
 
-        if (img) {
-            flyToCart(img.src, img.getBoundingClientRect(), cartBtn);
-        } else {
-            incrementBadge(cartBtn);
-        }
+        const card = form.closest(".card");
+        const img = card ? card.querySelector("img.cart-item-img") : null;
 
-        ajaxAdd(form);
+        // Hiệu ứng chỉ mang tính trang trí; kết quả thêm món do server quyết định.
+        if (img) flyToCart(img, button);
+
+        ajaxAdd(form, button);
     });
 })();
+```

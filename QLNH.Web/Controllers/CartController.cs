@@ -9,14 +9,57 @@ using QLNH_Web.Models;
 
 namespace QLNH_Web.Controllers;
 
+
 public class CartController : Controller
 {
-    private readonly AppDbContext _db;      // MonAn
-    private readonly AuthDbContext _auth;   // KhuVuc, UuDai, DatBan, Identity
-    public CartController(AppDbContext db, AuthDbContext auth) { _db = db; _auth = auth; }
+    private readonly AppDbContext _db;
+    private readonly AuthDbContext _auth;
 
-    // GIỮ NGUYÊN action Add(...) cũ của bạn (nút "Thêm" ở trang thực đơn gọi vào đây).
-    // Các action Update, Remove, Checkout cũ không còn dùng -> có thể xóa.
+    public CartController(AppDbContext db, AuthDbContext auth)
+    {
+        _db = db;
+        _auth = auth;
+    }
+
+    // Thêm món ăn vào giỏ hàng
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Add(int id, int soLuong = 1)
+    {
+        if (id <= 0)
+            return BadRequest("Mã món ăn không hợp lệ.");
+
+        var mon = await _db.MonAns
+            .FirstOrDefaultAsync(m => m.Id == id && m.ConPhucVu);
+
+        if (mon == null)
+            return NotFound("Món ăn không tồn tại hoặc đã ngừng phục vụ.");
+
+        soLuong = Math.Clamp(soLuong, 1, 100);
+
+        var cart = CartHelper.Get(HttpContext.Session);
+
+        if (cart.TryGetValue(id, out var soLuongCu))
+            cart[id] = Math.Min(soLuongCu + soLuong, 100);
+        else
+            cart[id] = soLuong;
+
+        CartHelper.Save(HttpContext.Session, cart);
+
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        {
+            return Ok(new
+            {
+                success = true,
+                message = "Đã thêm món vào giỏ hàng.",
+                cartCount = cart.Values.Sum()
+            });
+        }
+
+        TempData["Msg"] = "Đã thêm món vào giỏ hàng.";
+        return RedirectToAction("Index", "Menu");
+    }
+
 
     // ---------- Hàm dùng chung ----------
     private async Task<List<CartLine>> LoadLines()
