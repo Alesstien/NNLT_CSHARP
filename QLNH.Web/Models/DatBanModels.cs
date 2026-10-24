@@ -7,7 +7,7 @@ public static class TrangThaiDatBan
     public const string DaXacNhan = "Đã xác nhận";
     public const string DaHuy = "Đã hủy";
     public const string HoanThanh = "Đã hoàn thành";
-    public static readonly string[] TatCa = { ChoDuyet, DaXacNhan, DaHuy, HoanThanh };
+    public static readonly string[] TatCa = { ChoCoc, ChoDuyet, DaXacNhan, DaHuy, HoanThanh };
 }
 
 public static class CheDo
@@ -26,6 +26,7 @@ public class KhuVuc
     public decimal PhuThu { get; set; }          // 0 = miễn phí
     public int SucChua { get; set; }             // tổng số khách tối đa cùng lúc
     public bool HoatDong { get; set; } = true;
+    public bool ChoTiec { get; set; }
 }
 
 public class MucThucDon
@@ -65,6 +66,7 @@ public class DatBan
 
     public DateTime NgayGio { get; set; }
     public int SoKhach { get; set; }
+    public int SoBan { get; set; } = 1;
     public int KhuVucId { get; set; }
     public KhuVuc? KhuVuc { get; set; }
     public string? DipDacBiet { get; set; }
@@ -103,9 +105,9 @@ public class DatBanMon
     public int Id { get; set; }
     public int DatBanId { get; set; }
     public DatBan? DatBan { get; set; }
-    public int MucThucDonId { get; set; }
+    public int? MucThucDonId { get; set; }
     public MucThucDon? Mon { get; set; }
-    public string TenMon { get; set; } = "";     // lưu lại tên + giá tại thời điểm đặt
+    public int? MonAnId { get; set; }    public string TenMon { get; set; } = "";     // lưu lại tên + giá tại thời điểm đặt
     public decimal DonGia { get; set; }
     public int SoLuong { get; set; }
 }

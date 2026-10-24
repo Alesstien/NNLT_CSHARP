@@ -2,7 +2,7 @@
 
 <div class="card h-100 shadow-sm">
     <img src="@(string.IsNullOrEmpty(Model?.HinhAnh) ? "/images/default.jpg" : Model.HinhAnh)" 
-         class="card-img-top" 
+         class="card-img-top cart-item-img" 
          alt="@Model?.TenMon" 
          style="height: 180px; object-fit: cover;" />
 
@@ -11,7 +11,12 @@
         <p class="card-text text-muted small">@Model?.MoTa</p>
         <div class="mt-auto d-flex justify-content-between align-items-center">
             <span class="text-danger fw-bold">@Model?.Gia.ToString("N0") đ</span>
-            <button class="btn btn-sm btn-danger">+ Thêm</button>
+            <form asp-controller="Cart" asp-action="Add" method="post" class="cart-add-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model?.Id" />
+                <input type="hidden" name="soLuong" value="1" />
+                <button type="submit" class="btn btn-sm btn-danger">+ Thêm</button>
+            </form>
         </div>
     </div>
 </div>

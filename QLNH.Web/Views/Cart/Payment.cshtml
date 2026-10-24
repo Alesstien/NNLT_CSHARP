@@ -1,0 +1,178 @@
+@using QLNH_Web.Models
+@model PaymentVm
+@{
+    ViewData["Title"] = "Đặt cọc & Thanh toán";
+    var inp = Model.Input;
+    var bill = Model.Bill;
+    var b = Model.Booking;
+
+
+    const string STK = "0366534562";
+    var bin = inp.NganHang == "MB" ? "970422" : "970436";   // BIN: MB = 970422, Vietcombank = 970436
+    var qrUrl = $"https://img.vietqr.io/image/{bin}-{STK}-compact2.png?amount={bill.Coc:0}&addInfo={Model.MaGiaoDich}&accountName={Uri.EscapeDataString("NHA HANG HUONG VIET")}";
+
+    var cacCoc = new[] {
+        (CheDo.CoDinh, "Cọc cố định", "Giữ bàn bằng 500.000 đ"),
+        (CheDo.Ba30,   "Cọc 30%",     "30% tổng hóa đơn"),
+        (CheDo.Tra100, "Trả 100%",    "Thanh toán trọn gói")
+    };
+    var cacPt = new[] { ("VIETQR", "VietQR"), ("MOMO", "MoMo"), ("VNPAY", "VNPay"), ("THE", "Thẻ ngân hàng") };
+}
+<h3 class="mb-3">Đặt cọc & Thanh toán</h3>
+
+<form asp-action="Payment" method="post" id="formTT">
+    @* Nút ẩn đứng đầu form: Enter = tính lại, không bấm nhầm "Thanh toán" *@
+    <button type="submit" name="op" value="refresh" id="btnRefresh" class="d-none" tabindex="-1" aria-hidden="true">Cập nhật</button>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+
+            <div class="card mb-3"><div class="card-body">
+                <h5 class="card-title">Thông tin liên hệ</h5>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label small text-secondary" asp-for="Input.HoTen">Họ tên</label>
+                        <input class="form-control" asp-for="Input.HoTen" autocomplete="name" />
+                        <span class="text-danger small" asp-validation-for="Input.HoTen"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label small text-secondary" asp-for="Input.SoDienThoai">Số điện thoại</label>
+                        <input class="form-control" asp-for="Input.SoDienThoai" autocomplete="tel" />
+                        <span class="text-danger small" asp-validation-for="Input.SoDienThoai"></span>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-secondary" asp-for="Input.Email">Email nhận phiếu xác nhận</label>
+                        <input class="form-control" asp-for="Input.Email" autocomplete="email" />
+                        <span class="text-danger small" asp-validation-for="Input.Email"></span>
+                    </div>
+                </div>
+            </div></div>
+
+            <div class="card mb-3"><div class="card-body">
+                <h5 class="card-title">Mã ưu đãi</h5>
+                <div class="input-group">
+                    <input class="form-control" asp-for="Input.Ma" placeholder="Ví dụ: WELCOME10" />
+                    <button class="btn btn-outline-secondary" name="op" value="refresh">Áp dụng</button>
+                </div>
+                @if (Model.MaMsg != null)
+                {
+                    <div class="small mt-2 @(Model.MaHopLe ? "text-success" : "text-danger")">@Model.MaMsg</div>
+                }
+            </div></div>
+
+            <div class="card mb-3"><div class="card-body">
+                <h5 class="card-title">Hình thức đặt cọc</h5>
+                <div class="row g-2">
+                    @foreach (var (ma, ten, mota) in cacCoc)
+                    {
+                        <div class="col-sm-4">
+                            <input type="radio" class="btn-check" name="Input.CheDoCoc" id="cd_@ma" value="@ma"
+                                   checked="@(inp.CheDoCoc == ma)" onchange="guiLai()" />
+                            <label class="btn btn-outline-warning text-start w-100 h-100" for="cd_@ma">
+                                <strong class="d-block">@ten</strong>
+                                <small class="d-block text-secondary">@mota</small>
+                                <small>@Bill.TinhCoc(ma, bill.Tong).ToString("N0") đ</small>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div></div>
+
+            <div class="card mb-3"><div class="card-body">
+                <h5 class="card-title">Phương thức thanh toán</h5>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @foreach (var (ma, ten) in cacPt)
+                    {
+                        <input type="radio" class="btn-check" name="Input.PhuongThuc" id="pt_@ma" value="@ma"
+                               checked="@(inp.PhuongThuc == ma)" onchange="guiLai()" />
+                        <label class="btn btn-sm btn-outline-danger rounded-pill" for="pt_@ma">@ten</label>
+                    }
+                </div>
+
+                @if (inp.PhuongThuc == "VIETQR")
+                {
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <input type="radio" class="btn-check" name="Input.NganHang" id="nh_VCB" value="VCB" checked="@(inp.NganHang == "VCB")" onchange="guiLai()" />
+                        <label class="btn btn-sm btn-outline-secondary" for="nh_VCB">Vietcombank</label>
+                        <input type="radio" class="btn-check" name="Input.NganHang" id="nh_MB" value="MB" checked="@(inp.NganHang == "MB")" onchange="guiLai()" />
+                        <label class="btn btn-sm btn-outline-secondary" for="nh_MB">MB Bank</label>
+                    </div>
+                    <div class="d-flex flex-wrap gap-4 align-items-center">
+                        <img src="@qrUrl" alt="Mã VietQR" width="200" height="200" class="bg-white p-2 rounded" />
+                        <dl class="row mb-0 small" style="max-width:320px">
+                            <dt class="col-5 fw-normal text-secondary">Ngân hàng</dt><dd class="col-7">@(inp.NganHang == "MB" ? "MB Bank" : "Vietcombank")</dd>
+                            <dt class="col-5 fw-normal text-secondary">Số tài khoản</dt><dd class="col-7">@STK</dd>
+                            <dt class="col-5 fw-normal text-secondary">Số tiền</dt><dd class="col-7 fw-bold">@bill.Coc.ToString("N0") đ</dd>
+                            <dt class="col-5 fw-normal text-secondary">Nội dung</dt><dd class="col-7 fw-bold">@Model.MaGiaoDich</dd>
+                        </dl>
+                    </div>
+                    <p class="small text-secondary mt-3 mb-0">Mở app ngân hàng, quét mã, chuyển đúng số tiền và nội dung. Chuyển xong bấm “Tôi đã thanh toán”.</p>
+                }
+                else
+                {
+                    <p class="mb-1">Bạn sẽ thanh toán <strong>@bill.Coc.ToString("N0") đ</strong> qua <strong>@(cacPt.First(x => x.Item1 == inp.PhuongThuc).Item2)</strong>.</p>
+                    <p class="small text-secondary mb-0">Cổng thanh toán này chưa tích hợp. Hiện tại nhà hàng sẽ liên hệ để hướng dẫn thanh toán và xác nhận cọc.</p>
+                }
+            </div></div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Hóa đơn</h5>
+                <dl class="row mb-0 small">
+                    <dt class="col-6 fw-normal text-secondary">@Model.KhuVuc.Ten</dt>
+                    <dd class="col-6 text-end">@(b.LaTiec ? bill.SoBan + " bàn · " : "")@b.SoNguoi khách</dd>
+                    <dt class="col-6 fw-normal text-secondary">Tiền món@(bill.SoBan > 1 ? " (× " + bill.SoBan + " mâm)" : "")</dt>
+                    <dd class="col-6 text-end">@bill.TienMon.ToString("N0") đ</dd>
+                    <dt class="col-6 fw-normal text-secondary">Phụ thu khu vực</dt>
+                    <dd class="col-6 text-end">@bill.PhuThu.ToString("N0") đ</dd>
+                    @if (bill.Giam > 0)
+                    {
+                        <dt class="col-6 fw-normal text-secondary">Ưu đãi @inp.Ma?.Trim().ToUpper()</dt>
+                        <dd class="col-6 text-end">− @bill.Giam.ToString("N0") đ</dd>
+                    }
+                    <dt class="col-6 fw-normal text-secondary">VAT 8%</dt>
+                    <dd class="col-6 text-end">@bill.Vat.ToString("N0") đ</dd>
+                    <dt class="col-6 fw-normal text-secondary">Phí phục vụ 5%</dt>
+                    <dd class="col-6 text-end">@bill.PhiPhucVu.ToString("N0") đ</dd>
+                    <dt class="col-6 border-top pt-2 mt-2">Tổng hóa đơn</dt>
+                    <dd class="col-6 text-end border-top pt-2 mt-2 fw-bold">@bill.Tong.ToString("N0") đ</dd>
+                    <dt class="col-6 fw-normal">Thanh toán ngay</dt>
+                    <dd class="col-6 text-end fs-5 fw-bold text-danger">@bill.Coc.ToString("N0") đ</dd>
+                    <dt class="col-6 fw-normal text-secondary">Còn lại tại nhà hàng</dt>
+                    <dd class="col-6 text-end">@bill.ConLai.ToString("N0") đ</dd>
+                </dl>
+
+                <div id="hold" class="alert alert-warning small mt-3 mb-2" data-sec="@((int)(Model.GiuChoDen - DateTime.Now).TotalSeconds)"></div>
+
+                <button class="btn btn-danger w-100 fw-bold" id="btnPay" name="op" value="pay">Tôi đã thanh toán</button>
+                <a class="btn btn-outline-secondary w-100 mt-2" asp-action="Index">← Quay lại giỏ hàng</a>
+            </div></div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function guiLai() {
+        document.getElementById('formTT').requestSubmit(document.getElementById('btnRefresh'));
+    }
+    // Đồng hồ giữ chỗ 15 phút (server vẫn kiểm tra lại khi bấm thanh toán)
+    (function () {
+        var el = document.getElementById('hold'), btn = document.getElementById('btnPay');
+        var s = parseInt(el.dataset.sec, 10);
+        function tick() {
+            if (s <= 0) {
+                el.className = 'alert alert-danger small mt-3 mb-2';
+                el.textContent = 'Hết thời gian giữ chỗ. Quay lại giỏ hàng để đặt lại.';
+                btn.disabled = true;
+                return;
+            }
+            var m = Math.floor(s / 60), r = s % 60;
+            el.textContent = 'Bàn đang được giữ cho bạn trong ' + String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+            s--;
+            setTimeout(tick, 1000);
+        }
+        tick();
+    })();
+</script>

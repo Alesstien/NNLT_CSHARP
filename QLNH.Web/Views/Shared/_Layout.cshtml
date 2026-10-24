@@ -16,13 +16,13 @@
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
         <li class="nav-item"><a class="nav-link" asp-controller="Menu" asp-action="Index">Thực đơn</a></li>
-        <li class="nav-item"><a class="nav-link" asp-controller="Reservation" asp-action="Create">Đặt bàn</a></li>
+        
       </ul>
       <form class="d-flex me-3" asp-controller="Menu" asp-action="Index" method="get">
         <input class="form-control form-control-sm me-2" name="q" placeholder="Tìm món ăn..." />
         <button class="btn btn-sm btn-light">Tìm kiếm</button>
       </form>
-      <a class="btn btn-sm btn-outline-light" asp-controller="Cart" asp-action="Index"> Giỏ hàng</a>
+      <a id="cart-btn" class="btn btn-sm btn-outline-light" asp-controller="Cart" asp-action="Index">🛒 Giỏ hàng</a>
         <partial name="_LoginPartial" />
     </div>
   </div>
@@ -33,5 +33,6 @@
 </main>
 <footer class="text-center text-muted py-3 border-top">© 2026 Nhà hàng Hương Việt - Đồ án môn Ngôn ngữ lập trình C#</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/cart-fly.js"></script>
 </body>
 </html>

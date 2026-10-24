@@ -1,7 +1,40 @@
-@model int
-@{ ViewData["Title"] = "Đặt món thành công"; }
-<div class="text-center py-5">
-  <h2 class="text-success">✔ Đặt món thành công!</h2>
-  <p>Mã đơn hàng của bạn: <strong>#@Model</strong>. Nhà hàng sẽ liên hệ xác nhận sớm nhất.</p>
-  <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+@using QLNH_Web.Models
+@model QLNH_Web.Models.DatBan
+@{ ViewData["Title"] = "Đặt cọc thành công"; }
+
+<div class="card mx-auto" style="max-width:600px">
+    <div class="card-body">
+        <p class="text-success fw-semibold mb-1">✔ Đã nhận thông tin đặt cọc</p>
+        <p class="small text-secondary">Trạng thái: <strong>@Model.TrangThai</strong>. Nhà hàng sẽ đối chiếu khoản cọc và xác nhận với bạn sớm nhất.</p>
+        <div class="display-6 fw-bold mb-3" style="letter-spacing:.06em">@Model.MaDatBan</div>
+
+        <dl class="row small mb-3">
+            <dt class="col-4 fw-normal text-secondary">Khách</dt>
+            <dd class="col-8">@Model.HoTen · @Model.SoDienThoai</dd>
+            <dt class="col-4 fw-normal text-secondary">Thời gian</dt>
+            <dd class="col-8">@Model.NgayGio.ToString("dd/MM/yyyy HH:mm")</dd>
+            <dt class="col-4 fw-normal text-secondary">Khu vực</dt>
+            <dd class="col-8">@Model.KhuVuc?.Ten</dd>
+            <dt class="col-4 fw-normal text-secondary">Số khách</dt>
+            <dd class="col-8">@Model.SoKhach@(Model.SoBan > 1 ? " (" + Model.SoBan + " bàn)" : "") · @Model.DipDacBiet</dd>
+            <dt class="col-4 fw-normal text-secondary">Món đặt trước</dt>
+            <dd class="col-8">
+                @foreach (var m in Model.Mons)
+                {
+                    <div>@m.TenMon × @m.SoLuong</div>
+                }
+                @if (Model.SoBan > 1) { <div class="text-secondary">(× @Model.SoBan mâm)</div> }
+            </dd>
+            <dt class="col-4 fw-normal text-secondary">Tổng hóa đơn</dt>
+            <dd class="col-8">@Model.TongHoaDon.ToString("N0") đ</dd>
+            <dt class="col-4 fw-normal text-secondary">Đã thanh toán</dt>
+            <dd class="col-8 fw-bold">@Model.TienCoc.ToString("N0") đ qua @Model.PhuongThucThanhToan</dd>
+            <dt class="col-4 fw-normal text-secondary">Còn lại</dt>
+            <dd class="col-8">@Model.ConLai.ToString("N0") đ (trả tại nhà hàng)</dd>
+            <dt class="col-4 fw-normal text-secondary">Mã giao dịch</dt>
+            <dd class="col-8">@Model.MaGiaoDich</dd>
+        </dl>
+
+        <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+    </div>
 </div>
