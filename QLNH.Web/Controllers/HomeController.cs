@@ -11,9 +11,9 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
-        ViewBag.DanhMucs = _db.DanhMucs.Include(d => d.MonAns).OrderBy(d => d.TenDanhMuc).ToList();
-        var noiBat = _db.MonAns.Include(m => m.DanhMuc).Where(m => m.ConPhucVu).OrderByDescending(m => m.Gia).Take(6).ToList();
-        return View(noiBat);
+        ViewBag.DanhMucs = _db.DanhMucs.Include(d => d.MonAns).OrderBy(d => d.Id).ToList();
+        var tatCaMon = _db.MonAns.Include(m => m.DanhMuc).Where(m => m.ConPhucVu).OrderBy(m => m.DanhMucId).ThenBy(m => m.Id).ToList();
+        return View(tatCaMon);
     }
 
     public IActionResult Error() => View();

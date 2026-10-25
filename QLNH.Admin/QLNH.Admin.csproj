@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\QLNH.Data\QLNH.Data.csproj" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="WinForms.DataVisualization" Version="1.9.2" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

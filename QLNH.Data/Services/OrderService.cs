@@ -50,6 +50,44 @@ public class OrderService
             if (ban != null) ban.TrangThai = "Trống";
         }
         _db.SaveChanges();
+
+        // Nếu đơn hàng có mã đặt bàn từ Web trong GhiChu (ví dụ: [HV-123456] hoặc [AURA-123456]), đồng bộ trạng thái sang bảng DatBan và Web_DatBan
+        if (!string.IsNullOrEmpty(don.GhiChu) && don.GhiChu.StartsWith('['))
+        {
+            var closeIdx = don.GhiChu.IndexOf(']');
+            if (closeIdx > 1)
+            {
+                var ma = don.GhiChu[1..closeIdx].Trim();
+                var ttDatBanWin = trangThai switch
+                {
+                    TrangThaiDon.DangCheBien => "Đã xác nhận",
+                    TrangThaiDon.HoanThanh or TrangThaiDon.DaThanhToan => "Đã đến",
+                    TrangThaiDon.DaHuy => "Đã hủy",
+                    _ => "Chờ xác nhận"
+                };
+                var dbDatBan = _db.DatBans.FirstOrDefault(d => d.GhiChu != null && d.GhiChu.StartsWith("[" + ma + "]"));
+                if (dbDatBan != null)
+                {
+                    dbDatBan.TrangThai = ttDatBanWin;
+                    _db.SaveChanges();
+                }
+
+                var ttWeb = trangThai switch
+                {
+                    TrangThaiDon.DangCheBien => "Đã xác nhận",
+                    TrangThaiDon.HoanThanh or TrangThaiDon.DaThanhToan => "Đã hoàn thành",
+                    TrangThaiDon.DaHuy => "Đã hủy",
+                    _ => "Đang chờ duyệt"
+                };
+                try
+                {
+                    _db.Database.ExecuteSqlRaw(
+                        "IF OBJECT_ID('Web_DatBan', 'U') IS NOT NULL UPDATE Web_DatBan SET TrangThai = {0}, NgayCapNhat = GETDATE() WHERE MaDatBan = {1}",
+                        ttWeb, ma);
+                }
+                catch { /* bỏ qua nếu bảng Web_DatBan chưa khởi tạo */ }
+            }
+        }
     }
 
     public List<DoanhThuNgay> DoanhThuTheoNgay(DateTime tu, DateTime den)

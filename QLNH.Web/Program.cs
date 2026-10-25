@@ -57,7 +57,7 @@ using (var scope = app.Services.CreateScope())
     var roles = sp.GetRequiredService<RoleManager<IdentityRole>>();
     foreach (var r in new[] { AccountController.RoleKhach, AccountController.RoleAdmin })
         if (!await roles.RoleExistsAsync(r)) await roles.CreateAsync(new IdentityRole(r));
-    await DbSeeder.SeedAsync(auth, sp.GetRequiredService<UserManager<AppUser>>(), app.Configuration);
+    await DbSeeder.SeedAsync(auth, sp.GetRequiredService<UserManager<AppUser>>(), app.Configuration, sp.GetRequiredService<DatBanService>());
 }
 
 // Đường dẫn cũ của trang đặt bàn (menu cũ trỏ tới /Reservation/Create) -> trang đặt bàn mới

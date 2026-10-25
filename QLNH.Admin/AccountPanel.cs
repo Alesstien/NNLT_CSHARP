@@ -18,15 +18,27 @@ public class AccountPanel : UserControl
         var btnAdd = new Button { Text = "＋ Thêm tài khoản", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         var btnReset = new Button { Text = "Đặt lại mật khẩu", AutoSize = true };
         var btnLock = new Button { Text = "Khoá / Mở khoá", AutoSize = true };
+        var btnReload = new Button { Text = "⟳ Tải lại", AutoSize = true };
         btnAdd.Click += (_, _) => Them();
         btnReset.Click += (_, _) => DatLaiMatKhau();
         btnLock.Click += (_, _) => Khoa();
-        bar.Controls.AddRange(new Control[] { btnAdd, btnReset, btnLock });
+        btnReload.Click += (_, _) => Tai();
+        grid.CellContentClick += Grid_CellContentClick;
+        bar.Controls.AddRange(new Control[] { btnAdd, btnReset, btnLock, btnReload });
         Controls.Add(grid); Controls.Add(bar);
         Tai();
     }
 
-    private void Tai()
+    private void Grid_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (grid.Columns[e.ColumnIndex].Name == "HoatDong")
+        {
+            Khoa();
+        }
+    }
+
+    public void Tai()
     {
         using var db = Program.NewDb();
         grid.DataSource = db.TaiKhoans.Include(t => t.VaiTro).OrderBy(t => t.Id).AsEnumerable()
@@ -79,9 +91,41 @@ public class AccountPanel : UserControl
     private void Khoa()
     {
         if (Chon() is not int id) return;
-        if (id == _currentUserId) { MessageBox.Show("Không thể tự khoá tài khoản đang đăng nhập."); return; }
+        if (id == _currentUserId)
+        {
+            MessageBox.Show("Không thể tắt hoạt động của tài khoản đang đăng nhập.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
         using var db = Program.NewDb();
-        var tk = db.TaiKhoans.Find(id); if (tk == null) return;
-        tk.HoatDong = !tk.HoatDong; db.SaveChanges(); Tai();
+        var tk = db.TaiKhoans.Include(t => t.VaiTro).FirstOrDefault(t => t.Id == id);
+        if (tk == null) return;
+        if (tk.VaiTro?.TenVaiTro == "Admin" && tk.HoatDong)
+        {
+            MessageBox.Show("Không thể tắt hoạt động của tài khoản Quản trị viên (Admin).", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        tk.HoatDong = !tk.HoatDong;
+        db.SaveChanges();
+
+        // Đồng bộ trạng thái khóa / mở khóa sang bảng AspNetUsers của Web
+        try
+        {
+            if (tk.HoatDong)
+            {
+                db.Database.ExecuteSqlRaw(
+                    "IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL UPDATE AspNetUsers SET LockoutEnd = NULL, AccessFailedCount = 0 WHERE Email = {0} OR UserName = {0}",
+                    tk.TenDangNhap);
+            }
+            else
+            {
+                db.Database.ExecuteSqlRaw(
+                    "IF OBJECT_ID('AspNetUsers', 'U') IS NOT NULL UPDATE AspNetUsers SET LockoutEnabled = 1, LockoutEnd = '9999-12-31T23:59:59.9999999+00:00', SecurityStamp = CONVERT(nvarchar(36), NEWID()) WHERE Email = {0} OR UserName = {0}",
+                    tk.TenDangNhap);
+            }
+        }
+        catch { }
+
+        Tai();
     }
 }

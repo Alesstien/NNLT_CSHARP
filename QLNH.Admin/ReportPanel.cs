@@ -152,7 +152,7 @@ namespace QLNH.Admin
             return card;
         }
 
-        private void Xem()
+        public void Xem()
         {
             if (dtTu.Value.Date > dtDen.Value.Date) { 
                 MessageBox.Show("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."); 

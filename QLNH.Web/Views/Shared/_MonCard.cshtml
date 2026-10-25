@@ -1,15 +1,22 @@
 @model QLNH.Data.Entities.MonAn
 
 <div class="card h-100 shadow-sm">
-    <img src="@(string.IsNullOrEmpty(Model?.HinhAnh)
-                    ? "/images/default.jpg"
-                    : Model.HinhAnh)"
-         class="card-img-top cart-item-img"
-         alt="@Model?.TenMon"
-         style="height: 180px; object-fit: cover;" />
+    <a asp-controller="Menu" asp-action="Details" asp-route-id="@Model?.Id" class="text-decoration-none">
+        <img src="@(string.IsNullOrEmpty(Model?.HinhAnh)
+                        ? "/images/com-tam.jpg"
+                        : Model.HinhAnh)"
+             onerror="this.onerror=null;this.src='/images/com-tam.jpg';"
+             class="card-img-top cart-item-img"
+             alt="@Model?.TenMon"
+             style="height: 180px; object-fit: cover;" />
+    </a>
 
     <div class="card-body d-flex flex-column">
-        <h5 class="card-title">@Model?.TenMon</h5>
+        <h5 class="card-title">
+            <a asp-controller="Menu" asp-action="Details" asp-route-id="@Model?.Id" class="text-decoration-none text-dark">
+                @Model?.TenMon
+            </a>
+        </h5>
 
         <p class="card-text text-muted small">
             @Model?.MoTa
@@ -24,8 +31,6 @@
                   asp-action="Add"
                   method="post"
                   class="cart-add-form">
-
-                @Html.AntiForgeryToken()
 
                 <input type="hidden" name="id" value="@Model?.Id" />
                 <input type="hidden" name="soLuong" value="1" />

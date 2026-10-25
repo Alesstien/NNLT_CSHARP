@@ -36,9 +36,15 @@ public class DatBanService
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
     private readonly AuthDbContext _db;
+    private readonly QLNH.Data.AppDbContext _appDb;
     private readonly IMailSender _mail;
 
-    public DatBanService(AuthDbContext db, IMailSender mail) { _db = db; _mail = mail; }
+    public DatBanService(AuthDbContext db, QLNH.Data.AppDbContext appDb, IMailSender mail)
+    {
+        _db = db;
+        _appDb = appDb;
+        _mail = mail;
+    }
 
     // ---------- Tính tiền (giống hệt công thức ở trình duyệt) ----------
     private static decimal Lam(decimal x) => Math.Round(x, 0, MidpointRounding.AwayFromZero);
@@ -227,8 +233,9 @@ public class DatBanService
         b.TrangThai = TrangThaiDatBan.ChoDuyet;
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
+        await DongBoSangWinFormsAsync(b);
 
-        var sent = await _mail.SendAsync(b.Email, $"[Aura] Đã nhận đặt bàn {b.MaDatBan}", NoiDungEmail(b, "Chúng tôi đã ghi nhận đặt cọc của bạn. Nhà hàng sẽ đối chiếu giao dịch và xác nhận trong thời gian sớm nhất."));
+        var sent = await _mail.SendAsync(b.Email, $"[Hương Việt] Đã nhận đặt bàn {b.MaDatBan}", NoiDungEmail(b, "Chúng tôi đã ghi nhận đặt cọc của bạn. Nhà hàng sẽ đối chiếu giao dịch và xác nhận trong thời gian sớm nhất."));
         return new KetQuaDatBan { DatBan = b, EmailDaGui = sent };
     }
 
@@ -236,7 +243,7 @@ public class DatBanService
     /// <summary>Trả về null nếu thành công, ngược lại là thông báo lỗi.</summary>
     public async Task<string?> HuyAsync(int id, string? userId, bool laAdmin, string? lyDo)
     {
-        var b = await _db.DatBans.Include(x => x.KhuVuc).FirstOrDefaultAsync(x => x.Id == id);
+        var b = await _db.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons).FirstOrDefaultAsync(x => x.Id == id);
         if (b == null) return "Không tìm thấy đơn đặt bàn.";
         if (!laAdmin && b.UserId != userId) return "Bạn không có quyền hủy đơn này.";
         if (b.TrangThai is TrangThaiDatBan.DaHuy or TrangThaiDatBan.HoanThanh) return "Đơn này không thể hủy.";
@@ -248,31 +255,205 @@ public class DatBanService
         b.LyDoHuy = string.IsNullOrWhiteSpace(lyDo) ? (laAdmin ? "Nhà hàng hủy đơn" : "Khách hủy đơn") : lyDo.Trim();
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
-        if (daCoc) await _mail.SendAsync(b.Email, $"[Aura] Đơn đặt bàn {b.MaDatBan} đã hủy", NoiDungEmail(b, "Đơn đặt bàn của bạn đã được hủy."));
+        await DongBoSangWinFormsAsync(b);
+        if (daCoc) await _mail.SendAsync(b.Email, $"[Hương Việt] Đơn đặt bàn {b.MaDatBan} đã hủy", NoiDungEmail(b, "Đơn đặt bàn của bạn đã được hủy."));
         return null;
     }
 
     public async Task<string?> DuyetAsync(int id)
     {
-        var b = await _db.DatBans.Include(x => x.KhuVuc).FirstOrDefaultAsync(x => x.Id == id);
+        var b = await _db.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons).FirstOrDefaultAsync(x => x.Id == id);
         if (b == null) return "Không tìm thấy đơn đặt bàn.";
         if (b.TrangThai != TrangThaiDatBan.ChoDuyet) return "Chỉ duyệt được đơn đang chờ duyệt.";
         b.TrangThai = TrangThaiDatBan.DaXacNhan;
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
-        await _mail.SendAsync(b.Email, $"[Aura] Đặt bàn {b.MaDatBan} đã được xác nhận", NoiDungEmail(b, "Nhà hàng đã xác nhận đặt bàn của bạn. Vui lòng xuất trình mã khi đến."));
+        await DongBoSangWinFormsAsync(b);
+        await _mail.SendAsync(b.Email, $"[Hương Việt] Đặt bàn {b.MaDatBan} đã được xác nhận", NoiDungEmail(b, "Nhà hàng đã xác nhận đặt bàn của bạn. Vui lòng xuất trình mã khi đến."));
         return null;
     }
 
     public async Task<string?> HoanThanhAsync(int id)
     {
-        var b = await _db.DatBans.FirstOrDefaultAsync(x => x.Id == id);
+        var b = await _db.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons).FirstOrDefaultAsync(x => x.Id == id);
         if (b == null) return "Không tìm thấy đơn đặt bàn.";
         if (b.TrangThai != TrangThaiDatBan.DaXacNhan) return "Chỉ hoàn thành được đơn đã xác nhận.";
         b.TrangThai = TrangThaiDatBan.HoanThanh;
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
+        await DongBoSangWinFormsAsync(b);
         return null;
+    }
+
+    // ---------- Đồng bộ sang bảng của WinForms (QLNH.Admin) ----------
+    public async Task DongBoSangWinFormsAsync(DatBan b)
+    {
+        var kvTen = b.KhuVuc?.Ten
+            ?? await _db.KhuVucs.Where(k => k.Id == b.KhuVucId).Select(k => k.Ten).FirstOrDefaultAsync()
+            ?? "Khu vực Web";
+        var mons = b.Mons != null && b.Mons.Count > 0
+            ? b.Mons
+            : await _db.DatBanMons.Where(m => m.DatBanId == b.Id).ToListAsync();
+
+        var bans = await _appDb.Bans.OrderBy(x => x.SoGhe).ToListAsync();
+        var ban = bans.FirstOrDefault(x => x.TrangThai == "Trống" && x.SoGhe >= b.SoKhach)
+                  ?? bans.LastOrDefault(x => x.TrangThai == "Trống")
+                  ?? bans.FirstOrDefault(x => x.SoGhe >= b.SoKhach)
+                  ?? bans.LastOrDefault();
+
+        var ttDatBanWin = b.TrangThai switch
+        {
+            TrangThaiDatBan.DaXacNhan => "Đã xác nhận",
+            TrangThaiDatBan.HoanThanh => "Đã đến",
+            TrangThaiDatBan.DaHuy => "Đã hủy",
+            _ => "Chờ xác nhận"
+        };
+        var ttDonWin = b.TrangThai switch
+        {
+            TrangThaiDatBan.DaXacNhan => QLNH.Data.Entities.TrangThaiDon.DangCheBien,
+            TrangThaiDatBan.HoanThanh => QLNH.Data.Entities.TrangThaiDon.DaThanhToan,
+            TrangThaiDatBan.DaHuy => QLNH.Data.Entities.TrangThaiDon.DaHuy,
+            _ => QLNH.Data.Entities.TrangThaiDon.Moi
+        };
+
+        var prefix = $"[{b.MaDatBan}]";
+        var winDatBan = await _appDb.DatBans.FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
+        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
+        var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
+        var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
+        if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
+
+        if (winDatBan == null)
+        {
+            winDatBan = new QLNH.Data.Entities.DatBan
+            {
+                TenKhach = b.HoTen,
+                SoDienThoai = b.SoDienThoai,
+                NgayGio = b.NgayGio,
+                SoNguoi = Math.Clamp(b.SoKhach, 1, 1000),
+                BanId = ban?.Id,
+                TrangThai = ttDatBanWin,
+                GhiChu = ghiChuDatBan
+            };
+            _appDb.DatBans.Add(winDatBan);
+        }
+        else
+        {
+            winDatBan.TenKhach = b.HoTen;
+            winDatBan.SoDienThoai = b.SoDienThoai;
+            winDatBan.NgayGio = b.NgayGio;
+            winDatBan.SoNguoi = Math.Clamp(b.SoKhach, 1, 1000);
+            winDatBan.BanId ??= ban?.Id;
+            winDatBan.TrangThai = ttDatBanWin;
+            winDatBan.GhiChu = ghiChuDatBan;
+        }
+
+        var winDon = await _appDb.DonHangs.Include(d => d.ChiTiets)
+            .FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
+        var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
+        if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
+
+        if (winDon == null && (mons.Count > 0 || b.TongHoaDon > 0))
+        {
+            winDon = new QLNH.Data.Entities.DonHang
+            {
+                NgayTao = b.NgayThanhToan ?? b.NgayTao,
+                TenKhach = b.HoTen,
+                SoDienThoai = b.SoDienThoai,
+                BanId = winDatBan.BanId ?? ban?.Id,
+                TrangThai = ttDonWin,
+                TongTien = b.TongHoaDon,
+                GhiChu = ghiChuDon
+            };
+
+            var soBan = Math.Max(1, b.SoBan);
+            var allMonAns = await _appDb.MonAns.ToListAsync();
+            var defaultDanhMucId = await _appDb.DanhMucs.Select(d => d.Id).FirstOrDefaultAsync();
+            if (defaultDanhMucId == 0)
+            {
+                var dm = new QLNH.Data.Entities.DanhMuc { TenDanhMuc = "Thực đơn Web", MoTa = "Món đồng bộ từ Web" };
+                _appDb.DanhMucs.Add(dm);
+                await _appDb.SaveChangesAsync();
+                defaultDanhMucId = dm.Id;
+            }
+
+            foreach (var m in mons)
+            {
+                QLNH.Data.Entities.MonAn? monAn = null;
+                if (m.MonAnId.HasValue)
+                    monAn = allMonAns.FirstOrDefault(x => x.Id == m.MonAnId.Value);
+                monAn ??= allMonAns.FirstOrDefault(x => string.Equals(x.TenMon, m.TenMon, StringComparison.OrdinalIgnoreCase));
+
+                if (monAn == null)
+                {
+                    monAn = new QLNH.Data.Entities.MonAn
+                    {
+                        TenMon = m.TenMon,
+                        Gia = m.DonGia,
+                        DanhMucId = defaultDanhMucId,
+                        ConPhucVu = true
+                    };
+                    _appDb.MonAns.Add(monAn);
+                    await _appDb.SaveChangesAsync();
+                    allMonAns.Add(monAn);
+                }
+
+                winDon.ChiTiets.Add(new QLNH.Data.Entities.ChiTietDonHang
+                {
+                    MonAnId = monAn.Id,
+                    DonGia = m.DonGia,
+                    SoLuong = Math.Max(1, m.SoLuong * soBan)
+                });
+            }
+
+            _appDb.DonHangs.Add(winDon);
+        }
+        else if (winDon != null)
+        {
+            winDon.TrangThai = ttDonWin;
+            winDon.TongTien = b.TongHoaDon;
+            winDon.GhiChu = ghiChuDon;
+        }
+
+        await _appDb.SaveChangesAsync();
+    }
+
+    public async Task DongBoTaiKhoanSangWinFormsAsync(AppUser u, string? plainPassword = null, bool? hoatDong = null, bool laAdmin = false)
+    {
+        var tenDangNhap = (u.Email ?? u.UserName ?? u.PhoneNumber ?? "").Trim();
+        if (string.IsNullOrEmpty(tenDangNhap)) return;
+        if (tenDangNhap.Length > 50) tenDangNhap = tenDangNhap[..50];
+
+        var roleName = laAdmin ? "Admin" : "KhachHang";
+        var role = await _appDb.VaiTros.FirstOrDefaultAsync(v => v.TenVaiTro == roleName);
+        if (role == null)
+        {
+            role = new QLNH.Data.Entities.VaiTro { TenVaiTro = roleName };
+            _appDb.VaiTros.Add(role);
+            await _appDb.SaveChangesAsync();
+        }
+
+        var tk = await _appDb.TaiKhoans.FirstOrDefaultAsync(t => t.TenDangNhap == tenDangNhap);
+        var active = hoatDong ?? !(u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+        if (tk == null)
+        {
+            tk = new QLNH.Data.Entities.TaiKhoan
+            {
+                TenDangNhap = tenDangNhap,
+                HoTen = string.IsNullOrWhiteSpace(u.HoTen) ? tenDangNhap : u.HoTen.Trim(),
+                MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword ?? "Khach@123"),
+                VaiTroId = role.Id,
+                HoatDong = active
+            };
+            _appDb.TaiKhoans.Add(tk);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(u.HoTen)) tk.HoTen = u.HoTen.Trim();
+            if (!string.IsNullOrEmpty(plainPassword)) tk.MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword);
+            if (hoatDong.HasValue) tk.HoatDong = hoatDong.Value;
+        }
+        await _appDb.SaveChangesAsync();
     }
 
     // ---------- Helpers ----------
@@ -282,7 +463,7 @@ public class DatBanService
     {
         while (true)
         {
-            var ma = "AURA-" + RandomNumberGenerator.GetInt32(100000, 1000000);
+            var ma = "HV-" + RandomNumberGenerator.GetInt32(100000, 1000000);
             if (!await _db.DatBans.AnyAsync(d => d.MaDatBan == ma)) return ma;
         }
     }
@@ -299,7 +480,7 @@ public class DatBanService
     {
         string E(string? s) => WebUtility.HtmlEncode(s ?? "");
         return $@"<div style=""font-family:Segoe UI,Arial,sans-serif;max-width:520px"">
-<h2 style=""color:#b8860b"">Nhà hàng Aura Fine Dining</h2>
+<h2 style=""color:#b3261e"">Nhà hàng Hương Việt</h2>
 <p>Xin chào <b>{E(b.HoTen)}</b>,</p><p>{E(loiNhan)}</p>
 <table cellpadding=""6"" style=""border-collapse:collapse"">
 <tr><td>Mã đặt bàn</td><td><b>{E(b.MaDatBan)}</b></td></tr>

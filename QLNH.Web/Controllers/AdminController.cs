@@ -66,6 +66,7 @@ public class AdminController : Controller
         await _users.SetLockoutEnabledAsync(u, true);
         await _users.SetLockoutEndDateAsync(u, DateTimeOffset.MaxValue);
         await _users.UpdateSecurityStampAsync(u);   // buộc phiên đăng nhập hiện tại hết hiệu lực
+        await _svc.DongBoTaiKhoanSangWinFormsAsync(u, null, false);
         TempData["Msg"] = $"Đã khóa tài khoản {u.Email}.";
         return RedirectToAction(nameof(Accounts));
     }
@@ -77,6 +78,7 @@ public class AdminController : Controller
         if (u == null) return NotFound();
         await _users.SetLockoutEndDateAsync(u, null);
         await _users.ResetAccessFailedCountAsync(u);
+        await _svc.DongBoTaiKhoanSangWinFormsAsync(u, null, true);
         TempData["Msg"] = $"Đã mở khóa tài khoản {u.Email}.";
         return RedirectToAction(nameof(Accounts));
     }

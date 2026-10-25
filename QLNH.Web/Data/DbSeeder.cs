@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using QLNH_Web.Controllers;
 using QLNH_Web.Models;
+using QLNH_Web.Services;
 
 namespace QLNH_Web.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(AuthDbContext db, UserManager<AppUser> users, IConfiguration cfg)
+    public static async Task SeedAsync(AuthDbContext db, UserManager<AppUser> users, IConfiguration cfg, DatBanService? svc = null)
     {
         if (!await db.KhuVucs.AnyAsync())
         {
@@ -16,6 +17,13 @@ public static class DbSeeder
                 new KhuVuc { Ten = "Phòng VIP Trầm Hương", PhuThu = 500_000, SucChua = 12, MoTa = "Phòng riêng biệt cách âm tuyệt đối, hương trầm dịu nhẹ, phục vụ butler riêng." },
                 new KhuVuc { Ten = "Ban Công / Terrace Bầu Trời", PhuThu = 300_000, SucChua = 24, MoTa = "View toàn cảnh thành phố rực rỡ về đêm, không gian mở thoáng đãng." },
                 new KhuVuc { Ten = "Bàn Lãng Mạn Sân Vườn", PhuThu = 200_000, SucChua = 16, MoTa = "Góc riêng tư bao quanh bởi cây xanh, nến thơm và hồ nước thư thái." });
+        }
+
+        if (!await db.KhuVucs.AnyAsync(k => k.ChoTiec))
+        {
+            db.KhuVucs.AddRange(
+                new KhuVuc { Ten = "Sảnh Tiệc Đại Hoàng Gia", PhuThu = 2_000_000, SucChua = 300, ChoTiec = true, MoTa = "Sảnh tiệc sang trọng với sân khấu lớn, màn hình LED, âm thanh ánh sáng chuẩn quốc tế." },
+                new KhuVuc { Ten = "Sảnh Tiệc Sân Vườn Ánh Sao", PhuThu = 1_000_000, SucChua = 150, ChoTiec = true, MoTa = "Không gian tiệc ngoài trời lãng mạn, phù hợp tiệc cưới, sinh nhật và liên hoan." });
         }
 
         if (!await db.MucThucDons.AnyAsync())
@@ -54,6 +62,26 @@ public static class DbSeeder
             var admin = new AppUser { UserName = email, Email = email, EmailConfirmed = true, PhoneNumber = "0900000000", HoTen = "Quản trị viên" };
             var r = await users.CreateAsync(admin, cfg["AdminSeed:Password"] ?? "Admin@123");
             if (r.Succeeded) await users.AddToRoleAsync(admin, AccountController.RoleAdmin);
+        }
+
+        // Đồng bộ các đơn đặt bàn và tài khoản khách trên Web sang bảng WinForms (QLNH.Admin)
+        if (svc != null)
+        {
+            var allUsers = await db.Users.AsNoTracking().ToListAsync();
+            foreach (var u in allUsers)
+            {
+                var isAdmin = await users.IsInRoleAsync(u, AccountController.RoleAdmin);
+                await svc.DongBoTaiKhoanSangWinFormsAsync(u, null, null, isAdmin);
+            }
+
+            var webDatBans = await db.DatBans.Include(d => d.KhuVuc).Include(d => d.Mons)
+                .Where(d => d.TrangThai != TrangThaiDatBan.ChoCoc)
+                .OrderBy(d => d.Id)
+                .ToListAsync();
+            foreach (var b in webDatBans)
+            {
+                await svc.DongBoSangWinFormsAsync(b);
+            }
         }
     }
 }

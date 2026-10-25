@@ -9,6 +9,12 @@ public class MainForm : Form
 {
     public bool DangXuat { get; private set; }
 
+    private sealed class BanLookup
+    {
+        public int? Id { get; set; }
+        public string TenBan { get; set; } = "";
+    }
+
     public MainForm(TaiKhoan user)
     {
         bool isAdmin = user.VaiTro?.TenVaiTro == "Admin";
@@ -16,17 +22,49 @@ public class MainForm : Form
         WindowState = FormWindowState.Maximized; MinimumSize = new Size(900, 600);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
-        // Phân quyền: nhân viên chỉ thấy Đơn hàng & Đặt bàn
-        AddTab(tabs, "🧾 Đơn hàng", new OrdersPanel());
-        AddTab(tabs, "📅 Đặt bàn", new CrudPanel<DatBan>(q => q.DatBans.OrderByDescending(d => d.NgayGio), CauHinhDatBan));
+        var pnlOrders = new OrdersPanel();
+        var pnlPos = new PosPanel();
+        var pnlDatBan = new CrudPanel<DatBan>(q => q.DatBans.OrderByDescending(d => d.Id), CauHinhDatBan);
+
+        // Phân quyền: nhân viên thấy Đơn hàng, POS & Đặt bàn; Admin thấy toàn bộ
+        AddTab(tabs, "🧾 Đơn hàng", pnlOrders);
+        AddTab(tabs, "🛒 Bán tại bàn (POS)", pnlPos);
+        AddTab(tabs, "📅 Đặt bàn", pnlDatBan);
+
+        CrudPanel<MonAn>? pnlMonAn = null;
+        CrudPanel<DanhMuc>? pnlDanhMuc = null;
+        CrudPanel<Ban>? pnlBan = null;
+        ReportPanel? pnlReport = null;
+        AccountPanel? pnlAccount = null;
+
         if (isAdmin)
         {
-            AddTab(tabs, "🍽 Món ăn", new CrudPanel<MonAn>(q => q.MonAns.OrderBy(m => m.DanhMucId).ThenBy(m => m.TenMon), CauHinhMonAn));
-            AddTab(tabs, "📂 Danh mục", new CrudPanel<DanhMuc>(q => q.DanhMucs.OrderBy(d => d.TenDanhMuc)));
-            AddTab(tabs, "🪑 Bàn", new CrudPanel<Ban>(q => q.Bans.OrderBy(b => b.TenBan), CauHinhBan));
-            AddTab(tabs, "📊 Doanh thu", new ReportPanel());
-            AddTab(tabs, "👤 Tài khoản", new AccountPanel(user.Id));
+            pnlMonAn = new CrudPanel<MonAn>(q => q.MonAns.OrderBy(m => m.DanhMucId).ThenBy(m => m.Id), CauHinhMonAn);
+            pnlDanhMuc = new CrudPanel<DanhMuc>(q => q.DanhMucs.OrderBy(d => d.TenDanhMuc));
+            pnlBan = new CrudPanel<Ban>(q => q.Bans.OrderBy(b => b.TenBan), CauHinhBan);
+            pnlReport = new ReportPanel();
+            pnlAccount = new AccountPanel(user.Id);
+
+            AddTab(tabs, "🍽 Món ăn", pnlMonAn);
+            AddTab(tabs, "📂 Danh mục", pnlDanhMuc);
+            AddTab(tabs, "🪑 Bàn", pnlBan);
+            AddTab(tabs, "📊 Doanh thu", pnlReport);
+            AddTab(tabs, "👤 Tài khoản", pnlAccount);
         }
+
+        // Tự động làm mới dữ liệu khi chuyển tab để luôn đồng bộ với Web và các tab khác
+        tabs.SelectedIndexChanged += (_, _) =>
+        {
+            var ctrl = tabs.SelectedTab?.Controls.Count > 0 ? tabs.SelectedTab.Controls[0] : null;
+            if (ctrl == pnlOrders) pnlOrders.Tai();
+            else if (ctrl == pnlPos) pnlPos.LoadDataFromDb();
+            else if (ctrl == pnlDatBan) pnlDatBan.Tai();
+            else if (ctrl == pnlMonAn) pnlMonAn?.Tai();
+            else if (ctrl == pnlDanhMuc) pnlDanhMuc?.Tai();
+            else if (ctrl == pnlBan) pnlBan?.Tai();
+            else if (ctrl == pnlReport) pnlReport?.Xem();
+            else if (ctrl == pnlAccount) pnlAccount?.Tai();
+        };
 
         var menu = new MenuStrip();
         var mnuHeThong = new ToolStripMenuItem("Hệ thống");
@@ -44,8 +82,15 @@ public class MainForm : Form
         var page = new TabPage(title); page.Controls.Add(c); tabs.TabPages.Add(page);
     }
 
-    private static void ThayCot(DataGridView g, string name, DataGridViewColumn cotMoi)
+    private static void ThayCot(DataGridView g, string name, DataGridViewComboBoxColumn cotMoi)
     {
+        if (g.Columns[name] is DataGridViewComboBoxColumn existing)
+        {
+            existing.DataSource = cotMoi.DataSource;
+            existing.DisplayMember = cotMoi.DisplayMember;
+            existing.ValueMember = cotMoi.ValueMember;
+            return;
+        }
         int idx = g.Columns[name]?.Index ?? -1;
         if (idx < 0) return;
         cotMoi.DataPropertyName = name; cotMoi.Name = name; cotMoi.HeaderText = name;
@@ -53,7 +98,7 @@ public class MainForm : Form
     }
 
     private static DataGridViewComboBoxColumn Combo(object nguon, string hien, string tri) =>
-        new() { DataSource = nguon, DisplayMember = hien, ValueMember = tri, FlatStyle = FlatStyle.Flat };
+        new() { DataSource = nguon, DisplayMember = hien, ValueMember = tri, FlatStyle = FlatStyle.Flat, Width = 140 };
 
     private static void CauHinhMonAn(DataGridView g, AppDbContext db) =>
         ThayCot(g, "DanhMucId", Combo(db.DanhMucs.AsNoTracking().OrderBy(d => d.TenDanhMuc).ToList(), "TenDanhMuc", "Id"));
@@ -63,9 +108,12 @@ public class MainForm : Form
 
     private static void CauHinhDatBan(DataGridView g, AppDbContext db)
     {
-        var trangThai = Combo(new[] { "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Đã huỷ" }, "", "");
+        var trangThai = Combo(new[] { "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Đã hủy" }, "", "");
         ThayCot(g, "TrangThai", trangThai);
-        var bans = db.Bans.AsNoTracking().OrderBy(b => b.TenBan).ToList();
+        var bans = db.Bans.AsNoTracking().OrderBy(b => b.TenBan)
+            .Select(b => new BanLookup { Id = b.Id, TenBan = b.TenBan })
+            .ToList();
+        bans.Insert(0, new BanLookup { Id = null, TenBan = "(Chưa xếp bàn)" });
         ThayCot(g, "BanId", Combo(bans, "TenBan", "Id"));
     }
 }

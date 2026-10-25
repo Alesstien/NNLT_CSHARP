@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QLNH_Web.Models;
+using QLNH_Web.Services;
 using QLNH_Web.ViewModels;
 
 namespace QLNH_Web.Controllers;
@@ -13,11 +14,13 @@ public class AccountController : Controller
     public const string RoleAdmin = "Admin";
     private readonly UserManager<AppUser> _users;
     private readonly SignInManager<AppUser> _signIn;
+    private readonly DatBanService _svc;
 
-    public AccountController(UserManager<AppUser> users, SignInManager<AppUser> signIn)
+    public AccountController(UserManager<AppUser> users, SignInManager<AppUser> signIn, DatBanService svc)
     {
         _users = users;
         _signIn = signIn;
+        _svc = svc;
     }
 
     // ---------- Đăng ký ----------
@@ -55,6 +58,7 @@ public class AccountController : Controller
         }
 
         await _users.AddToRoleAsync(user, RoleKhach);
+        await _svc.DongBoTaiKhoanSangWinFormsAsync(user, m.MatKhau, true, false);
         await _signIn.SignInAsync(user, isPersistent: false);
         return RedirectToAction("Index", "Home");
     }

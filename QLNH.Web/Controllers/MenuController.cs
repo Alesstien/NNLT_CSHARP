@@ -18,9 +18,9 @@ public class MenuController : Controller
         if (giaTu != null) query = query.Where(m => m.Gia >= giaTu);
         if (giaDen != null) query = query.Where(m => m.Gia <= giaDen);
 
-        ViewBag.DanhMucs = _db.DanhMucs.OrderBy(d => d.TenDanhMuc).ToList();
+        ViewBag.DanhMucs = _db.DanhMucs.OrderBy(d => d.Id).ToList();
         ViewBag.Q = q; ViewBag.DanhMucId = danhMucId; ViewBag.GiaTu = giaTu; ViewBag.GiaDen = giaDen;
-        return View(query.OrderBy(m => m.DanhMuc!.TenDanhMuc).ThenBy(m => m.TenMon).ToList());
+        return View(query.OrderBy(m => m.DanhMucId).ThenBy(m => m.Id).ToList());
     }
 
     public IActionResult Details(int id)

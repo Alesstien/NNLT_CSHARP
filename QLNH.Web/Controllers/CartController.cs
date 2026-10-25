@@ -3,9 +3,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QLNH.Data;            // TODO: namespace của AppDbContext (đổi cho đúng project của bạn)
-using QLNH_Web.Data;        // TODO: namespace của AuthDbContext (đổi cho đúng project của bạn)
+using QLNH.Data;
+using QLNH_Web.Data;
 using QLNH_Web.Models;
+using QLNH_Web.Services;
 
 namespace QLNH_Web.Controllers;
 
@@ -14,11 +15,13 @@ public class CartController : Controller
 {
     private readonly AppDbContext _db;
     private readonly AuthDbContext _auth;
+    private readonly DatBanService _svc;
 
-    public CartController(AppDbContext db, AuthDbContext auth)
+    public CartController(AppDbContext db, AuthDbContext auth, DatBanService svc)
     {
         _db = db;
         _auth = auth;
+        _svc = svc;
     }
 
     // Thêm món ăn vào giỏ hàng
@@ -66,8 +69,8 @@ public class CartController : Controller
     {
         var cart = CartHelper.Get(HttpContext.Session);
         var ids = cart.Keys.ToList();
-        // TODO: đổi m.Id / m.Ten / m.Gia theo entity MonAn của bạn
-        var mons = await _db.MonAns.Where(m => ids.Contains(m.Id)).ToListAsync();
+        if (ids.Count == 0) return new();
+        var mons = await _db.MonAns.Where(m => ids.Contains(m.Id)).OrderBy(m => m.Id).ToListAsync();
         return mons.Select(m => new CartLine
         {
             MonAnId = m.Id,
@@ -90,9 +93,11 @@ public class CartController : Controller
     public async Task<IActionResult> Index()
     {
         var b = BookingDraft.Get(HttpContext.Session);
-        b.ThoiGianDen ??= DateTime.Now.AddHours(2);
+        if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now)
+            b.ThoiGianDen = DateTime.Now.AddHours(2);
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).OrderBy(k => k.Id).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
+        b.Save(HttpContext.Session);
         var lines = await LoadLines();
 
         var vm = new CartPageVm { Lines = lines, Booking = b, KhuVucs = kvs, KhuVuc = kv };
@@ -119,7 +124,7 @@ public class CartController : Controller
         {
             switch (p[0])
             {
-                case "inc": cart[id]++; break;
+                case "inc": cart[id] = Math.Min(cart[id] + 1, 100); break;
                 case "dec": if (--cart[id] <= 0) cart.Remove(id); break;
                 case "del": cart.Remove(id); break;
             }
@@ -186,7 +191,19 @@ public class CartController : Controller
     {
         HttpContext.Session.SetString("giu_cho", DateTime.Now.AddMinutes(15).ToString("o"));
         HttpContext.Session.SetString("ma_gd", "HV" + DateTime.Now.ToString("yyMMddHHmmss"));
-        var vm = await BuildPaymentVm(new PaymentInput());
+        var inp = new PaymentInput();
+        var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrEmpty(uid))
+        {
+            var u = await _auth.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == uid);
+            if (u != null)
+            {
+                inp.HoTen = u.HoTen ?? "";
+                inp.SoDienThoai = u.PhoneNumber ?? "";
+                inp.Email = u.Email ?? "";
+            }
+        }
+        var vm = await BuildPaymentVm(inp);
         return vm == null ? RedirectToAction(nameof(Index)) : View(vm);
     }
 
@@ -228,6 +245,7 @@ public class CartController : Controller
         };
         _auth.DatBans.Add(datBan);
         await _auth.SaveChangesAsync();
+        await _svc.DongBoSangWinFormsAsync(datBan);
 
         CartHelper.Clear(HttpContext.Session);
         BookingDraft.Clear(HttpContext.Session);

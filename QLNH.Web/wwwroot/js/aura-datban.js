@@ -10,8 +10,14 @@
   var money = function (n) { return Number(n).toLocaleString('vi-VN') + ' ₫'; };
   var icon = function (id) { return '<svg class="ic"><use href="#' + id + '"/></svg>'; };
 
-  var CATS = [['all', 'Tất cả món'], ['Khai vị', 'Món Khai Vị'], ['Món chính', 'Món Chính Cao Cấp'],
-              ['Rượu vang & đồ uống', 'Rượu Vang & Đồ Uống'], ['Tráng miệng', 'Tráng Miệng']];
+  var CATS = [['all', 'Tất cả món']];
+  var seenCats = {};
+  (D.mons || []).forEach(function (m) {
+    if (m.danhMuc && !seenCats[m.danhMuc]) {
+      seenCats[m.danhMuc] = true;
+      CATS.push([m.danhMuc, m.danhMuc]);
+    }
+  });
   var MODES = [['CocCoDinh', 'CỌC CỐ ĐỊNH GIỮ BÀN', 'Giữ bàn tiêu chuẩn, thanh toán số còn lại khi dùng bữa.'],
                ['Coc30', 'ĐẶT CỌC 30% HÓA ĐƠN', 'Phù hợp khi có chọn trước các món ăn cao cấp.'],
                ['Tra100', 'THANH TOÁN 100% TRỌN GÓI', 'Tiện lợi, không cần thanh toán thêm tại nhà hàng.']];
