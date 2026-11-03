@@ -60,13 +60,21 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(auth, sp.GetRequiredService<UserManager<AppUser>>(), app.Configuration, sp.GetRequiredService<DatBanService>());
 }
 
-// Đường dẫn cũ của trang đặt bàn (menu cũ trỏ tới /Reservation/Create) -> trang đặt bàn mới
+// Đường dẫn cũ của trang đặt bàn / lịch sử đặt bàn -> chuyển về Trang chủ hoặc Giỏ hàng
 app.Use(async (ctx, next) =>
 {
     var p = ctx.Request.Path;
-    if (HttpMethods.IsGet(ctx.Request.Method) &&
-        (p.Equals("/Reservation", StringComparison.OrdinalIgnoreCase) || p.Equals("/Reservation/Create", StringComparison.OrdinalIgnoreCase)))
-    { ctx.Response.Redirect("/DatBan"); return; }
+    if (HttpMethods.IsGet(ctx.Request.Method))
+    {
+        if (p.Equals("/Reservation", StringComparison.OrdinalIgnoreCase) ||
+            p.Equals("/Reservation/Create", StringComparison.OrdinalIgnoreCase) ||
+            p.Equals("/DatBan", StringComparison.OrdinalIgnoreCase) ||
+            p.Equals("/DatBan/Index", StringComparison.OrdinalIgnoreCase))
+        { ctx.Response.Redirect("/Cart"); return; }
+
+        if (p.StartsWithSegments("/DatBan", StringComparison.OrdinalIgnoreCase))
+        { ctx.Response.Redirect("/"); return; }
+    }
     await next();
 });
 

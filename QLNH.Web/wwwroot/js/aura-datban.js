@@ -112,8 +112,8 @@
         arr.forEach(function (x) { S.avail[x.khuVucId] = x; });
         var cur = S.avail[S.areaId];
         if (cur && !cur.duCho) {
-          var alt = D.areas.filter(function (a) { return S.avail[a.id] && S.avail[a.id].duCho; })[0];
-          if (alt) { S.areaId = alt.id; toast('Khu vực bạn chọn đã hết chỗ, hệ thống chuyển sang "' + alt.ten + '".'); }
+          var curArea = areaById(S.areaId);
+          toast('Khu vực "' + (curArea ? curArea.ten : '') + '" không đáp ứng sức chứa (tối đa ' + (curArea ? curArea.sucChua : cur.conLai) + ' khách). Vui lòng giảm số khách hoặc chọn khu vực khác.');
         }
         renderAreas();
       }).catch(function () { renderAreas(); });
@@ -216,7 +216,11 @@
     var btn = $('#btnNext'); btn.disabled = true;
     return loadAvail().then(function () {
       var av = S.avail[S.areaId];
-      if (av && !av.duCho) { toast('Khu vực đã chọn không đủ chỗ. Vui lòng chọn khu vực hoặc giờ khác.'); return null; }
+      var curArea = areaById(S.areaId);
+      if ((av && !av.duCho) || (curArea && S.guests > curArea.sucChua)) {
+        toast('Khu vực "' + (curArea ? curArea.ten : 'đã chọn') + '" không đáp ứng sức chứa cho ' + S.guests + ' khách (tối đa ' + (curArea ? curArea.sucChua : (av ? av.conLai : 0)) + ' khách). Vui lòng giảm số khách hoặc chọn khu vực khác.');
+        return null;
+      }
       if (S.mode !== 'CocCoDinh' && tongMon() === 0) S.mode = 'CocCoDinh';
       return hold();
     }).then(function (h) {

@@ -6,6 +6,7 @@
     var kv = Model.KhuVuc;
     bool quaSucChua = kv != null && b.SoNguoi > kv.SucChua;
 }
+<div id="cart-page-container">
 <h3 class="mb-3">Giỏ hàng & Đặt bàn</h3>
 
 @if (TempData["Loi"] is string loi)
@@ -13,56 +14,53 @@
     <div class="alert alert-danger">@loi</div>
 }
 
-@if (!Model.Lines.Any())
-{
-    <div class="alert alert-info">
-        Giỏ hàng trống. <a asp-controller="Menu" asp-action="Index" class="fw-bold">Xem thực đơn để chọn món</a>
-    </div>
-}
-else
-{
 <form asp-action="Apply" method="post" id="formGio">
     @* Nút ẩn này phải đứng ĐẦU form: phím Enter sẽ kích hoạt nó thay vì nút +/−/Xóa *@
     <button type="submit" name="op" value="refresh" id="btnRefresh" class="d-none" tabindex="-1" aria-hidden="true">Cập nhật</button>
 
     <div class="row g-4">
         <div class="col-lg-7">
-            <div class="alert alert-light border small">
-                📌 <strong>Mẹo nhỏ:</strong> với <strong>Tiệc cưới, Sinh nhật hoặc Liên hoan</strong>, hãy chọn món cho
-                <strong>1 mâm (1 bàn 10 người)</strong>. Hệ thống tự nhân theo số bàn.
-            </div>
             <h5>Món đã chọn</h5>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Món</th>
-                            <th class="text-end">Đơn giá</th>
-                            <th>Số lượng</th>
-                            <th class="text-end">Thành tiền</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var l in Model.Lines)
-                    {
-                        <tr>
-                            <td>@l.TenMon</td>
-                            <td class="text-end">@l.DonGia.ToString("N0")</td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Số lượng @l.TenMon">
-                                    <button class="btn btn-outline-secondary" name="op" value="dec:@l.MonAnId" aria-label="Giảm">−</button>
-                                    <span class="btn btn-outline-secondary disabled text-body px-3 fw-bold">@l.SoLuong</span>
-                                    <button class="btn btn-outline-secondary" name="op" value="inc:@l.MonAnId" aria-label="Tăng">+</button>
-                                </div>
-                            </td>
-                            <td class="text-end">@l.ThanhTien.ToString("N0")</td>
-                            <td><button class="btn btn-sm btn-outline-danger" name="op" value="del:@l.MonAnId">Xóa</button></td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            </div>
+            @if (!Model.Lines.Any())
+            {
+                <div class="alert alert-info">
+                    Chưa có món ăn nào trong giỏ. Bạn có thể <strong>đặt bàn trước mà không cần chọn món</strong> (gọi món khi đến nhà hàng), hoặc <a asp-controller="Menu" asp-action="Index" class="fw-bold">xem thực đơn để chọn món trước</a>.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Món</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th>Số lượng</th>
+                                <th class="text-end">Thành tiền</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var l in Model.Lines)
+                        {
+                            <tr>
+                                <td>@l.TenMon</td>
+                                <td class="text-end">@l.DonGia.ToString("N0")</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Số lượng @l.TenMon">
+                                        <button class="btn btn-outline-secondary" name="op" value="dec:@l.MonAnId" aria-label="Giảm">−</button>
+                                        <span class="btn btn-outline-secondary disabled text-body px-3 fw-bold">@l.SoLuong</span>
+                                        <button class="btn btn-outline-secondary" name="op" value="inc:@l.MonAnId" aria-label="Tăng">+</button>
+                                    </div>
+                                </td>
+                                <td class="text-end">@l.ThanhTien.ToString("N0")</td>
+                                <td><button class="btn btn-sm btn-outline-danger" name="op" value="del:@l.MonAnId">Xóa</button></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
             <a class="btn btn-outline-secondary" asp-controller="Menu" asp-action="Index">+ Chọn thêm món ăn</a>
         </div>
 
@@ -74,17 +72,22 @@ else
                     <div class="row g-3 mb-3">
                         <div class="col-sm-7">
                             <label class="form-label small text-secondary" for="ThoiGianDen">Ngày giờ nhận bàn</label>
-                            <input type="datetime-local" class="form-control" id="ThoiGianDen" name="ThoiGianDen"
-                                   value="@(b.ThoiGianDen?.ToString("yyyy-MM-ddTHH:mm"))" />
+                            <input type="datetime-local" class="form-control @(b.ThoiGianDen != null && b.ThoiGianDen <= DateTime.Now ? "is-invalid" : "")" id="ThoiGianDen" name="ThoiGianDen"
+                                   value="@(b.ThoiGianDen?.ToString("yyyy-MM-ddTHH:mm"))" onchange="guiLai()" />
+                            @if (b.ThoiGianDen != null && b.ThoiGianDen <= DateTime.Now)
+                            {
+                                <div class="invalid-feedback d-block">Hãy chọn ngày giờ nhận bàn trong tương lai.</div>
+                            }
                         </div>
                         <div class="col-sm-5">
-                            <label class="form-label small text-secondary d-block">Số người</label>
-                            <div class="btn-group" role="group" aria-label="Số người">
+                            <label class="form-label small text-secondary d-block" for="SoNguoi">Số người</label>
+                            <div class="input-group" role="group" aria-label="Số người">
                                 <button class="btn btn-outline-secondary" name="op" value="ng-" aria-label="Giảm số người">−</button>
-                                <span class="btn btn-outline-secondary disabled text-body px-3 fw-bold">@b.SoNguoi</span>
+                                <input type="number" min="1" max="1000" id="SoNguoi" name="SoNguoi" value="@b.SoNguoi"
+                                       class="form-control text-center fw-bold px-1 @(quaSucChua ? "is-invalid" : "")"
+                                       onchange="guiLai()" />
                                 <button class="btn btn-outline-secondary" name="op" value="ng+" aria-label="Tăng số người">+</button>
                             </div>
-                            <input type="hidden" name="SoNguoi" value="@b.SoNguoi" />
                         </div>
                     </div>
 
@@ -93,20 +96,21 @@ else
                         @for (int i = 0; i < BookingDraft.CacLoaiLe.Length; i++)
                         {
                             var le = BookingDraft.CacLoaiLe[i];
-                            <input type="radio" class="btn-check" name="LoaiLe" id="le@(i)" value="@le"
-                                   checked="@(b.LoaiLe == le)" onchange="guiLai()" />
-                            <label class="btn btn-sm btn-outline-danger rounded-pill" for="le@(i)">@le</label>
+                            <div class="position-relative">
+                                <input type="radio" class="btn-check" name="LoaiLe" id="le@(i)" value="@le"
+                                       checked="@(b.LoaiLe == le)" onchange="guiLai()" />
+                                <label class="btn btn-sm btn-outline-danger rounded-pill" for="le@(i)">@le</label>
+                            </div>
                         }
                     </div>
 
-                    <label class="form-label small text-secondary">Chọn khu vực / sảnh</label>
+                    <label class="form-label small text-secondary">Chọn bàn / khu vực</label>
                     <div class="row g-2 mb-2">
                         @foreach (var k in Model.KhuVucs)
                         {
-                            var khongPhuHop = k.ChoTiec != b.LaTiec;
-                            <div class="col-sm-6">
+                            <div class="col-sm-6 position-relative">
                                 <input type="radio" class="btn-check" name="KhuVucId" id="kv@(k.Id)" value="@k.Id"
-                                       checked="@(kv?.Id == k.Id)" disabled="@khongPhuHop" onchange="guiLai()" />
+                                       checked="@(kv?.Id == k.Id)" onchange="guiLai()" />
                                 <label class="btn btn-outline-warning text-start w-100 h-100" for="kv@(k.Id)">
                                     <strong class="d-block">@k.Ten</strong>
                                     <small class="d-block text-secondary">@k.MoTa</small>
@@ -121,7 +125,7 @@ else
 
                     @if (quaSucChua)
                     {
-                        <div class="alert alert-danger small mt-3 mb-0">⚠ @(kv!.Ten) chỉ chứa tối đa @(kv.SucChua) khách. Hãy giảm số người hoặc chọn khu vực khác.</div>
+                        <div class="alert alert-danger small mt-3 mb-0">⚠ @(kv!.Ten) chỉ chứa tối đa @(kv.SucChua) khách. Hãy giảm số người hoặc chọn bàn/khu vực khác.</div>
                     }
                     else if (b.LaTiec)
                     {
@@ -140,7 +144,7 @@ else
                             <dd class="col-5 text-end">@(b.LaTiec ? bill.SoBan + " bàn · " : "")@b.SoNguoi khách</dd>
                             <dt class="col-7 fw-normal text-secondary">Tiền món@(bill.SoBan > 1 ? " (× " + bill.SoBan + " mâm)" : "")</dt>
                             <dd class="col-5 text-end">@bill.TienMon.ToString("N0") đ</dd>
-                            <dt class="col-7 fw-normal text-secondary">Phụ thu khu vực</dt>
+                            <dt class="col-7 fw-normal text-secondary">Phụ thu bàn / VIP</dt>
                             <dd class="col-5 text-end">@bill.PhuThu.ToString("N0") đ</dd>
                             <dt class="col-7 fw-normal text-secondary">VAT 8%</dt>
                             <dd class="col-5 text-end">@bill.Vat.ToString("N0") đ</dd>
@@ -152,7 +156,7 @@ else
                     }
                     else
                     {
-                        <div class="text-warning small">Chưa có khu vực phù hợp. Hãy thêm dữ liệu bảng KhuVuc.</div>
+                        <div class="text-warning small">Chưa có bàn/khu vực phù hợp.</div>
                     }
                     <button class="btn btn-danger w-100 fw-bold mt-3" name="op" value="next"
                             disabled="@(quaSucChua || Model.Bill == null)">Tiếp tục: Đặt cọc & Thanh toán →</button>
@@ -161,11 +165,67 @@ else
         </div>
     </div>
 </form>
+</div>
 
 <script>
-    // Đổi loại buổi / khu vực -> gửi form để server tính lại bàn, tiền
-    function guiLai() {
-        document.getElementById('formGio').requestSubmit(document.getElementById('btnRefresh'));
+    // Gửi form ngầm bằng fetch() khi chọn bàn/khu vực, loại buổi, tăng/giảm số người hoặc món ăn
+    // giúp cập nhật tức thì mà KHÔNG tải lại trang và KHÔNG bị nhảy cuộn lên đầu trang.
+    async function capNhatGioHang(submitter) {
+        const form = document.getElementById('formGio');
+        if (!form) return;
+        const scrollPos = window.scrollY;
+        const fd = new FormData(form);
+        if (submitter && submitter.name) {
+            fd.set(submitter.name, submitter.value);
+        } else {
+            fd.set('op', 'refresh');
+        }
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+            });
+            if (res.redirected && res.url && !res.url.toLowerCase().includes('/cart')) {
+                window.location.href = res.url;
+                return;
+            }
+            const html = await res.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newContainer = doc.getElementById('cart-page-container');
+            const curContainer = document.getElementById('cart-page-container');
+            if (newContainer && curContainer) {
+                curContainer.innerHTML = newContainer.innerHTML;
+                const newBadge = doc.querySelector('#cart-btn .cart-badge');
+                const curCartBtn = document.getElementById('cart-btn');
+                if (curCartBtn) {
+                    const curBadge = curCartBtn.querySelector('.cart-badge');
+                    if (newBadge) {
+                        if (curBadge) curBadge.textContent = newBadge.textContent;
+                    } else if (curBadge) {
+                        curBadge.remove();
+                    }
+                }
+                window.scrollTo({ top: scrollPos, behavior: 'instant' });
+            }
+        } catch (err) {
+            form.submit();
+        }
     }
+
+    function guiLai() {
+        capNhatGioHang(document.getElementById('btnRefresh'));
+    }
+
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form || form.id !== 'formGio') return;
+        const submitter = e.submitter;
+        if (submitter && submitter.name === 'op' && submitter.value === 'next') {
+            return;
+        }
+        e.preventDefault();
+        capNhatGioHang(submitter);
+    });
 </script>
-}

@@ -1,4 +1,173 @@
-.bg-brand { background-color: #b3261e; }
-.card-mon:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transition: .2s; }
-.price { color: #b3261e; font-weight: 700; }
-.hero { background: linear-gradient(135deg,#b3261e,#e8590c); color:#fff; border-radius:1rem; padding:3rem 1.5rem; }
+/* ===== MÀU CHỦ ĐẠO & THẺ MÓN ĂN ===== */
+.bg-brand {
+  background: linear-gradient(135deg, #9e1f18 0%, #b3261e 55%, #c9342b 100%);
+}
+.card-mon:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+  transition: .2s;
+}
+.price {
+  color: #b3261e;
+  font-weight: 700;
+}
+.hero {
+  background: linear-gradient(135deg, #b3261e, #e8590c);
+  color: #fff;
+  border-radius: 1rem;
+  padding: 3rem 1.5rem;
+}
+
+/* ===== HEADER / NAVBAR ĐỒNG BỘ ===== */
+.hv-navbar {
+  padding: 10px 0;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .18);
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+}
+
+.hv-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff !important;
+  margin-right: 1.5rem;
+}
+.hv-brand-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.hv-nav-links {
+  gap: 4px;
+}
+.hv-nav-links .nav-link {
+  color: rgba(255, 255, 255, .86) !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 7px 14px !important;
+  border-radius: 999px;
+  transition: all .2s ease;
+  white-space: nowrap;
+}
+.hv-nav-links .nav-link:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, .12);
+}
+.hv-nav-links .nav-link.active {
+  color: #fff3c4 !important;
+  background: rgba(255, 255, 255, .18);
+}
+
+/* Khu vực công cụ bên phải Header */
+.hv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Ô tìm kiếm dạng Pill liền khối */
+.hv-search-box {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 3px 4px 3px 14px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .06);
+  border: 1px solid rgba(255, 255, 255, .9);
+  transition: box-shadow .2s ease;
+}
+.hv-search-box:focus-within {
+  box-shadow: 0 0 0 3px rgba(248, 220, 124, .45);
+}
+.hv-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: #1f2937;
+  width: 170px;
+  padding: 0;
+}
+.hv-search-input::placeholder {
+  color: #9ca3af;
+}
+.hv-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: #b3261e;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.hv-search-btn:hover {
+  background: #8f1c15;
+}
+
+/* Nút Giỏ hàng dạng Pill đồng bộ */
+.hv-cart-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  border: 1.5px solid rgba(255, 255, 255, .45);
+  color: #ffffff !important;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .2s ease;
+}
+.hv-cart-btn:hover {
+  background: rgba(255, 255, 255, .24);
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+.hv-cart-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+.cart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #1a1204;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 991.98px) {
+  .hv-header-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, .15);
+  }
+  .hv-search-box {
+    flex: 1 1 auto;
+  }
+  .hv-search-input {
+    width: 100%;
+  }
+}

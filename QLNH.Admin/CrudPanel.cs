@@ -44,8 +44,57 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
         BuildColumns();
         _grid.DataError += (_, e) => { e.ThrowException = false; };
+        _grid.CellValidating += Grid_CellValidating;
+        _grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
+        _grid.CellValueChanged += Grid_CellValueChanged;
         Controls.Add(_grid); Controls.Add(bar);
         Tai();
+    }
+
+    private void Grid_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+    {
+        if (_grid.IsCurrentCellDirty && _grid.CurrentCell is DataGridViewCheckBoxCell)
+        {
+            _grid.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
+    }
+
+    private void Grid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+        if (_grid.Columns[e.ColumnIndex].Name == "ConPhucVu" && _grid.Rows[e.RowIndex].DataBoundItem is MonAn mon && mon.Id > 0 && !string.IsNullOrWhiteSpace(mon.TenMon) && mon.Gia >= 0)
+        {
+            try
+            {
+                _db.SaveChanges();
+                DongBoMonAnSangWeb();
+            }
+            catch { }
+        }
+    }
+
+    private void Grid_CellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex < 0 || !_grid.IsCurrentCellInEditMode) return;
+        var colName = _grid.Columns[e.ColumnIndex].Name;
+
+        if (colName == "Gia")
+        {
+            var raw = (e.FormattedValue?.ToString() ?? "").Trim();
+            if (!decimal.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out var gia)
+                && !decimal.TryParse(raw, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out gia))
+            {
+                MessageBox.Show("Giá món ăn phải là số hợp lệ!", "Dữ liệu không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                e.Cancel = true;
+                return;
+            }
+            if (gia < 0)
+            {
+                MessageBox.Show("Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)!", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                e.Cancel = true;
+                return;
+            }
+        }
     }
 
     private static Button Btn(string text, Color c, EventHandler h)
@@ -77,6 +126,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
     {
         try
         {
+            _grid.CancelEdit();
             _grid.EndEdit();
             foreach (var e in _db.ChangeTracker.Entries().ToList()) e.State = EntityState.Detached;
             _configure?.Invoke(_grid, _db);
@@ -188,9 +238,14 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
     private void Luu()
     {
-        _grid.EndEdit();
+        if (!_grid.EndEdit()) return;
         foreach (var x in _list)
         {
+            if (x is MonAn mon && mon.Gia < 0)
+            {
+                MessageBox.Show("• Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             var results = new List<ValidationResult>();
             if (!Validator.TryValidateObject(x, new ValidationContext(x), results, true))
             {
@@ -205,6 +260,10 @@ public class CrudPanel<T> : UserControl where T : class, new()
             if (typeof(T) == typeof(MonAn) || typeof(T) == typeof(DanhMuc))
             {
                 DongBoMonAnSangWeb();
+            }
+            else if (typeof(T) == typeof(Ban))
+            {
+                DongBoBanSangWeb();
             }
             else if (typeof(T) == typeof(DatBan))
             {
@@ -241,6 +300,39 @@ public class CrudPanel<T> : UserControl where T : class, new()
             }
         }
         catch { /* bỏ qua nếu bảng Web_MucThucDon chưa tạo */ }
+    }
+
+    private void DongBoBanSangWeb()
+    {
+        try
+        {
+            var bans = _db.Bans.AsNoTracking().OrderBy(b => b.Id).ToList();
+            _db.Database.ExecuteSqlRaw("IF OBJECT_ID('Web_KhuVuc', 'U') IS NOT NULL UPDATE Web_KhuVuc SET HoatDong = 0");
+            foreach (var ban in bans)
+            {
+                var ten = (ban.TenBan ?? "").Trim();
+                if (string.IsNullOrEmpty(ten)) continue;
+                bool isVip = ten.Contains("VIP", StringComparison.OrdinalIgnoreCase);
+                bool choTiec = ban.SoGhe >= 8 || isVip || ten.Contains("Tiệc", StringComparison.OrdinalIgnoreCase) || ten.Contains("Sảnh", StringComparison.OrdinalIgnoreCase);
+                decimal phuThu = isVip ? 200_000m : 0m;
+                string moTa = isVip
+                    ? $"Phòng / Bàn VIP ({ban.SoGhe} ghế) · Trạng thái: {ban.TrangThai}"
+                    : $"Bàn tiêu chuẩn ({ban.SoGhe} ghế) · Trạng thái: {ban.TrangThai}";
+                bool hoatDong = !string.Equals(ban.TrangThai, "Bảo trì", StringComparison.OrdinalIgnoreCase);
+
+                _db.Database.ExecuteSqlRaw(@"
+                    IF OBJECT_ID('Web_KhuVuc', 'U') IS NOT NULL
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM Web_KhuVuc WHERE Ten = {0})
+                            UPDATE Web_KhuVuc SET MoTa = {1}, PhuThu = {2}, SucChua = {3}, HoatDong = {4}, ChoTiec = {5} WHERE Ten = {0};
+                        ELSE
+                            INSERT INTO Web_KhuVuc (Ten, MoTa, PhuThu, SucChua, HoatDong, ChoTiec)
+                            VALUES ({0}, {1}, {2}, {3}, {4}, {5});
+                    END",
+                    ten, moTa, phuThu, ban.SoGhe, hoatDong, choTiec);
+            }
+        }
+        catch { /* bỏ qua nếu bảng Web_KhuVuc chưa tạo */ }
     }
 
     private void DongBoDatBanSangWeb()
@@ -335,6 +427,10 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 }
                 catch { }
             }
+            if (typeof(T) == typeof(Ban))
+            {
+                DongBoBanSangWeb();
+            }
             Tai();
         }
         catch (DbUpdateException ex)
@@ -361,6 +457,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
         var kw = _txtSearch.Text.Trim().ToLowerInvariant();
         CurrencyManager? cm = (CurrencyManager?)BindingContext?[_list];
         cm?.SuspendBinding();
+        _grid.CurrentCell = null;
         foreach (DataGridViewRow r in _grid.Rows)
         {
             bool match = kw.Length == 0 || r.Cells.Cast<DataGridViewCell>().Any(c => (c.Value?.ToString() ?? "").ToLowerInvariant().Contains(kw));

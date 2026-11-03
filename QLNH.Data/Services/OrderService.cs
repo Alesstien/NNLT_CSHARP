@@ -44,10 +44,16 @@ public class OrderService
         if (!TrangThaiDon.TatCa.Contains(trangThai)) throw new ArgumentException("Trạng thái không hợp lệ.");
         var don = _db.DonHangs.Find(donId) ?? throw new InvalidOperationException("Không tìm thấy đơn hàng.");
         don.TrangThai = trangThai;
-        if ((trangThai == TrangThaiDon.DaThanhToan || trangThai == TrangThaiDon.DaHuy) && don.BanId != null)
+        if (don.BanId != null)
         {
             var ban = _db.Bans.Find(don.BanId);
-            if (ban != null) ban.TrangThai = "Trống";
+            if (ban != null)
+            {
+                if (trangThai == TrangThaiDon.DaThanhToan || trangThai == TrangThaiDon.HoanThanh || trangThai == TrangThaiDon.DaHuy)
+                    ban.TrangThai = "Trống";
+                else if (trangThai == TrangThaiDon.DangCheBien)
+                    ban.TrangThai = "Đang dùng";
+            }
         }
         _db.SaveChanges();
 
@@ -105,10 +111,10 @@ public class OrderService
     {
         var tuNgay = tu.Date; var denNgay = den.Date.AddDays(1);
         return _db.ChiTietDonHangs.Include(c => c.MonAn).Include(c => c.DonHang)
-            .Where(c => c.DonHang!.TrangThai == TrangThaiDon.DaThanhToan && c.DonHang.NgayTao >= tuNgay && c.DonHang.NgayTao < denNgay)
+            .Where(c => c.DonHang != null && c.DonHang.TrangThai == TrangThaiDon.DaThanhToan && c.DonHang.NgayTao >= tuNgay && c.DonHang.NgayTao < denNgay)
             .AsEnumerable()
-            .GroupBy(c => c.MonAn!.TenMon)
+            .GroupBy(c => c.MonAn?.TenMon ?? "Món khác")
             .Select(g => new MonBanChay(g.Key, g.Sum(x => x.SoLuong), g.Sum(x => x.ThanhTien)))
-            .OrderByDescending(x => x.SoLuong).Take(top).ToList();
+            .OrderByDescending(x => x.SoLuong).ThenByDescending(x => x.DoanhThu).Take(top).ToList();
     }
 }

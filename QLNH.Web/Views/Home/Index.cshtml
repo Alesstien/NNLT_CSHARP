@@ -3,19 +3,86 @@
 <div class="hero mb-4">
   <h1 class="display-5 fw-bold">Hương vị Việt - Đậm đà từng món</h1>
   <p class="lead">Đặt món trực tuyến hoặc đặt bàn trước để không phải chờ đợi.</p>
-  <a class="btn btn-light me-2" asp-controller="Menu" asp-action="Index">Xem thực đơn</a>
-  <a class="btn btn-outline-light" asp-controller="Reservation" asp-action="Create">Đặt bàn ngay</a>
+  <a class="btn btn-light fw-semibold" asp-controller="Menu" asp-action="Index">Xem thực đơn</a>
 </div>
 <h4 class="mb-3">Danh mục món ăn</h4>
-<div class="row g-2 mb-4">
+<div class="row g-2 mb-4" id="home-dm-filter">
+  <div class="col-6 col-md-4 col-lg-2">
+    <button type="button" class="btn btn-danger w-100 dm-filter-btn active" data-dm="all" data-ten="Tất cả">
+      Tất cả <span class="badge bg-light text-danger ms-1">@Model.Count</span>
+    </button>
+  </div>
   @foreach (var d in dms)
   {
+    var count = d.MonAns.Count(m => m.ConPhucVu);
     <div class="col-6 col-md-4 col-lg-2">
-      <a class="btn btn-outline-danger w-100" asp-controller="Menu" asp-action="Index" asp-route-danhMucId="@d.Id">@d.TenDanhMuc <span class="badge bg-danger">@d.MonAns.Count(m => m.ConPhucVu)</span></a>
+      <button type="button" class="btn btn-outline-danger w-100 dm-filter-btn" data-dm="@d.Id" data-ten="@d.TenDanhMuc">
+        @d.TenDanhMuc <span class="badge bg-danger ms-1">@count</span>
+      </button>
     </div>
   }
 </div>
-<h4 class="mb-3">Thực đơn món ăn (@Model.Count món)</h4>
-<div class="row g-3">
-  @foreach (var m in Model) { <div class="col-12 col-sm-6 col-lg-4"><partial name="_MonCard" model="m" /></div> }
+<h4 class="mb-3" id="home-mon-title">Thực đơn món ăn (@Model.Count món)</h4>
+<div class="row g-3" id="home-mon-grid">
+  @foreach (var m in Model)
+  {
+    <div class="col-12 col-sm-6 col-lg-4 home-mon-item" data-dm="@m.DanhMucId">
+      <partial name="_MonCard" model="m" />
+    </div>
+  }
 </div>
+<div id="home-mon-empty" class="alert alert-warning d-none mt-2">Chưa có món ăn nào trong danh mục này.</div>
+
+<script>
+  (function () {
+    const btns = document.querySelectorAll('#home-dm-filter .dm-filter-btn');
+    const items = document.querySelectorAll('#home-mon-grid .home-mon-item');
+    const title = document.getElementById('home-mon-title');
+    const empty = document.getElementById('home-mon-empty');
+    let currentDm = 'all';
+
+    function locTheoDanhMuc(dmId, tenDm) {
+      // Nếu bấm lại vào danh mục đang chọn thì quay về "Tất cả"
+      if (dmId !== 'all' && currentDm === dmId) {
+        dmId = 'all';
+        tenDm = 'Tất cả';
+      }
+      currentDm = dmId;
+
+      btns.forEach(function (b) {
+        const isSelected = b.getAttribute('data-dm') === dmId;
+        b.classList.toggle('btn-danger', isSelected);
+        b.classList.toggle('btn-outline-danger', !isSelected);
+        b.classList.toggle('active', isSelected);
+        const badge = b.querySelector('.badge');
+        if (badge) {
+          badge.classList.toggle('bg-light', isSelected);
+          badge.classList.toggle('text-danger', isSelected);
+          badge.classList.toggle('bg-danger', !isSelected);
+        }
+      });
+
+      let visibleCount = 0;
+      items.forEach(function (item) {
+        const match = dmId === 'all' || item.getAttribute('data-dm') === dmId;
+        item.classList.toggle('d-none', !match);
+        if (match) visibleCount++;
+      });
+
+      if (title) {
+        title.textContent = dmId === 'all'
+          ? 'Thực đơn món ăn (' + visibleCount + ' món)'
+          : 'Thực đơn món ăn — ' + tenDm + ' (' + visibleCount + ' món)';
+      }
+      if (empty) {
+        empty.classList.toggle('d-none', visibleCount > 0);
+      }
+    }
+
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        locTheoDanhMuc(btn.getAttribute('data-dm'), btn.getAttribute('data-ten'));
+      });
+    });
+  })();
+</script>

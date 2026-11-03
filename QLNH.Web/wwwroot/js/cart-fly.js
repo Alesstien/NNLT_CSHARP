@@ -102,7 +102,7 @@
     }, 850);
   }
 
-  async function ajaxAdd(form, button) {
+  async function ajaxAdd(form, button, img) {
     const submitButton = form.querySelector(
       'button[type="submit"], input[type="submit"]',
     );
@@ -139,8 +139,8 @@
         });
 
         alert(
-          "Không nhận được phản hồi JSON từ máy chủ. " +
-            "Vui lòng kiểm tra F12 > Network.",
+          body ||
+            "Không nhận được phản hồi hợp lệ từ máy chủ. Vui lòng thử lại.",
         );
 
         return;
@@ -154,6 +154,10 @@
         alert(result.message || "Không thể thêm món vào giỏ hàng.");
 
         return;
+      }
+
+      if (img) {
+        flyToCart(img, button);
       }
 
       updateBadge(button, result.cartCount);
@@ -187,12 +191,7 @@
     const card = form.closest(".card");
     const img = card ? card.querySelector("img.cart-item-img") : null;
 
-    // Tạo hiệu ứng ảnh bay vào giỏ hàng.
-    if (img) {
-      flyToCart(img, button);
-    }
-
-    // Gửi yêu cầu thêm món đến máy chủ.
-    ajaxAdd(form, button);
+    // Gửi yêu cầu thêm món đến máy chủ (chỉ bay vào giỏ khi máy chủ chấp nhận).
+    ajaxAdd(form, button, img);
   });
 })();

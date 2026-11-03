@@ -5,28 +5,108 @@
 @inject QLNH_Web.Data.AuthDbContext Db
 
 <style>
-    .auth-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: 12px; }
-    .auth-btn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 20px; border-radius: 999px;
-                font: 700 14px/1 'Inter','Segoe UI',system-ui,sans-serif; text-decoration: none; border: 1.5px solid transparent;
-                cursor: pointer; transition: .2s; white-space: nowrap; }
-    .auth-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .auth-login { color: #f5d77a; border-color: #d4af37; background: rgba(212,175,55,.10); }
-    .auth-login:hover { background: rgba(212,175,55,.25); color: #fff3c4; transform: translateY(-1px); }
-    .auth-register { color: #1a1204; background: linear-gradient(135deg,#f59e0b,#f8dc7c); border-color: #f59e0b;
-                     animation: authGlow 2.4s infinite; }
-    .auth-register:hover { transform: translateY(-1px) scale(1.03); color: #1a1204; filter: brightness(1.08); }
-    .auth-admin { color: #fff; background: #7c3aed; border-color: #7c3aed; }
-    .auth-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-    .auth-admin:hover { background: #6d28d9; color: #fff; }
-    .auth-hello { display: inline-flex; align-items: center; gap: 8px; color: #f3f4f6; font: 500 14px 'Inter','Segoe UI',sans-serif; }
-    .auth-avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
-                   background: linear-gradient(135deg,#f59e0b,#f8dc7c); color: #1a1204; font-weight: 800; }
-    .auth-box form { margin: 0; }
-    @@keyframes authGlow {
-        0% { box-shadow: 0 0 0 0 rgba(245,158,11,.55); }
-        70% { box-shadow: 0 0 0 12px rgba(245,158,11,0); }
-        100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+    .auth-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: nowrap;
     }
+    .auth-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 999px;
+        font: 600 13.5px/1 'Inter', 'Segoe UI', system-ui, sans-serif;
+        text-decoration: none;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition: all .2s ease;
+        white-space: nowrap;
+    }
+    .auth-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .auth-login {
+        color: #fff3c4;
+        border-color: rgba(248, 220, 124, .55);
+        background: rgba(255, 255, 255, .10);
+    }
+    .auth-login:hover {
+        background: rgba(248, 220, 124, .22);
+        border-color: #f8dc7c;
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+    .auth-register {
+        color: #1a1204;
+        background: linear-gradient(135deg, #f59e0b, #f8dc7c);
+        border-color: #f59e0b;
+        font-weight: 700;
+    }
+    .auth-register:hover {
+        transform: translateY(-1px);
+        color: #1a1204;
+        filter: brightness(1.06);
+    }
+    .auth-admin {
+        color: #fff;
+        background: rgba(124, 58, 237, .9);
+        border-color: rgba(167, 139, 250, .5);
+    }
+    .auth-admin:hover {
+        background: #6d28d9;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+    .auth-badge {
+        min-width: 19px;
+        height: 19px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .auth-user-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        padding: 4px 14px 4px 5px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, .18);
+        border: 1px solid rgba(255, 255, 255, .14);
+        color: #fff;
+        font: 500 13.5px/1 'Inter', 'Segoe UI', sans-serif;
+        white-space: nowrap;
+    }
+    .auth-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f59e0b, #f8dc7c);
+        color: #1a1204;
+        font-size: 13px;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+    .auth-box form { margin: 0; display: inline-flex; }
 </style>
 
 <div class="auth-box">
@@ -35,11 +115,17 @@
     var u = await UserManager.GetUserAsync(User);
     var ten = string.IsNullOrWhiteSpace(u?.HoTen) ? (User.Identity!.Name ?? "") : u!.HoTen;
     var chuCai = ten.Length > 0 ? ten.Substring(0, 1).ToUpper() : "?";
-    <span class="auth-hello"><span class="auth-avatar">@chuCai</span> Xin chào, <b>@ten</b></span>
+    <div class="auth-user-pill" title="Tài khoản đang đăng nhập">
+        <span class="auth-avatar">@chuCai</span>
+        <span>Xin chào, <b>@ten</b></span>
+    </div>
     if (User.IsInRole("Admin"))
     {
         var choDuyet = await Db.DatBans.CountAsync(d => d.TrangThai == TrangThaiDatBan.ChoDuyet);
-        <a class="auth-btn auth-admin" asp-controller="Admin" asp-action="Reservations">Quản trị@if (choDuyet > 0) { <span class="auth-badge">@choDuyet</span> }</a>
+        <a class="auth-btn auth-admin" asp-controller="Admin" asp-action="Reservations">
+            Quản trị
+            @if (choDuyet > 0) { <span class="auth-badge">@choDuyet</span> }
+        </a>
     }
     <form asp-controller="Account" asp-action="Logout" method="post">
         <button type="submit" class="auth-btn auth-login">Đăng xuất</button>

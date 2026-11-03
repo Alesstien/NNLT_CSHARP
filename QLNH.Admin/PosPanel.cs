@@ -245,7 +245,7 @@ namespace QLNH.Admin
                 var openOrder = db.DonHangs
                     .Include(d => d.ChiTiets)
                     .ThenInclude(c => c.MonAn)
-                    .Where(d => d.BanId == ban.Id && d.TrangThai != "Đã thanh toán" && d.TrangThai != "Đã hủy" && d.TrangThai != "Đã huỷ")
+                    .Where(d => d.BanId == ban.Id && d.TrangThai != "Đã thanh toán" && d.TrangThai != "Hoàn thành" && d.TrangThai != "Đã hủy" && d.TrangThai != "Đã huỷ")
                     .OrderByDescending(d => d.Id)
                     .FirstOrDefault();
 

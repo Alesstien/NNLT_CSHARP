@@ -64,9 +64,11 @@ public static class DbSeeder
             if (r.Succeeded) await users.AddToRoleAsync(admin, AccountController.RoleAdmin);
         }
 
-        // Đồng bộ các đơn đặt bàn và tài khoản khách trên Web sang bảng WinForms (QLNH.Admin)
+        // Đồng bộ các đơn đặt bàn, bàn ăn và tài khoản khách trên Web với bảng WinForms (QLNH.Admin)
         if (svc != null)
         {
+            await svc.DongBoBanTuAdminAsync();
+
             var allUsers = await db.Users.AsNoTracking().ToListAsync();
             foreach (var u in allUsers)
             {

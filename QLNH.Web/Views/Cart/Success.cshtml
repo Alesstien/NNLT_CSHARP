@@ -19,11 +19,18 @@
             <dd class="col-8">@Model.SoKhach@(Model.SoBan > 1 ? " (" + Model.SoBan + " bàn)" : "") · @Model.DipDacBiet</dd>
             <dt class="col-4 fw-normal text-secondary">Món đặt trước</dt>
             <dd class="col-8">
-                @foreach (var m in Model.Mons)
+                @if (Model.Mons.Any())
                 {
-                    <div>@m.TenMon × @m.SoLuong</div>
+                    @foreach (var m in Model.Mons)
+                    {
+                        <div>@m.TenMon × @m.SoLuong</div>
+                    }
+                    @if (Model.SoBan > 1) { <div class="text-secondary">(× @Model.SoBan mâm)</div> }
                 }
-                @if (Model.SoBan > 1) { <div class="text-secondary">(× @Model.SoBan mâm)</div> }
+                else
+                {
+                    <span class="text-secondary">Chưa chọn món trước (gọi món tại nhà hàng)</span>
+                }
             </dd>
             <dt class="col-4 fw-normal text-secondary">Tổng hóa đơn</dt>
             <dd class="col-8">@Model.TongHoaDon.ToString("N0") đ</dd>

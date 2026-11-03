@@ -116,6 +116,7 @@ public class DatBanService
     {
         if (!TryParseNgayGio(r.Ngay, r.Gio, out var ngayGio) || !Slots.Any(s => s.Value == r.Gio))
             return Loi("Ngày hoặc giờ không hợp lệ.");
+        if (ngayGio <= DateTime.Now) return Loi("Hãy chọn ngày giờ nhận bàn trong tương lai.");
         if (ngayGio < DateTime.Now.AddHours(1)) return Loi("Vui lòng đặt bàn trước giờ hẹn ít nhất 1 giờ.");
         if (ngayGio > DateTime.Now.AddDays(90)) return Loi("Chỉ nhận đặt bàn trong vòng 90 ngày tới.");
         if (!CheDo.TatCa.Contains(r.CheDoCoc)) return Loi("Chế độ đặt cọc không hợp lệ.");
@@ -161,12 +162,14 @@ public class DatBanService
             // Giá luôn lấy từ CSDL, không tin giá do trình duyệt gửi lên
             var ids = chon.Select(m => m.MucThucDonId).ToList();
             var mons = await _db.MucThucDons.Where(m => ids.Contains(m.Id) && m.ConPhucVu).ToListAsync();
+            var adminMons = await _appDb.MonAns.AsNoTracking().Where(m => m.ConPhucVu).ToListAsync();
             var dong = new List<DatBanMon>();
             foreach (var c in chon)
             {
                 var mon = mons.FirstOrDefault(m => m.Id == c.MucThucDonId);
                 if (mon == null) return Loi("Có món không còn phục vụ, vui lòng tải lại trang.");
-                dong.Add(new DatBanMon { MucThucDonId = mon.Id, TenMon = mon.Ten, DonGia = mon.Gia, SoLuong = c.SoLuong });
+                var adminMon = adminMons.FirstOrDefault(a => string.Equals(a.TenMon.Trim(), mon.Ten.Trim(), StringComparison.OrdinalIgnoreCase));
+                dong.Add(new DatBanMon { MucThucDonId = mon.Id, MonAnId = adminMon?.Id, TenMon = mon.Ten, DonGia = mon.Gia, SoLuong = c.SoLuong });
             }
 
             var gia = TinhGia(dong.Sum(d => d.DonGia * d.SoLuong), kv.PhuThu, ud);
@@ -285,6 +288,66 @@ public class DatBanService
         return null;
     }
 
+    // ---------- Đồng bộ danh sách Bàn từ Admin sang Web_KhuVuc ----------
+    public async Task DongBoBanTuAdminAsync()
+    {
+        var adminBans = await _appDb.Bans.AsNoTracking().OrderBy(b => b.Id).ToListAsync();
+        if (adminBans.Count == 0) return;
+
+        var webKvs = await _db.KhuVucs.ToListAsync();
+        var activeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var ban in adminBans)
+        {
+            var ten = (ban.TenBan ?? "").Trim();
+            if (string.IsNullOrEmpty(ten)) continue;
+
+            bool isVip = ten.Contains("VIP", StringComparison.OrdinalIgnoreCase);
+            bool choTiec = ban.SoGhe >= 8 || isVip || ten.Contains("Tiệc", StringComparison.OrdinalIgnoreCase) || ten.Contains("Sảnh", StringComparison.OrdinalIgnoreCase);
+            decimal phuThu = isVip ? 200_000m : 0m;
+            string moTa = isVip
+                ? $"Phòng / Bàn VIP ({ban.SoGhe} ghế) · Trạng thái: {ban.TrangThai}"
+                : $"Bàn tiêu chuẩn ({ban.SoGhe} ghế) · Trạng thái: {ban.TrangThai}";
+            bool hoatDong = !string.Equals(ban.TrangThai, "Bảo trì", StringComparison.OrdinalIgnoreCase);
+
+            var existing = webKvs.FirstOrDefault(k => string.Equals(k.Ten.Trim(), ten, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+            {
+                _db.KhuVucs.Add(new KhuVuc
+                {
+                    Ten = ten,
+                    MoTa = moTa,
+                    PhuThu = phuThu,
+                    SucChua = ban.SoGhe,
+                    HoatDong = hoatDong,
+                    ChoTiec = choTiec
+                });
+            }
+            else
+            {
+                existing.Ten = ten;
+                existing.MoTa = moTa;
+                existing.PhuThu = phuThu;
+                existing.SucChua = ban.SoGhe;
+                existing.HoatDong = hoatDong;
+                existing.ChoTiec = choTiec;
+            }
+
+            if (hoatDong) activeNames.Add(ten);
+        }
+
+        // Ẩn các khu vực mẫu cũ không có trong bảng Ban của QLNH.Admin
+        foreach (var kv in webKvs)
+        {
+            if (!activeNames.Contains(kv.Ten.Trim()))
+            {
+                kv.HoatDong = false;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
     // ---------- Đồng bộ sang bảng của WinForms (QLNH.Admin) ----------
     public async Task DongBoSangWinFormsAsync(DatBan b)
     {
@@ -296,7 +359,8 @@ public class DatBanService
             : await _db.DatBanMons.Where(m => m.DatBanId == b.Id).ToListAsync();
 
         var bans = await _appDb.Bans.OrderBy(x => x.SoGhe).ToListAsync();
-        var ban = bans.FirstOrDefault(x => x.TrangThai == "Trống" && x.SoGhe >= b.SoKhach)
+        var ban = bans.FirstOrDefault(x => string.Equals(x.TenBan.Trim(), kvTen.Trim(), StringComparison.OrdinalIgnoreCase))
+                  ?? bans.FirstOrDefault(x => x.TrangThai == "Trống" && x.SoGhe >= b.SoKhach)
                   ?? bans.LastOrDefault(x => x.TrangThai == "Trống")
                   ?? bans.FirstOrDefault(x => x.SoGhe >= b.SoKhach)
                   ?? bans.LastOrDefault();
@@ -413,6 +477,19 @@ public class DatBanService
             winDon.TrangThai = ttDonWin;
             winDon.TongTien = b.TongHoaDon;
             winDon.GhiChu = ghiChuDon;
+        }
+
+        var targetBanId = winDon?.BanId ?? winDatBan.BanId ?? ban?.Id;
+        if (targetBanId.HasValue)
+        {
+            var banEntity = await _appDb.Bans.FindAsync(targetBanId.Value);
+            if (banEntity != null)
+            {
+                if (b.TrangThai is TrangThaiDatBan.HoanThanh or TrangThaiDatBan.DaHuy)
+                    banEntity.TrangThai = "Trống";
+                else if (b.TrangThai == TrangThaiDatBan.DaXacNhan && banEntity.TrangThai == "Trống")
+                    banEntity.TrangThai = "Đã đặt";
+            }
         }
 
         await _appDb.SaveChangesAsync();

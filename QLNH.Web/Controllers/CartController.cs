@@ -29,14 +29,26 @@ public class CartController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(int id, int soLuong = 1)
     {
-        if (id <= 0)
-            return BadRequest("Mã món ăn không hợp lệ.");
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        if (id <= 0 || soLuong <= 0)
+        {
+            const string msg = "Mã món ăn hoặc số lượng không hợp lệ.";
+            if (isAjax) return BadRequest(new { success = false, message = msg });
+            TempData["Loi"] = msg;
+            return BadRequest(msg);
+        }
 
         var mon = await _db.MonAns
             .FirstOrDefaultAsync(m => m.Id == id && m.ConPhucVu);
 
         if (mon == null)
-            return NotFound("Món ăn không tồn tại hoặc đã ngừng phục vụ.");
+        {
+            const string msg = "Món ăn không tồn tại hoặc đã ngừng phục vụ.";
+            if (isAjax) return NotFound(new { success = false, message = msg });
+            TempData["Loi"] = msg;
+            return NotFound(msg);
+        }
 
         soLuong = Math.Clamp(soLuong, 1, 100);
 
@@ -49,7 +61,7 @@ public class CartController : Controller
 
         CartHelper.Save(HttpContext.Session, cart);
 
-        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        if (isAjax)
         {
             return Ok(new
             {
@@ -70,7 +82,7 @@ public class CartController : Controller
         var cart = CartHelper.Get(HttpContext.Session);
         var ids = cart.Keys.ToList();
         if (ids.Count == 0) return new();
-        var mons = await _db.MonAns.Where(m => ids.Contains(m.Id)).OrderBy(m => m.Id).ToListAsync();
+        var mons = await _db.MonAns.Where(m => ids.Contains(m.Id) && m.ConPhucVu).OrderBy(m => m.Id).ToListAsync();
         return mons.Select(m => new CartLine
         {
             MonAnId = m.Id,
@@ -80,11 +92,12 @@ public class CartController : Controller
         }).ToList();
     }
 
-    /// <summary>Chọn khu vực hợp lệ: tiệc thì chọn sảnh tiệc, ăn thường thì chọn khu thường.</summary>
+    /// <summary>Chọn bàn / khu vực từ danh sách bàn của Admin.</summary>
     private static KhuVuc? ChonKhuVuc(BookingDraft b, List<KhuVuc> kvs)
     {
-        var hopLe = kvs.Where(k => k.ChoTiec == b.LaTiec).ToList();
-        var kv = hopLe.FirstOrDefault(k => k.Id == b.KhuVucId) ?? hopLe.FirstOrDefault();
+        var kv = kvs.FirstOrDefault(k => k.Id == b.KhuVucId)
+                 ?? (b.LaTiec ? kvs.LastOrDefault(k => k.ChoTiec) : null)
+                 ?? kvs.FirstOrDefault();
         if (kv != null) b.KhuVucId = kv.Id;
         return kv;
     }
@@ -92,8 +105,9 @@ public class CartController : Controller
     // ---------- Bước 1: giỏ hàng + đặt bàn ----------
     public async Task<IActionResult> Index()
     {
+        await _svc.DongBoBanTuAdminAsync();
         var b = BookingDraft.Get(HttpContext.Session);
-        if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now)
+        if (b.ThoiGianDen == null)
             b.ThoiGianDen = DateTime.Now.AddHours(2);
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).OrderBy(k => k.Id).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
@@ -101,7 +115,7 @@ public class CartController : Controller
         var lines = await LoadLines();
 
         var vm = new CartPageVm { Lines = lines, Booking = b, KhuVucs = kvs, KhuVuc = kv };
-        if (kv != null && lines.Count > 0)
+        if (kv != null)
             vm.Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, null, CheDo.CoDinh);
         return View(vm);
     }
@@ -118,6 +132,16 @@ public class CartController : Controller
 
         var cart = CartHelper.Get(HttpContext.Session);
         if (op == "next") return await TiepTuc(booking, cart);
+
+        if (booking.ThoiGianDen != null && booking.ThoiGianDen <= DateTime.Now)
+            TempData["Loi"] = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+        else
+        {
+            var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
+            var kv = ChonKhuVuc(booking, kvs);
+            if (kv != null && booking.SoNguoi > kv.SucChua)
+                TempData["Loi"] = $"Khu vực \"{kv.Ten}\" không đáp ứng sức chứa (tối đa {kv.SucChua} khách, hiện chọn {booking.SoNguoi} khách).";
+        }
 
         var p = (op ?? "").Split(':');   // "inc:5" | "dec:5" | "del:5"
         if (p.Length == 2 && int.TryParse(p[1], out var id) && cart.ContainsKey(id))
@@ -139,8 +163,7 @@ public class CartController : Controller
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
 
-        if (cart.Count == 0) loi = "Giỏ hàng đang trống.";
-        else if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now) loi = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+        if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now) loi = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
         else if (kv == null) loi = "Chưa có khu vực phù hợp với loại buổi này.";
         else if (b.SoNguoi > kv.SucChua) loi = $"{kv.Ten} chỉ chứa tối đa {kv.SucChua} khách.";
 
@@ -154,7 +177,7 @@ public class CartController : Controller
     {
         var lines = await LoadLines();
         var b = BookingDraft.Get(HttpContext.Session);
-        if (lines.Count == 0 || b.ThoiGianDen == null) return null;
+        if (b.ThoiGianDen == null) return null;
 
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
@@ -222,6 +245,7 @@ public class CartController : Controller
             return View(vm);
         }
 
+        var webMons = await _auth.MucThucDons.AsNoTracking().ToListAsync();
         var b = vm.Booking; var bill = vm.Bill;
         var datBan = new DatBan
         {
@@ -238,9 +262,17 @@ public class CartController : Controller
             MaGiaoDich = vm.MaGiaoDich,
             DaThanhToanCoc = true, NgayThanhToan = DateTime.Now,
             TrangThai = TrangThaiDatBan.ChoDuyet,     // admin đối chiếu tiền rồi chuyển sang "Đã xác nhận"
-            Mons = vm.Lines.Select(l => new DatBanMon
+            Mons = vm.Lines.Select(l =>
             {
-                MonAnId = l.MonAnId, TenMon = l.TenMon, DonGia = l.DonGia, SoLuong = l.SoLuong
+                var wm = webMons.FirstOrDefault(w => string.Equals(w.Ten.Trim(), l.TenMon.Trim(), StringComparison.OrdinalIgnoreCase));
+                return new DatBanMon
+                {
+                    MonAnId = l.MonAnId,
+                    MucThucDonId = wm?.Id,
+                    TenMon = l.TenMon,
+                    DonGia = l.DonGia,
+                    SoLuong = l.SoLuong
+                };
             }).ToList()
         };
         _auth.DatBans.Add(datBan);

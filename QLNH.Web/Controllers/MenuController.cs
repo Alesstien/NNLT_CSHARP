@@ -25,7 +25,7 @@ public class MenuController : Controller
 
     public IActionResult Details(int id)
     {
-        var mon = _db.MonAns.Include(m => m.DanhMuc).FirstOrDefault(m => m.Id == id);
+        var mon = _db.MonAns.Include(m => m.DanhMuc).FirstOrDefault(m => m.Id == id && m.ConPhucVu);
         if (mon == null) return NotFound();
         ViewBag.LienQuan = _db.MonAns.Where(m => m.DanhMucId == mon.DanhMucId && m.Id != id && m.ConPhucVu).Take(3).ToList();
         return View(mon);

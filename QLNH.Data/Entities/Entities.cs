@@ -47,7 +47,7 @@ public class MonAn
     [Required(ErrorMessage = "Tên món không được để trống"), StringLength(150)]
     public string TenMon { get; set; } = "";
     [StringLength(500)] public string? MoTa { get; set; }
-    [Range(0, 100000000, ErrorMessage = "Giá phải từ 0 trở lên")]
+    [Range(typeof(decimal), "0", "1000000000", ErrorMessage = "Giá phải từ 0 trở lên")]
     public decimal Gia { get; set; }
     [StringLength(300)] public string? HinhAnh { get; set; }
     public int DanhMucId { get; set; }
