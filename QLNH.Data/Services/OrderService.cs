@@ -53,6 +53,8 @@ public class OrderService
                     ban.TrangThai = "Trống";
                 else if (trangThai == TrangThaiDon.DangCheBien)
                     ban.TrangThai = "Đang dùng";
+                else if (trangThai == TrangThaiDon.DaXacNhan && ban.TrangThai == "Trống")
+                    ban.TrangThai = "Đã đặt";
             }
         }
         _db.SaveChanges();
@@ -66,7 +68,7 @@ public class OrderService
                 var ma = don.GhiChu[1..closeIdx].Trim();
                 var ttDatBanWin = trangThai switch
                 {
-                    TrangThaiDon.DangCheBien => "Đã xác nhận",
+                    TrangThaiDon.DaXacNhan or TrangThaiDon.DangCheBien => "Đã xác nhận",
                     TrangThaiDon.HoanThanh or TrangThaiDon.DaThanhToan => "Đã đến",
                     TrangThaiDon.DaHuy => "Đã hủy",
                     _ => "Chờ xác nhận"
@@ -80,8 +82,10 @@ public class OrderService
 
                 var ttWeb = trangThai switch
                 {
-                    TrangThaiDon.DangCheBien => "Đã xác nhận",
-                    TrangThaiDon.HoanThanh or TrangThaiDon.DaThanhToan => "Đã hoàn thành",
+                    TrangThaiDon.DaXacNhan => "Đã xác nhận",
+                    TrangThaiDon.DangCheBien => "Đang chế biến",
+                    TrangThaiDon.HoanThanh => "Đã hoàn thành",
+                    TrangThaiDon.DaThanhToan => "Đã thanh toán",
                     TrangThaiDon.DaHuy => "Đã hủy",
                     _ => "Đang chờ duyệt"
                 };

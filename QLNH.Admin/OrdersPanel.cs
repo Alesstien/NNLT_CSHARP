@@ -66,6 +66,11 @@ public class OrdersPanel : UserControl
     private void TaiChiTiet()
     {
         if (IdDangChon() is not int id) { gridCt.DataSource = null; return; }
+        var ttHienTai = gridDon.CurrentRow?.Cells["TrangThai"]?.Value?.ToString();
+        if (!string.IsNullOrEmpty(ttHienTai) && cboTrangThai.Items.Contains(ttHienTai))
+        {
+            cboTrangThai.SelectedItem = ttHienTai;
+        }
         using var db = Program.NewDb();
         gridCt.DataSource = db.ChiTietDonHangs.Include(c => c.MonAn).Where(c => c.DonHangId == id).AsEnumerable()
             .Select(c => new { Mon = c.MonAn!.TenMon, c.SoLuong, DonGia = c.DonGia.ToString("N0"), ThanhTien = c.ThanhTien.ToString("N0") }).ToList();

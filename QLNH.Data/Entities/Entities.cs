@@ -5,11 +5,12 @@ namespace QLNH.Data.Entities;
 public static class TrangThaiDon
 {
     public const string Moi = "Mới";
+    public const string DaXacNhan = "Đã xác nhận";
     public const string DangCheBien = "Đang chế biến";
     public const string HoanThanh = "Hoàn thành";
     public const string DaThanhToan = "Đã thanh toán";
     public const string DaHuy = "Đã hủy";
-    public static readonly string[] TatCa = { Moi, DangCheBien, HoanThanh, DaThanhToan, DaHuy };
+    public static readonly string[] TatCa = { Moi, DaXacNhan, DangCheBien, HoanThanh, DaThanhToan, DaHuy };
 }
 
 public class VaiTro

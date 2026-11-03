@@ -374,7 +374,7 @@ public class DatBanService
         };
         var ttDonWin = b.TrangThai switch
         {
-            TrangThaiDatBan.DaXacNhan => QLNH.Data.Entities.TrangThaiDon.DangCheBien,
+            TrangThaiDatBan.DaXacNhan => QLNH.Data.Entities.TrangThaiDon.DaXacNhan,
             TrangThaiDatBan.HoanThanh => QLNH.Data.Entities.TrangThaiDon.DaThanhToan,
             TrangThaiDatBan.DaHuy => QLNH.Data.Entities.TrangThaiDon.DaHuy,
             _ => QLNH.Data.Entities.TrangThaiDon.Moi
@@ -417,7 +417,7 @@ public class DatBanService
         var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
         if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
 
-        if (winDon == null && (mons.Count > 0 || b.TongHoaDon > 0))
+        if (winDon == null)
         {
             winDon = new QLNH.Data.Entities.DonHang
             {
@@ -426,7 +426,7 @@ public class DatBanService
                 SoDienThoai = b.SoDienThoai,
                 BanId = winDatBan.BanId ?? ban?.Id,
                 TrangThai = ttDonWin,
-                TongTien = b.TongHoaDon,
+                TongTien = b.TongHoaDon > 0 ? b.TongHoaDon : b.TienCoc,
                 GhiChu = ghiChuDon
             };
 
@@ -475,7 +475,7 @@ public class DatBanService
         else if (winDon != null)
         {
             winDon.TrangThai = ttDonWin;
-            winDon.TongTien = b.TongHoaDon;
+            winDon.TongTien = b.TongHoaDon > 0 ? b.TongHoaDon : b.TienCoc;
             winDon.GhiChu = ghiChuDon;
         }
 

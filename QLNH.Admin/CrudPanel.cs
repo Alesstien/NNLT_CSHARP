@@ -53,7 +53,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
     private void Grid_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
     {
-        if (_grid.IsCurrentCellDirty && _grid.CurrentCell is DataGridViewCheckBoxCell)
+        if (_grid.IsCurrentCellDirty && (_grid.CurrentCell is DataGridViewCheckBoxCell || _grid.CurrentCell is DataGridViewComboBoxCell))
         {
             _grid.CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
@@ -62,12 +62,22 @@ public class CrudPanel<T> : UserControl where T : class, new()
     private void Grid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
     {
         if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-        if (_grid.Columns[e.ColumnIndex].Name == "ConPhucVu" && _grid.Rows[e.RowIndex].DataBoundItem is MonAn mon && mon.Id > 0 && !string.IsNullOrWhiteSpace(mon.TenMon) && mon.Gia >= 0)
+        var colName = _grid.Columns[e.ColumnIndex].Name;
+        if (colName == "ConPhucVu" && _grid.Rows[e.RowIndex].DataBoundItem is MonAn mon && mon.Id > 0 && !string.IsNullOrWhiteSpace(mon.TenMon) && mon.Gia >= 0)
         {
             try
             {
                 _db.SaveChanges();
                 DongBoMonAnSangWeb();
+            }
+            catch { }
+        }
+        else if (colName == "TrangThai" && _grid.Rows[e.RowIndex].DataBoundItem is DatBan dbItem && dbItem.Id > 0 && !string.IsNullOrWhiteSpace(dbItem.TenKhach))
+        {
+            try
+            {
+                _db.SaveChanges();
+                DongBoDatBanSangWeb();
             }
             catch { }
         }
@@ -355,7 +365,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
             };
             var ttDon = item.TrangThai switch
             {
-                "Đã xác nhận" => TrangThaiDon.DangCheBien,
+                "Đã xác nhận" => TrangThaiDon.DaXacNhan,
                 "Đã đến" => TrangThaiDon.DaThanhToan,
                 "Đã huỷ" or "Đã hủy" => TrangThaiDon.DaHuy,
                 _ => TrangThaiDon.Moi

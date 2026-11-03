@@ -1,11 +1,35 @@
 @using QLNH_Web.Models
 @model QLNH_Web.Models.DatBan
-@{ ViewData["Title"] = "Đặt cọc thành công"; }
+@{
+    ViewData["Title"] = "Đặt cọc thành công";
+
+    string BadgeClass(string tt) => tt switch
+    {
+        "Đã xác nhận" => "bg-success",
+        "Đang chế biến" => "bg-primary",
+        "Đã hoàn thành" or "Hoàn thành" or "Đã thanh toán" => "bg-info text-dark",
+        "Đã hủy" => "bg-danger",
+        _ => "bg-warning text-dark"
+    };
+
+    string MoTaTrangThai(string tt) => tt switch
+    {
+        "Đã xác nhận" => "Nhà hàng đã xác nhận đơn đặt bàn của bạn. Vui lòng đến đúng giờ hẹn.",
+        "Đang chế biến" => "Nhà hàng đang chuẩn bị món ăn phục vụ bàn của bạn.",
+        "Đã hoàn thành" or "Hoàn thành" or "Đã thanh toán" => "Đơn đặt bàn đã hoàn tất và thanh toán. Cảm ơn quý khách!",
+        "Đã hủy" => "Đơn đặt bàn này đã bị hủy.",
+        _ => "Nhà hàng sẽ đối chiếu khoản cọc và xác nhận với bạn sớm nhất."
+    };
+}
 
 <div class="card mx-auto" style="max-width:600px">
     <div class="card-body">
-        <p class="text-success fw-semibold mb-1">✔ Đã nhận thông tin đặt cọc</p>
-        <p class="small text-secondary">Trạng thái: <strong>@Model.TrangThai</strong>. Nhà hàng sẽ đối chiếu khoản cọc và xác nhận với bạn sớm nhất.</p>
+        <p class="text-success fw-semibold mb-1" id="success-header">✔ Đã nhận thông tin đặt cọc</p>
+        <p class="small text-secondary mb-3">
+            Trạng thái:
+            <span id="status-badge" class="badge @BadgeClass(Model.TrangThai)">@Model.TrangThai</span>
+            — <span id="status-desc">@MoTaTrangThai(Model.TrangThai)</span>
+        </p>
         <div class="display-6 fw-bold mb-3" style="letter-spacing:.06em">@Model.MaDatBan</div>
 
         <dl class="row small mb-3">
@@ -45,3 +69,51 @@
         <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
     </div>
 </div>
+
+<script>
+    (function () {
+        const badge = document.getElementById('status-badge');
+        const desc = document.getElementById('status-desc');
+        let currentStatus = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrangThai));
+
+        function getBadgeClass(tt) {
+            switch (tt) {
+                case 'Đã xác nhận': return 'badge bg-success';
+                case 'Đang chế biến': return 'badge bg-primary';
+                case 'Đã hoàn thành':
+                case 'Hoàn thành':
+                case 'Đã thanh toán': return 'badge bg-info text-dark';
+                case 'Đã hủy': return 'badge bg-danger';
+                default: return 'badge bg-warning text-dark';
+            }
+        }
+
+        function getDesc(tt) {
+            switch (tt) {
+                case 'Đã xác nhận': return 'Nhà hàng đã xác nhận đơn đặt bàn của bạn. Vui lòng đến đúng giờ hẹn.';
+                case 'Đang chế biến': return 'Nhà hàng đang chuẩn bị món ăn phục vụ bàn của bạn.';
+                case 'Đã hoàn thành':
+                case 'Hoàn thành':
+                case 'Đã thanh toán': return 'Đơn đặt bàn đã hoàn tất và thanh toán. Cảm ơn quý khách!';
+                case 'Đã hủy': return 'Đơn đặt bàn này đã bị hủy.';
+                default: return 'Nhà hàng sẽ đối chiếu khoản cọc và xác nhận với bạn sớm nhất.';
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch('/Cart/Status/@Model.Id', { cache: 'no-store' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.trangThai && data.trangThai !== currentStatus) {
+                    currentStatus = data.trangThai;
+                    badge.textContent = currentStatus;
+                    badge.className = getBadgeClass(currentStatus);
+                    desc.textContent = getDesc(currentStatus);
+                }
+            } catch (e) { }
+        }
+
+        setInterval(checkStatus, 2000);
+    })();
+</script>

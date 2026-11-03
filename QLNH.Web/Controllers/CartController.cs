@@ -188,8 +188,8 @@ public class CartController : Controller
             || string.IsNullOrEmpty(maGd)) return null;
 
         if (!CheDo.TatCa.Contains(inp.CheDoCoc)) inp.CheDoCoc = CheDo.CoDinh;
-        if (!new[] { "VIETQR", "MOMO", "VNPAY", "THE" }.Contains(inp.PhuongThuc)) inp.PhuongThuc = "VIETQR";
-        if (inp.NganHang != "MB") inp.NganHang = "VCB";
+        inp.PhuongThuc = "VIETQR";
+        inp.NganHang = "TIMO";
 
         UuDai? ud = null; string? maMsg = null;
         var ma = inp.Ma?.Trim().ToUpper();
@@ -289,8 +289,20 @@ public class CartController : Controller
     public async Task<IActionResult> Success(int id)
     {
         var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var d = await _auth.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons)
+        var d = await _auth.DatBans.AsNoTracking().Include(x => x.KhuVuc).Include(x => x.Mons)
             .FirstOrDefaultAsync(x => x.Id == id && x.UserId == uid);
         return d == null ? NotFound() : View(d);
+    }
+
+    [Authorize, HttpGet]
+    public async Task<IActionResult> Status(int id)
+    {
+        var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var tt = await _auth.DatBans.AsNoTracking()
+            .Where(x => x.Id == id && x.UserId == uid)
+            .Select(x => x.TrangThai)
+            .FirstOrDefaultAsync();
+        if (tt == null) return NotFound();
+        return Json(new { trangThai = tt });
     }
 }
