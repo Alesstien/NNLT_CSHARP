@@ -7,6 +7,7 @@ using QLNH.Data;
 using QLNH_Web.Data;
 using QLNH_Web.Models;
 using QLNH_Web.Services;
+using QLNH_Web.ViewModels;
 
 namespace QLNH_Web.Controllers;
 
@@ -289,6 +290,96 @@ await _svc.DongBoSangWinFormsAsync(datBan);
         BookingDraft.Clear(HttpContext.Session);
         return RedirectToAction(nameof(Success), new { id = datBan.Id });
     }
+
+[Authorize, HttpGet]
+public async Task<IActionResult> History(
+    DateTime? tuNgay,
+    DateTime? denNgay,
+    string? trangThai,
+    int trang = 1)
+{
+    const int kichThuocTrang = 5;
+
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId))
+        return Challenge();
+
+    tuNgay = tuNgay?.Date;
+    denNgay = denNgay?.Date;
+
+    if (tuNgay.HasValue && denNgay.HasValue && tuNgay > denNgay)
+    {
+        ModelState.AddModelError("",
+            "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+    }
+
+    if (!string.IsNullOrEmpty(trangThai)
+        && !TrangThaiDatBan.TatCa.Contains(trangThai))
+    {
+        trangThai = null;
+    }
+
+    var vm = new LichSuDatBanVm
+    {
+        TuNgay = tuNgay,
+        DenNgay = denNgay,
+        TrangThai = trangThai
+    };
+
+    if (!ModelState.IsValid)
+        return View(vm);
+
+    var query = _auth.DatBans
+        .AsNoTracking()
+        .Where(d => d.UserId == userId);
+
+    if (tuNgay.HasValue)
+        query = query.Where(d => d.NgayGio >= tuNgay.Value);
+
+    if (denNgay.HasValue && denNgay.Value < DateTime.MaxValue.Date)
+    {
+        var ngayKeTiep = denNgay.Value.AddDays(1);
+        query = query.Where(d => d.NgayGio < ngayKeTiep);
+    }
+
+    if (!string.IsNullOrEmpty(trangThai))
+        query = query.Where(d => d.TrangThai == trangThai);
+
+    vm.TongDon = await query.CountAsync();
+    vm.TongTrang = (int)Math.Ceiling(
+        vm.TongDon / (double)kichThuocTrang);
+    vm.Trang = Math.Clamp(trang, 1, Math.Max(1, vm.TongTrang));
+
+    vm.DonHangs = await query
+        .Include(d => d.KhuVuc)
+        .OrderByDescending(d => d.NgayTao)
+        .ThenByDescending(d => d.Id)
+        .Skip((vm.Trang - 1) * kichThuocTrang)
+        .Take(kichThuocTrang)
+        .ToListAsync();
+
+    return View(vm);
+}
+
+[Authorize, HttpGet]
+public async Task<IActionResult> Details(int id)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId))
+        return Challenge();
+
+    var donHang = await _auth.DatBans
+        .AsNoTracking()
+        .Include(d => d.KhuVuc)
+        .Include(d => d.Mons)
+        .FirstOrDefaultAsync(d =>
+            d.Id == id && d.UserId == userId);
+
+    if (donHang == null)
+        return NotFound();
+
+    return View(donHang);
+}
 
     // ---------- Bước 3: phiếu xác nhận ----------
     [Authorize]
