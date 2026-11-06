@@ -1,0 +1,182 @@
+@using QLNH_Web.Models
+@model QLNH_Web.ViewModels.LichSuDatBanVm
+
+@{
+    ViewData["Title"] = "Lịch sử đặt bàn";
+}
+
+<div class="container py-4" style="max-width: 960px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Lịch sử đặt bàn</h3>
+            <p class="text-secondary mb-0">
+                Tra cứu và xem thông tin các đơn của bạn.
+            </p>
+        </div>
+
+        <a asp-controller="Cart"
+           asp-action="Index"
+           class="btn btn-outline-warning">
+            Đặt bàn mới
+        </a>
+    </div>
+
+    <form method="get"
+          asp-action="History"
+          class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-2"></div>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    <label for="tuNgay" class="form-label">
+                        Nhận bàn từ ngày
+                    </label>
+                    <input type="date"
+                           id="tuNgay"
+                           name="tuNgay"
+                           value="@Model.TuNgay?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <label for="denNgay" class="form-label">
+                        Đến hết ngày
+                    </label>
+                    <input type="date"
+                           id="denNgay"
+                           name="denNgay"
+                           value="@Model.DenNgay?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <label for="trangThai" class="form-label">
+                        Trạng thái
+                    </label>
+                    <select id="trangThai"
+                            name="trangThai"
+                            class="form-select">
+                        <option value="">Tất cả trạng thái</option>
+
+                        @foreach (var tt in TrangThaiDatBan.TatCa)
+                        {
+                            <option value="@tt"
+                                    selected="@(Model.TrangThai == tt)">
+                                @tt
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-sm-6 col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-warning">
+                        Lọc đơn
+                    </button>
+                    <a asp-action="History"
+                       class="btn btn-outline-secondary">
+                        Xóa lọc
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <p class="small text-secondary">
+        Tìm thấy <strong>@Model.TongDon</strong> đơn đặt bàn.
+    </p>
+
+    @if (Model.DonHangs.Count == 0)
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body text-center py-5">
+                <h5>Chưa có đơn phù hợp</h5>
+                <p class="text-secondary mb-0">
+                    Thử đổi bộ lọc hoặc tạo đơn đặt bàn mới.
+                </p>
+            </div>
+        </div>
+    }
+
+    @foreach (var don in Model.DonHangs)
+    {
+        <article class="card border-0 shadow-sm rounded-4 mb-3">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">@don.MaDatBan</h5>
+                        <small class="text-secondary">
+                            Tạo lúc @don.NgayTao.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                    </div>
+
+                    <span class="badge rounded-pill bg-light text-dark border align-self-start px-3 py-2">
+                        @don.TrangThai
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="small text-secondary">Nhận bàn</div>
+                        <div class="fw-semibold">
+                            @don.NgayGio.ToString("dd/MM/yyyy · HH:mm")
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <div class="small text-secondary">Bàn và số khách</div>
+                        <div>
+                            @don.KhuVuc?.Ten · @don.SoKhach khách
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center border-top mt-3 pt-3">
+                    <div>
+                        <div class="small text-secondary">Tổng hóa đơn</div>
+                        <strong>@don.TongHoaDon.ToString("N0") đ</strong>
+                    </div>
+
+                    <a asp-action="Details"
+                       asp-route-id="@don.Id"
+                       class="btn btn-outline-warning">
+                        Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </article>
+    }
+
+    @if (Model.TongTrang > 1)
+    {
+        <nav aria-label="Phân trang lịch sử đặt bàn"
+             class="d-flex justify-content-center align-items-center gap-3 mt-4">
+            @if (Model.Trang > 1)
+            {
+                <a asp-action="History"
+                   asp-route-trang="@(Model.Trang - 1)"
+                   asp-route-tuNgay="@Model.TuNgay?.ToString("yyyy-MM-dd")"
+                   asp-route-denNgay="@Model.DenNgay?.ToString("yyyy-MM-dd")"
+                   asp-route-trangThai="@Model.TrangThai"
+                   class="btn btn-outline-secondary">
+                    ← Trước
+                </a>
+            }
+
+            <span>Trang @Model.Trang / @Model.TongTrang</span>
+
+            @if (Model.Trang < Model.TongTrang)
+            {
+                <a asp-action="History"
+                   asp-route-trang="@(Model.Trang + 1)"
+                   asp-route-tuNgay="@Model.TuNgay?.ToString("yyyy-MM-dd")"
+                   asp-route-denNgay="@Model.DenNgay?.ToString("yyyy-MM-dd")"
+                   asp-route-trangThai="@Model.TrangThai"
+                   class="btn btn-outline-secondary">
+                    Sau →
+                </a>
+            }
+        </nav>
+    }
+</div>
