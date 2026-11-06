@@ -1,0 +1,145 @@
+@model QLNH_Web.Models.DatBan
+
+@{
+    ViewData["Title"] = "Chi tiết đặt bàn";
+
+    var thongTin = new Dictionary<string, string>
+    {
+        ["Trạng thái"] = Model.TrangThai,
+        ["Ngày tạo đơn"] = Model.NgayTao.ToString("dd/MM/yyyy HH:mm"),
+        ["Họ tên"] = Model.HoTen,
+        ["Số điện thoại"] = Model.SoDienThoai,
+        ["Email"] = Model.Email,
+        ["Ngày giờ nhận bàn"] = Model.NgayGio.ToString("dd/MM/yyyy HH:mm"),
+        ["Bàn / khu vực"] = Model.KhuVuc?.Ten ?? "—",
+        ["Số khách"] = Model.SoKhach.ToString(),
+        ["Số bàn / mâm"] = Model.SoBan.ToString(),
+        ["Loại buổi"] = Model.DipDacBiet ?? "—",
+        ["Ghi chú"] = Model.GhiChu ?? "—"
+    };
+
+    var thanhToan = new Dictionary<string, string>
+    {
+        ["Tiền món"] = Model.TongMon.ToString("N0") + " đ",
+        ["Phụ thu"] = Model.PhuThuKhuVuc.ToString("N0") + " đ",
+        ["VAT"] = Model.Vat.ToString("N0") + " đ",
+        ["Phí phục vụ"] = Model.PhiPhucVu.ToString("N0") + " đ",
+        ["Mã ưu đãi"] = Model.MaUuDai ?? "—",
+        ["Giảm giá"] = Model.GiamGia.ToString("N0") + " đ",
+        ["Tổng hóa đơn"] = Model.TongHoaDon.ToString("N0") + " đ",
+        ["Chế độ thanh toán"] = Model.CheDoCoc switch
+        {
+            "CocCoDinh" => "Cọc cố định",
+            "Coc30" => "Cọc 30%",
+            "Tra100" => "Thanh toán toàn bộ",
+            _ => Model.CheDoCoc
+        },
+        ["Khoản cọc ghi nhận"] = Model.TienCoc.ToString("N0") + " đ",
+        ["Còn lại theo đơn"] = Model.ConLai.ToString("N0") + " đ",
+        ["Phương thức"] = Model.PhuongThucThanhToan,
+        ["Ngân hàng"] = Model.NganHang ?? "—",
+        ["Mã giao dịch"] = Model.MaGiaoDich,
+        ["Đã ghi nhận thanh toán cọc"] = Model.DaThanhToanCoc ? "Có" : "Chưa",
+        ["Ngày ghi nhận thanh toán"] =
+            Model.NgayThanhToan?.ToString("dd/MM/yyyy HH:mm") ?? "—",
+        ["Hạn giữ chỗ"] =
+            Model.GiuChoDen?.ToString("dd/MM/yyyy HH:mm") ?? "—",
+        ["Cập nhật lần cuối"] =
+            Model.NgayCapNhat?.ToString("dd/MM/yyyy HH:mm") ?? "—"
+    };
+}
+
+<div class="container py-4" style="max-width: 900px;">
+    <a asp-action="History"
+       class="btn btn-outline-secondary mb-3">
+        ← Lịch sử đặt bàn
+    </a>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <h3 class="fw-bold mb-4">Đơn @Model.MaDatBan</h3>
+
+            @if (!string.IsNullOrWhiteSpace(Model.LyDoHuy))
+            {
+                <div class="alert alert-danger">
+                    <strong>Lý do hủy</strong>
+                    <div>@Model.LyDoHuy</div>
+                </div>
+            }
+
+            <h5 class="fw-bold mb-3">Thông tin đặt bàn</h5>
+
+            <dl class="row">
+                @foreach (var muc in thongTin)
+                {
+                    <dt class="col-sm-5 text-secondary fw-normal mb-2">
+                        @muc.Key
+                    </dt>
+                    <dd class="col-sm-7 mb-2 text-break"
+                        style="white-space: pre-wrap;">@muc.Value</dd>
+                }
+            </dl>
+
+            <h5 class="fw-bold border-top pt-4 mt-3 mb-3">
+                Món đặt trước
+            </h5>
+
+            @if (Model.Mons.Count == 0)
+            {
+                <p class="text-secondary">Đơn này chưa đặt món trước.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Món ăn</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-end">Số lượng</th>
+                                <th class="text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var mon in Model.Mons)
+                            {
+                                <tr>
+                                    <td>@mon.TenMon</td>
+                                    <td class="text-end">
+                                        @mon.DonGia.ToString("N0") đ
+                                    </td>
+                                    <td class="text-end">@mon.SoLuong</td>
+                                    <td class="text-end">
+                                        @((mon.DonGia * mon.SoLuong).ToString("N0")) đ
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.SoBan > 1)
+                {
+                    <p class="small text-secondary">
+                        Số bàn / mâm của đơn này là @Model.SoBan.
+                        Các khoản tổng hợp bên dưới lấy từ hóa đơn đã lưu.
+                    </p>
+                }
+            }
+
+            <h5 class="fw-bold border-top pt-4 mt-3 mb-3">
+                Chi phí và thanh toán
+            </h5>
+
+            <dl class="row">
+                @foreach (var muc in thanhToan)
+                {
+                    <dt class="col-sm-5 text-secondary fw-normal mb-2">
+                        @muc.Key
+                    </dt>
+                    <dd class="col-sm-7 mb-2 text-break">@muc.Value</dd>
+                }
+            </dl>
+        </div>
+    </div>
+</div>
