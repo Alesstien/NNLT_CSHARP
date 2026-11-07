@@ -130,6 +130,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             .AnyAsync(d =>
                 d.KhuVucId == datBan.KhuVucId
                 && d.TrangThai != TrangThaiDatBan.DaHuy
+                && d.TrangThai != TrangThaiDatBan.HoanThanh
+                && d.TrangThai != "Đã thanh toán"
                 && (d.TrangThai != TrangThaiDatBan.ChoCoc
                     || d.GiuChoDen > bayGio)
                 && d.NgayGio > tu
@@ -305,6 +307,12 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             return "Chỉ có thể tự hủy trước giờ hẹn ít nhất 2 giờ. Vui lòng liên hệ nhà hàng.";
 
         var daCoc = b.DaThanhToanCoc;
+        if (await _appDb.DatBans.AsNoTracking().AnyAsync(d =>
+            d.MaDatBan == b.MaDatBan
+            && (d.BatDauPhucVuLuc != null || d.TrangThai == "Đã đến")))
+        {
+            return "Phiếu đã được tiếp nhận. Vui lòng xử lý tại POS.";
+        }
         b.TrangThai = TrangThaiDatBan.DaHuy;
         b.LyDoHuy = string.IsNullOrWhiteSpace(lyDo) ? (laAdmin ? "Nhà hàng hủy đơn" : "Khách hủy đơn") : lyDo.Trim();
         b.NgayCapNhat = DateTime.Now;
@@ -432,8 +440,9 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         };
 
         var prefix = $"[{b.MaDatBan}]";
-         var winDatBan = await _appDb.DatBans
-        .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
+        var winDatBan = await _appDb.DatBans
+    .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
+          var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
         var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
         var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
         if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
