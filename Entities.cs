@@ -107,6 +107,8 @@ public class DatBan
     public string SoDienThoai { get; set; } = "";
     public DateTime NgayGio { get; set; } = DateTime.Now.AddHours(2);
     [Range(1, 1000, ErrorMessage = "Số người từ 1 đến 1000")]
+
+    public DateTime? BatDauPhucVuLuc { get; set; }
     public int SoNguoi { get; set; } = 2;
     public int? BanId { get; set; }
     public Ban? Ban { get; set; }
