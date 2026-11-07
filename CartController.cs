@@ -268,7 +268,6 @@ if (cheDoDaGui != inp.CheDoCoc)
         var b = vm.Booking; var bill = vm.Bill;
         var datBan = new DatBan
         {
-            MaDatBan = "HV-" + Random.Shared.Next(100000, 999999),
             UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
             HoTen = inp.HoTen.Trim(), SoDienThoai = inp.SoDienThoai.Trim(), Email = inp.Email.Trim(),
             NgayGio = b.ThoiGianDen!.Value, SoKhach = b.SoNguoi, SoBan = bill.SoBan,
