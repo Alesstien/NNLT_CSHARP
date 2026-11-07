@@ -116,8 +116,11 @@ public class CartController : Controller
         var lines = await LoadLines();
 
         var vm = new CartPageVm { Lines = lines, Booking = b, KhuVucs = kvs, KhuVuc = kv };
-        if (kv != null)
-            vm.Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, null, CheDo.CoDinh);
+       if (kv != null)
+{
+    var cheDoMacDinh = lines.Count == 0 ? CheDo.CoDinh : CheDo.Ba30;
+    vm.Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, null, cheDoMacDinh);
+}
         return View(vm);
     }
 
@@ -188,7 +191,11 @@ public class CartController : Controller
         if (!DateTime.TryParse(HttpContext.Session.GetString("giu_cho"), null, DateTimeStyles.RoundtripKind, out var hetHan)
             || string.IsNullOrEmpty(maGd)) return null;
 
-        if (!CheDo.TatCa.Contains(inp.CheDoCoc)) inp.CheDoCoc = CheDo.CoDinh;
+inp.CheDoCoc = lines.Count == 0
+    ? CheDo.CoDinh
+    : inp.CheDoCoc == CheDo.Tra100
+        ? CheDo.Tra100
+        : CheDo.Ba30;
         inp.PhuongThuc = "VIETQR";
         inp.NganHang = "TIMO";
 
@@ -227,6 +234,8 @@ public class CartController : Controller
                 inp.Email = u.Email ?? "";
             }
         }
+
+    
         var vm = await BuildPaymentVm(inp);
         return vm == null ? RedirectToAction(nameof(Index)) : View(vm);
     }
@@ -234,11 +243,20 @@ public class CartController : Controller
     [Authorize, HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Payment([Bind(Prefix = "Input")] PaymentInput inp, string? op)
     {
-        if (op != "pay") ModelState.Clear();            // "Áp dụng mã" / đổi cọc / đổi phương thức: chỉ tính lại
-        var vm = await BuildPaymentVm(inp);
-        if (vm == null) return RedirectToAction(nameof(Index));
-        if (op != "pay") return View(vm);
+        if (op != "pay") ModelState.Clear();
 
+var cheDoDaGui = inp.CheDoCoc;
+var vm = await BuildPaymentVm(inp);
+
+if (vm == null) return RedirectToAction(nameof(Index));
+if (op != "pay") return View(vm);
+
+if (cheDoDaGui != inp.CheDoCoc)
+{
+    ModelState.AddModelError("",
+        "Hình thức đặt cọc đã thay đổi. Vui lòng kiểm tra lại số tiền trước khi xác nhận.");
+    return View(vm);
+}
         if (!ModelState.IsValid) return View(vm);
         if (vm.GiuChoDen < DateTime.Now)
         {
