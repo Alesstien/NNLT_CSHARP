@@ -432,8 +432,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         };
 
         var prefix = $"[{b.MaDatBan}]";
-        var winDatBan = await _appDb.DatBans.FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
-        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
+         var winDatBan = await _appDb.DatBans
+        .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
         var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
         var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
         if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
@@ -442,6 +442,7 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         {
             winDatBan = new QLNH.Data.Entities.DatBan
             {
+                MaDatBan = b.MaDatBan,
                 TenKhach = b.HoTen,
                 SoDienThoai = b.SoDienThoai,
                 NgayGio = b.NgayGio,
@@ -463,8 +464,9 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             winDatBan.GhiChu = ghiChuDatBan;
         }
 
-        var winDon = await _appDb.DonHangs.Include(d => d.ChiTiets)
-            .FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
+        var winDon = await _appDb.DonHangs
+        .Include(d => d.ChiTiets)
+        .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
         var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
         if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
 
@@ -472,6 +474,7 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         {
             winDon = new QLNH.Data.Entities.DonHang
             {
+                MaDatBan = b.MaDatBan,
                 NgayTao = b.NgayThanhToan ?? b.NgayTao,
                 TenKhach = b.HoTen,
                 SoDienThoai = b.SoDienThoai,
