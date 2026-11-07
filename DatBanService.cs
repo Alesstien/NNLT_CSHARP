@@ -114,7 +114,9 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         if (ban == null)
             return "Bàn đã chọn không còn phục vụ. Vui lòng chọn bàn khác.";
 
-        if (datBan.NgayGio <= DateTime.Now)
+        var bayGio = DateTime.Now;
+
+        if (datBan.NgayGio <= bayGio)
             return "Hãy chọn ngày giờ nhận bàn trong tương lai.";
 
         if (datBan.SoKhach <= 0 || datBan.SoKhach > ban.SucChua)
@@ -122,7 +124,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
 
         var tu = datBan.NgayGio.AddHours(-2);
         var den = datBan.NgayGio.AddHours(2);
-        var bayGio = DateTime.Now;
 
         var daCoDon = await _db.DatBans
             .AsNoTracking()
@@ -138,6 +139,7 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             return $"{ban.Ten} đã có người đặt trong khung giờ này. "
                 + "Vui lòng chọn bàn khác hoặc đổi giờ.";
 
+        datBan.MaDatBan = await TaoMaAsync();
         _db.DatBans.Add(datBan);
         await _db.SaveChangesAsync();
 
