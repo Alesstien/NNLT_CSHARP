@@ -195,8 +195,7 @@ namespace QLNH.Admin
                         Text = $"{ban.TenBan}\n{tinhTrang}",
                         Size = new Size(85, 80),
                         Margin = new Padding(5),
-                        BackColor = ban.TrangThai == "Trống" ? Color.Gainsboro : Color.Orange,
-                        FlatStyle = FlatStyle.Flat,
+                        BackColor = tinhTrang == "Trống" ? Color.Gainsboro : Color.Orange,                        FlatStyle = FlatStyle.Flat,
                         Cursor = Cursors.Hand,
                         Tag = ban
                     };
@@ -327,7 +326,10 @@ namespace QLNH.Admin
                     }
                 if (currentSelectedTable != null && currentSelectedTable.Tag is Ban oldBan)
                 {
-                    currentSelectedTable.BackColor = oldBan.TrangThai == "Trống" ? Color.Gainsboro : Color.Orange;
+                    currentSelectedTable.BackColor =
+                    currentSelectedTable.Text.EndsWith("\nTrống", StringComparison.Ordinal)
+                        ? Color.Gainsboro
+                        : Color.Orange;
                     currentSelectedTable.ForeColor = Color.Black;
                 }
 
@@ -818,7 +820,40 @@ try
                 MessageBox.Show("Lỗi lưu tạm đơn hàng: " + ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+private static decimal? TinhGiamVoucherTaiQuay(string ma, decimal tienMon)
+{
+    using var db = Program.NewDb();
 
+    var homNay = DateTime.Today;
+    var voucher = db.WebUuDais.AsNoTracking().SingleOrDefault(x =>
+        x.Ma == ma
+        && x.HoatDong
+        && (x.HanDung == null || x.HanDung >= homNay));
+
+    if (voucher == null || tienMon <= 0)
+        return null;
+
+    return Math.Round(Math.Min(
+        tienMon * voucher.PhanTramGiam / 100m,
+        voucher.GiamToiDa ?? decimal.MaxValue));
+}
+
+        private static bool CoMonDatTruoc(
+    QLNH.Data.AppDbContext db, string? maDatBan)
+{
+    if (string.IsNullOrWhiteSpace(maDatBan))
+        return false;
+
+    return db.Database.SqlQuery<int>($"""
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+            FROM dbo.Web_DatBan AS d
+            JOIN dbo.Web_DatBanMon AS m ON m.DatBanId = d.Id
+            WHERE d.MaDatBan = {maDatBan}
+              AND m.SoLuong > 0
+        ) THEN 1 ELSE 0 END AS [Value]
+        """).Single() == 1;
+}
         private void BtnPay_Click(object? sender, EventArgs e)
         {
             
@@ -840,7 +875,38 @@ try
                         return;
                     }
                 }
-            using (PaymentForm paymentForm = new PaymentForm(totalAmount, tenBan, _currentDeposit))
+                string? maDaAp = null;
+decimal giamDaAp = 0;
+bool duDieuKienApMa = false;
+
+if (_currentOpenOrderId is int idDangMo)
+{
+    using var dbDoc = Program.NewDb();
+
+    var donDangMo = dbDoc.DonHangs.AsNoTracking()
+        .SingleOrDefault(d => d.Id == idDangMo);
+
+    if (donDangMo == null)
+    {
+        MessageBox.Show("Đơn đã thay đổi. Vui lòng chọn lại bàn.");
+        return;
+    }
+
+    maDaAp = donDangMo.MaUuDai;
+    giamDaAp = donDangMo.GiamGia;
+
+    // Kiểm tra món có trên phiếu đặt bàn gốc.
+    duDieuKienApMa = CoMonDatTruoc(dbDoc, donDangMo.MaDatBan);
+}
+
+var tienMon = TinhTongMon();
+
+using (var paymentForm = new PaymentForm(
+    totalAmount, tenBan, _currentDeposit,
+    maDaAp, giamDaAp,
+    duDieuKienApMa
+        ? ma => TinhGiamVoucherTaiQuay(ma, tienMon)
+        : null))
             {
                 if (paymentForm.ShowDialog() == DialogResult.OK)
                 {
@@ -848,11 +914,74 @@ try
                     try
                     {
                         using var db = Program.NewDb();
-                        var don = LuuDonHangCuaBan(db, ban, TrangThaiDon.DaThanhToan, "Trống");
-                        new OrderService(db).DoiTrangThai(don.Id, TrangThaiDon.DaThanhToan);
+using var tx = db.Database.BeginTransaction(
+    System.Data.IsolationLevel.Serializable);
 
-                        PrintBill(tenBan, totalAmount, _currentDeposit, dgvOrderDetails.Rows);
+if (_currentOpenOrderId is int idCanLuu)
+{
+    var hienTai = db.DonHangs.AsNoTracking()
+        .SingleOrDefault(d => d.Id == idCanLuu);
 
+    if (hienTai == null
+        || hienTai.TrangThai == TrangThaiDon.DaThanhToan
+        || hienTai.TrangThai == TrangThaiDon.DaHuy
+        || hienTai.TrangThai == "Đã huỷ"
+        || hienTai.TrangThai == TrangThaiDon.HoanThanh
+        || hienTai.MaUuDai != maDaAp
+        || hienTai.GiamGia != giamDaAp)
+    {
+        throw new InvalidOperationException(
+            "Đơn hoặc mã ưu đãi đã thay đổi. Hãy mở lại đơn trước khi thanh toán.");
+    }
+}
+
+var don = LuuDonHangCuaBan(
+    db, ban, TrangThaiDon.DaThanhToan, "Trống");
+
+if (paymentForm.MaUuDaiMoi is string maMoi)
+{
+    if (!string.IsNullOrWhiteSpace(don.MaUuDai))
+        throw new InvalidOperationException("Hóa đơn này đã có mã ưu đãi.");
+
+    // Chèn kiểm tra ở đây, trước khi gán mã vào đơn.
+    if (!CoMonDatTruoc(db, don.MaDatBan))
+        throw new InvalidOperationException(
+            "Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
+
+    don.MaUuDai = maMoi;
+    don.GiamGia = paymentForm.GiamGiaMoi;
+    don.TongTien = paymentForm.TongSauUuDai;
+
+    // Nếu là phiếu Web, lưu mã áp tại quầy vào cùng hóa đơn Web.
+    if (don.MaDatBan is string maDatBan
+        && (maDatBan.StartsWith("HV-", StringComparison.OrdinalIgnoreCase)
+            || maDatBan.StartsWith("AURA-", StringComparison.OrdinalIgnoreCase)))
+    {
+        var conLai = Math.Max(0, don.TongTien - _currentDeposit);
+
+        var soDong = db.Database.ExecuteSqlInterpolated($"""
+            UPDATE dbo.Web_DatBan
+            SET MaUuDai = {maMoi},
+                GiamGia = {don.GiamGia},
+                TongHoaDon = {don.TongTien},
+                ConLai = {conLai},
+                NgayCapNhat = SYSDATETIME()
+            WHERE MaDatBan = {maDatBan}
+              AND NULLIF(LTRIM(RTRIM(MaUuDai)), N'') IS NULL
+            """);
+
+        if (soDong != 1)
+            throw new InvalidOperationException(
+                "Phiếu Web đã có mã hoặc không tìm thấy phiếu liên kết.");
+                }
+
+                db.SaveChanges();
+            }
+
+            new OrderService(db).DoiTrangThai(don.Id, TrangThaiDon.DaThanhToan);
+            tx.Commit();
+
+            PrintBill(tenBan, don.TongTien, _currentDeposit, dgvOrderDetails.Rows);
                         _selectedBanId = null;
                         _currentOpenOrderId = null;
                         _currentDeposit = 0;
