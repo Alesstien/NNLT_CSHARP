@@ -290,9 +290,6 @@ namespace QLNH.Admin
         .Select(d => (DateTime?)d.NgayGio)
         .FirstOrDefault();
 
-    if (gioHen is DateTime gio)
-        return $"Bàn đang giữ cho khách có hẹn lúc {gio:HH:mm}. "
-            + "Nếu khách đặt bàn đã tới, hãy chuyển phiếu sang Đã đến.";
 
     return null;
 }
@@ -310,7 +307,10 @@ namespace QLNH.Admin
                     {
                         try
                         {
-                            donHangId = MoDonDatTruocTaiPos(db, ban.Id);
+                            donHangId = MoDonDatTruocTaiPos(db, ban.Id, out var daTuChoi);
+
+                            if (daTuChoi)
+                                return;
                         }
                         catch (InvalidOperationException ex)
                         {
@@ -338,8 +338,10 @@ namespace QLNH.Admin
 
                 TaiDonDangMoCuaBan(ban);
             }
-        }private int? MoDonDatTruocTaiPos(QLNH.Data.AppDbContext db, int banId)
+        }
+        private int? MoDonDatTruocTaiPos(QLNH.Data.AppDbContext db, int banId, out bool daTuChoi)
 {
+    daTuChoi = false;
     var bayGio = DateTime.Now;
     var denLuc = bayGio.AddMinutes(30);
 
@@ -372,7 +374,10 @@ namespace QLNH.Admin
         MessageBoxIcon.Question);
 
     if (xacNhan != DialogResult.Yes)
-        return null;
+        {
+            daTuChoi = true;
+            return null;
+        }
 
     using var tx = db.Database.BeginTransaction();
 
