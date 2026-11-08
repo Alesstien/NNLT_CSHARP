@@ -73,12 +73,8 @@
 <div class="col-12">
         @{
         var ngayHienTai = DateTime.Now;
-        var gioNhanBan = b.ThoiGianDen ?? ngayHienTai.AddHours(2);
-
-        
-        // Làm tròn lên mốc 15 phút.
-        gioNhanBan = gioNhanBan.Date.AddMinutes(
-            Math.Ceiling(gioNhanBan.TimeOfDay.TotalMinutes / 15) * 15);
+        var gioNhanBan = BookingDraft.ChuanHoaGioNhanBan(
+        b.ThoiGianDen, ngayHienTai);
 
         var ngayChon = gioNhanBan.ToString("yyyy-MM-dd");
         var gioChon = gioNhanBan.ToString("HH:mm");
@@ -127,7 +123,9 @@
         <select id="gioNhanBan"
                 class="form-select booking-hour-input"
                 onchange="capNhatNgayGioNhanBan()">
-            @for (var phut = 0; phut < 24 * 60; phut += 15)
+            @for (var phut = BookingDraft.GioMoCua * 60;
+        phut <= BookingDraft.GioNhanBanCuoi * 60;
+        phut += BookingDraft.BuocPhutDatBan)
             {
                 var gio = TimeSpan.FromMinutes(phut).ToString(@"hh\:mm");
                 var thoiDiem = gioNhanBan.Date.AddMinutes(phut);
@@ -175,12 +173,18 @@
 </div>
 
         <div class="booking-time-note">
-            <span class="booking-note-dot"></span>
-            <span>
-                Chọn giờ đến để kiểm tra bàn trống.
-                Mỗi lượt sử dụng bàn dự kiến 2 giờ.
-            </span>
-        </div>
+    <span class="booking-note-dot"></span>
+    <span>
+        Chọn giờ đến để kiểm tra bàn trống.
+        Mỗi lượt sử dụng bàn dự kiến 2 giờ.
+    </span>
+</div>
+
+<div class="alert alert-warning small mt-3 mb-0 py-2 px-3">
+    <strong>Vui lòng đến đúng giờ hẹn.</strong><br />
+    Nếu quý khách chưa đến sau 15 phút kể từ giờ hẹn,
+    hệ thống sẽ tự động hủy đơn đặt bàn.
+</div>
     </div>
 </div>
                         
