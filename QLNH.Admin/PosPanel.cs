@@ -665,56 +665,132 @@ namespace QLNH.Admin
 
             if (dlg.ShowDialog(this) != DialogResult.OK || cbo.SelectedItem is not Ban Chon) return;
 
-            try
-            {
-                var loi = KiemTraGiuBan(db, Chon.Id);
+            var donIdTruocKhiDoi = _currentOpenOrderId;
 
-            if (loi != null)
-                {
-                    MessageBox.Show(loi, "Bàn đang được giữ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
+try
+{
+    using (var tx = db.Database.BeginTransaction())
+    {
+        var loi = KiemTraGiuBan(db, Chon.Id);
+        if (loi != null)
+            throw new InvalidOperationException(loi);
+
+        if (_currentOpenOrderId == null && dgvOrderDetails.Rows.Count > 0)
+        {
+            LuuDonHangCuaBan(
+                db, banCu, TrangThaiDon.DaXacNhan, "Đang dùng");
+        }
+
+        if (_currentOpenOrderId is not int donId)
+            throw new InvalidOperationException("Bàn chưa có đơn đang phục vụ.");
+
+        var don = TimDonDangPhucVu(db, banCu.Id)
+            .SingleOrDefault(o => o.Id == donId)
+            ?? throw new InvalidOperationException(
+                "Đơn đã thay đổi. Vui lòng chọn lại bàn.");
+
+        var bCu = db.Bans.Find(banCu.Id)
+            ?? throw new InvalidOperationException("Không tìm thấy bàn cũ.");
+
+        var bMoi = db.Bans.Find(Chon.Id)
+            ?? throw new InvalidOperationException("Không tìm thấy bàn mới.");
+
+        if (!string.IsNullOrWhiteSpace(don.MaDatBan))
+        {
+            var phieu = db.DatBans.SingleOrDefault(d =>
+                d.MaDatBan == don.MaDatBan
+                && d.BanId == banCu.Id
+                && d.TrangThai == "Đã xác nhận"
+                && d.BatDauPhucVuLuc != null)
+                ?? throw new InvalidOperationException(
+                    "Không tìm thấy phiếu đang phục vụ của đơn này.");
+
+            if (phieu.SoNguoi > bMoi.SoGhe)
+                throw new InvalidOperationException("Bàn mới không đủ chỗ.");
+
+            DongBoDoiBanLenWeb(db, don.MaDatBan, bMoi.TenBan);
+            phieu.BanId = bMoi.Id;
+        }
+
+        don.BanId = bMoi.Id;
+        if (don.TenKhach == $"Khách tại bàn ({bCu.TenBan})")
+            don.TenKhach = $"Khách tại bàn ({bMoi.TenBan})";
+
+        bCu.TrangThai = "Trống";
+        bMoi.TrangThai = "Đang dùng";
+
+        db.SaveChanges();
+        tx.Commit();
                 }
-                // Nếu bàn hiện tại có chọn món nhưng chưa lưu đơn, lưu tạm trước khi chuyển
-                if (_currentOpenOrderId == null && dgvOrderDetails.Rows.Count > 0)
-                {
-                LuuDonHangCuaBan(db, banCu, TrangThaiDon.DaXacNhan, "Đang dùng");                }
-
-                if (_currentOpenOrderId.HasValue)
-                {
-                    var don = db.DonHangs.Find(_currentOpenOrderId.Value);
-                    if (don != null)
-                    {
-                        don.BanId = Chon.Id;
-                        if (don.TenKhach == $"Khách tại bàn ({banCu.TenBan})")
-                            don.TenKhach = $"Khách tại bàn ({Chon.TenBan})";
-                    }
-                }
-
-                var datBans = db.DatBans.Where(d => d.BanId == banCu.Id && d.TrangThai != "Đã đến" && d.TrangThai != "Đã hủy" && d.TrangThai != "Đã huỷ").ToList();
-                foreach (var dbItem in datBans)
-                {
-                    dbItem.BanId = Chon.Id;
-                }
-
-                var bCu = db.Bans.Find(banCu.Id);
-                var bMoi = db.Bans.Find(Chon.Id);
-                if (bCu != null) bCu.TrangThai = "Trống";
-                if (bMoi != null) bMoi.TrangThai = "Đang dùng";
-
-                db.SaveChanges();
-
-                _selectedBanId = Chon.Id;
-                LoadDataFromDb();
-                if (bMoi != null) TaiDonDangMoCuaBan(bMoi);
-
-                MessageBox.Show($"Đã chuyển khách và toàn bộ hóa đơn từ {banCu.TenBan} sang {Chon.TenBan} thành công!", "Đổi bàn thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi khi đổi bàn: " + ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _currentOpenOrderId = donIdTruocKhiDoi;
+                MessageBox.Show("Lỗi khi đổi bàn: " + ex.GetBaseException().Message);
+                return;
             }
+
+            _selectedBanId = Chon.Id;
+            LoadDataFromDb();
+            TaiDonDangMoCuaBan(Chon);
+
+            MessageBox.Show(
+                $"Đã chuyển đơn từ {banCu.TenBan} sang {Chon.TenBan}.");
         }
+        private static void DongBoDoiBanLenWeb(
+    QLNH.Data.AppDbContext db, string maDatBan, string tenBanMoi)
+{
+    db.Database.ExecuteSqlInterpolated($"""
+        DECLARE @Ma nvarchar(30) = {maDatBan};
+        DECLARE @TenBan nvarchar(100) = {tenBanMoi.Trim()};
+        DECLARE @GioHen datetime2;
+
+        SELECT @GioHen = NgayGio
+        FROM dbo.Web_DatBan WITH (UPDLOCK, HOLDLOCK)
+        WHERE MaDatBan = @Ma
+          AND TrangThai = N'Đã xác nhận';
+
+        IF @GioHen IS NULL
+        BEGIN
+            IF LEFT(@Ma, 3) = N'WF-'
+               AND NOT EXISTS (
+                   SELECT 1 FROM dbo.Web_DatBan WHERE MaDatBan = @Ma
+               )
+                RETURN;
+
+            THROW 50001, N'Không tìm thấy phiếu Web đang xác nhận để đổi bàn.', 1;
+        END;
+
+        DECLARE @KhuVucMoi int;
+
+        SELECT @KhuVucMoi = MIN(Id)
+        FROM dbo.Web_KhuVuc
+        WHERE LTRIM(RTRIM(Ten)) = @TenBan AND HoatDong = 1
+        HAVING COUNT(*) = 1;
+
+        IF @KhuVucMoi IS NULL
+            THROW 50002, N'Không tìm thấy bàn mới tương ứng trên Web.', 1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.Web_DatBan WITH (UPDLOCK, HOLDLOCK)
+            WHERE KhuVucId = @KhuVucMoi
+              AND MaDatBan <> @Ma
+              AND TrangThai NOT IN (
+                  N'Đã hủy', N'Đã huỷ', N'Đã hoàn thành', N'Đã thanh toán'
+              )
+              AND (TrangThai <> N'Chờ đặt cọc' OR GiuChoDen > SYSDATETIME())
+              AND NgayGio > DATEADD(HOUR, -2, @GioHen)
+              AND NgayGio < DATEADD(HOUR, 2, @GioHen)
+        )
+            THROW 50003, N'Bàn mới đã có phiếu Web trùng khung giờ.', 1;
+
+        UPDATE dbo.Web_DatBan
+        SET KhuVucId = @KhuVucMoi,
+            NgayCapNhat = SYSDATETIME()
+        WHERE MaDatBan = @Ma;
+        """);
+}
 
         private void BtnSaveOrder_Click(object? sender, EventArgs e)
         {
