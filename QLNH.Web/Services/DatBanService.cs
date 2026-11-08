@@ -102,6 +102,8 @@ public class DatBanService
 
 public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
 {
+    if (!BookingDraft.TrongGioPhucVu(datBan.NgayGio))
+    return "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
     await Gate.WaitAsync();
 
     try
@@ -205,6 +207,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             // Mã ưu đãi
             UuDai? ud = null;
             var ma = r.MaUuDai?.Trim().ToUpperInvariant();
+            if (!string.IsNullOrEmpty(ma) && chon.Count == 0)
+            return Loi("Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
             if (!string.IsNullOrEmpty(ma))
             {
                 var homNay = DateTime.Today;
@@ -483,6 +487,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         {
             winDon = new QLNH.Data.Entities.DonHang
             {
+                MaUuDai = b.MaUuDai,
+                GiamGia = b.GiamGia,
                 MaDatBan = b.MaDatBan,
                 NgayTao = b.NgayThanhToan ?? b.NgayTao,
                 TenKhach = b.HoTen,
