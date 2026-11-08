@@ -305,7 +305,19 @@ namespace QLNH.Admin
                     .OrderByDescending(o => o.Id)
                     .Select(o => (int?)o.Id)
                     .FirstOrDefault();
-    
+
+                if (donHangId == null)
+                    {
+                        try
+                        {
+                            donHangId = MoDonDatTruocTaiPos(db, ban.Id);
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            MessageBox.Show(ex.Message, "Không mở được đơn");
+                            return;
+                        }
+                    }
                 var loi = KiemTraGiuBan(db, ban.Id, donHangId);
                 if (loi != null)
                 {
@@ -326,8 +338,97 @@ namespace QLNH.Admin
 
                 TaiDonDangMoCuaBan(ban);
             }
-        }
+        }private int? MoDonDatTruocTaiPos(QLNH.Data.AppDbContext db, int banId)
+{
+    var bayGio = DateTime.Now;
+    var denLuc = bayGio.AddMinutes(30);
 
+    var phieu = db.DatBans.AsNoTracking()
+        .Where(d => d.BanId == banId
+            && d.TrangThai == "Đã xác nhận"
+            && d.BatDauPhucVuLuc == null
+            && d.NgayGio <= denLuc)
+        .OrderBy(d => d.NgayGio)
+        .ThenBy(d => d.Id)
+        .FirstOrDefault();
+
+    if (phieu == null)
+        return null;
+
+    var banCoTheNhanKhach = db.Bans.Any(b => b.Id == banId
+        && (b.TrangThai == "Trống" || b.TrangThai == "Đã đặt"));
+
+    if (!banCoTheNhanKhach)
+        return null;
+
+    if (string.IsNullOrWhiteSpace(phieu.MaDatBan))
+        throw new InvalidOperationException("Phiếu này chưa có mã đặt bàn.");
+
+    var xacNhan = MessageBox.Show(
+        $"Xác nhận khách của phiếu {phieu.MaDatBan} "
+        + $"hẹn lúc {phieu.NgayGio:HH:mm} đã tới để mở order?",
+        "Bắt đầu phục vụ",
+        MessageBoxButtons.YesNo,
+        MessageBoxIcon.Question);
+
+    if (xacNhan != DialogResult.Yes)
+        return null;
+
+    using var tx = db.Database.BeginTransaction();
+
+    var nhanLuc = DateTime.Now;
+    var daNhan = db.DatBans
+        .Where(d => d.Id == phieu.Id
+            && d.BanId == banId
+            && d.MaDatBan == phieu.MaDatBan
+            && d.TrangThai == "Đã xác nhận"
+            && d.BatDauPhucVuLuc == null)
+        .ExecuteUpdate(s => s.SetProperty(
+            d => d.BatDauPhucVuLuc, (DateTime?)nhanLuc));
+
+    if (daNhan != 1)
+        throw new InvalidOperationException("Phiếu đã thay đổi. Hãy chọn lại bàn.");
+
+    var daMoBan = db.Bans
+        .Where(b => b.Id == banId
+            && (b.TrangThai == "Trống" || b.TrangThai == "Đã đặt"))
+        .ExecuteUpdate(s => s.SetProperty(b => b.TrangThai, "Đang dùng"));
+
+    if (daMoBan != 1)
+        throw new InvalidOperationException("Bàn đã đổi trạng thái. Hãy chọn lại bàn.");
+
+    var cacDon = db.DonHangs
+        .Where(o => o.MaDatBan == phieu.MaDatBan)
+        .Take(2)
+        .ToList();
+
+    if (cacDon.Count > 1)
+        throw new InvalidOperationException("Phiếu này đang liên kết với nhiều đơn.");
+
+    var don = cacDon.SingleOrDefault();
+
+    if (don == null)
+    {
+        don = new DonHang
+        {
+            BanId = banId,
+            MaDatBan = phieu.MaDatBan,
+            TenKhach = phieu.TenKhach,
+            SoDienThoai = phieu.SoDienThoai,
+            TrangThai = TrangThaiDon.DaXacNhan,
+            NgayTao = nhanLuc
+        };
+
+        db.DonHangs.Add(don);
+        db.SaveChanges();
+    }
+
+    if (!TimDonDangPhucVu(db, banId).Any(o => o.Id == don.Id))
+        throw new InvalidOperationException("Đơn đã đóng hoặc đang gắn với bàn khác.");
+
+    tx.Commit();
+    return don.Id;
+}
         private void TaiDonDangMoCuaBan(Ban ban)
         {
             dgvOrderDetails.Rows.Clear();
