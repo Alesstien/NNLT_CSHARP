@@ -6,20 +6,34 @@ namespace QLNH.Admin
 {
     public class PaymentForm : Form
     {
-        private readonly decimal _tongHoaDon;
+        private decimal _tongHoaDon;
         private readonly decimal _tienCoc;
-        private readonly decimal _canThu;
+        private decimal _canThu;
+        private readonly string? _maDaAp;
+        private readonly decimal _giamDaAp;
+        private readonly Func<string, decimal?>? _tinhGiamGia;
+
+        public string? MaUuDaiMoi { get; private set; }
+        public decimal GiamGiaMoi { get; private set; }
+        public decimal TongSauUuDai => _tongHoaDon;
         private TextBox txtTienKhachDua = null!;
         private Label lblTienThua = null!;
         private Button btnXacNhan = null!;
 
-        public PaymentForm(decimal tongHoaDon, string tenBan, decimal tienCoc = 0)
-        {
-            _tongHoaDon = tongHoaDon;
-            _tienCoc = tienCoc;
-            _canThu = Math.Max(0, tongHoaDon - tienCoc);
-            InitializeUI(tenBan);
-        }
+        public PaymentForm(
+    decimal tongHoaDon, string tenBan, decimal tienCoc = 0,
+    string? maDaAp = null, decimal giamDaAp = 0,
+    Func<string, decimal?>? tinhGiamGia = null)
+{
+    _tongHoaDon = tongHoaDon;
+    _tienCoc = tienCoc;
+    _canThu = Math.Max(0, tongHoaDon - tienCoc);
+    _maDaAp = maDaAp;
+    _giamDaAp = giamDaAp;
+    _tinhGiamGia = tinhGiamGia;
+
+    InitializeUI(tenBan);
+}
 
         private void InitializeUI(string tenBan)
         {
@@ -64,7 +78,80 @@ namespace QLNH.Admin
                 lblTienThuaText, lblTienThua,
                 btnXacNhan
             });
+            if (!string.IsNullOrWhiteSpace(_maDaAp) || _tinhGiamGia != null)
+{
+    ClientSize = new Size(430, 420);
+    btnXacNhan.Top = 345;
 
+    var lblVoucher = new Label
+    {
+        Text = string.IsNullOrWhiteSpace(_maDaAp)
+            ? "Mã ưu đãi"
+            : $"Đã áp dụng {_maDaAp} · Giảm {_giamDaAp:N0} đ",
+        Location = new Point(30, 270),
+        AutoSize = true
+    };
+
+    Controls.Add(lblVoucher);
+
+    if (string.IsNullOrWhiteSpace(_maDaAp) && _tinhGiamGia != null)
+    {
+        var txtVoucher = new TextBox
+        {
+            Location = new Point(30, 293),
+            Width = 230,
+            MaxLength = 30,
+            CharacterCasing = CharacterCasing.Upper
+        };
+
+        var btnApDung = new Button
+        {
+            Text = "Áp dụng",
+            Location = new Point(270, 291),
+            Width = 110
+        };
+
+        btnApDung.Click += (_, _) =>
+        {
+            var ma = txtVoucher.Text.Trim().ToUpperInvariant();
+            if (ma.Length == 0)
+            {
+                MessageBox.Show("Hãy nhập mã ưu đãi.");
+                return;
+            }
+
+            try
+            {
+                var giam = _tinhGiamGia(ma);
+                if (giam is not decimal soTien || soTien <= 0)
+                {
+                    MessageBox.Show("Mã không hợp lệ hoặc đơn không đủ điều kiện.");
+                    return;
+                }
+
+                MaUuDaiMoi = ma;
+                GiamGiaMoi = Math.Min(soTien, _tongHoaDon);
+                _tongHoaDon -= GiamGiaMoi;
+                _canThu = Math.Max(0, _tongHoaDon - _tienCoc);
+
+                lblTongVal.Text = $"{_tongHoaDon:N0} đ";
+                lblCanThuVal.Text = $"{_canThu:N0} đ";
+                txtTienKhachDua.Text = _canThu.ToString("0");
+                lblVoucher.Text = $"Đã áp dụng {ma} · Giảm {GiamGiaMoi:N0} đ";
+
+                txtVoucher.Enabled = false;
+                btnApDung.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không kiểm tra được mã: " + ex.GetBaseException().Message);
+            }
+        };
+
+        Controls.Add(txtVoucher);
+        Controls.Add(btnApDung);
+    }
+}
             this.AcceptButton = btnXacNhan;
         }
 
