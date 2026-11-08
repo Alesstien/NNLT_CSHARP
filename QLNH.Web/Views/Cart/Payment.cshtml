@@ -6,10 +6,17 @@
     var bill = Model.Bill;
     var b = Model.Booking;
 
-    var cacCoc = new[] {
-        (CheDo.CoDinh, "Cọc cố định", "Giữ bàn bằng 500.000 đ"),
-        (CheDo.Ba30,   "Cọc 30%",     "30% tổng hóa đơn"),
-        (CheDo.Tra100, "Trả 100%",    "Thanh toán trọn gói")
+    var chiDatBan = Model.Lines.Count == 0;
+
+var cacCoc = chiDatBan
+    ? new[]
+    {
+        (CheDo.CoDinh, "Cọc giữ bàn", "Khoản cọc được trừ vào hóa đơn tại nhà hàng")
+    }
+    : new[]
+    {
+        (CheDo.Ba30, "Cọc 30%", "Thanh toán trước 30% tổng hóa đơn"),
+        (CheDo.Tra100, "Thanh toán toàn bộ", "Thanh toán 100% tổng hóa đơn")
     };
 }
 <h3 class="mb-3">Đặt cọc & Thanh toán</h3>
@@ -60,7 +67,7 @@
                 <div class="row g-2">
                     @foreach (var (ma, ten, mota) in cacCoc)
                     {
-                        <div class="col-sm-4 position-relative">
+                        <div class="@(chiDatBan ? "col-12" : "col-sm-6") position-relative">
                             <input type="radio" class="btn-check" name="Input.CheDoCoc" id="cd_@ma" value="@ma"
                                    checked="@(inp.CheDoCoc == ma)" onchange="guiLai()" />
                             <label class="btn btn-outline-warning text-start w-100 h-100" for="cd_@ma">
