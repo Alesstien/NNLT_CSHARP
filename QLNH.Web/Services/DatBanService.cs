@@ -100,6 +100,59 @@ public class DatBanService
         }).ToList();
     }
 
+public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
+{
+    await Gate.WaitAsync();
+
+    try
+    {
+        var ban = await _db.KhuVucs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(k =>
+                k.Id == datBan.KhuVucId && k.HoatDong);
+
+        if (ban == null)
+            return "Bàn đã chọn không còn phục vụ. Vui lòng chọn bàn khác.";
+
+        var bayGio = DateTime.Now;
+
+        if (datBan.NgayGio <= bayGio)
+            return "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+
+        if (datBan.SoKhach <= 0 || datBan.SoKhach > ban.SucChua)
+            return $"{ban.Ten} chỉ phục vụ từ 1 đến {ban.SucChua} khách.";
+
+        var tu = datBan.NgayGio.AddHours(-2);
+        var den = datBan.NgayGio.AddHours(2);
+
+        var daCoDon = await _db.DatBans
+            .AsNoTracking()
+            .AnyAsync(d =>
+                d.KhuVucId == datBan.KhuVucId
+                && d.TrangThai != TrangThaiDatBan.DaHuy
+                && d.TrangThai != TrangThaiDatBan.HoanThanh
+                && d.TrangThai != "Đã thanh toán"
+                && (d.TrangThai != TrangThaiDatBan.ChoCoc
+                    || d.GiuChoDen > bayGio)
+                && d.NgayGio > tu
+                && d.NgayGio < den);
+
+        if (daCoDon)
+            return $"{ban.Ten} đã có người đặt trong khung giờ này. "
+                + "Vui lòng chọn bàn khác hoặc đổi giờ.";
+
+        datBan.MaDatBan = await TaoMaAsync();
+        _db.DatBans.Add(datBan);
+        await _db.SaveChangesAsync();
+
+        return null;
+    }
+    finally
+    {
+        Gate.Release();
+    }
+}
+
     /// <summary>Hủy các lần giữ chỗ đã quá hạn mà chưa xác nhận cọc.</summary>
     public async Task DonDepGiuChoAsync()
     {
@@ -254,6 +307,12 @@ public class DatBanService
             return "Chỉ có thể tự hủy trước giờ hẹn ít nhất 2 giờ. Vui lòng liên hệ nhà hàng.";
 
         var daCoc = b.DaThanhToanCoc;
+        if (await _appDb.DatBans.AsNoTracking().AnyAsync(d =>
+            d.MaDatBan == b.MaDatBan
+            && (d.BatDauPhucVuLuc != null || d.TrangThai == "Đã đến")))
+        {
+            return "Phiếu đã được tiếp nhận. Vui lòng xử lý tại POS.";
+        }
         b.TrangThai = TrangThaiDatBan.DaHuy;
         b.LyDoHuy = string.IsNullOrWhiteSpace(lyDo) ? (laAdmin ? "Nhà hàng hủy đơn" : "Khách hủy đơn") : lyDo.Trim();
         b.NgayCapNhat = DateTime.Now;
@@ -381,8 +440,9 @@ public class DatBanService
         };
 
         var prefix = $"[{b.MaDatBan}]";
-        var winDatBan = await _appDb.DatBans.FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
-        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
+        var winDatBan = await _appDb.DatBans
+    .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
+          var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
         var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
         var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
         if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
@@ -391,6 +451,7 @@ public class DatBanService
         {
             winDatBan = new QLNH.Data.Entities.DatBan
             {
+                MaDatBan = b.MaDatBan,
                 TenKhach = b.HoTen,
                 SoDienThoai = b.SoDienThoai,
                 NgayGio = b.NgayGio,
@@ -412,8 +473,9 @@ public class DatBanService
             winDatBan.GhiChu = ghiChuDatBan;
         }
 
-        var winDon = await _appDb.DonHangs.Include(d => d.ChiTiets)
-            .FirstOrDefaultAsync(d => d.GhiChu != null && d.GhiChu.StartsWith(prefix));
+        var winDon = await _appDb.DonHangs
+        .Include(d => d.ChiTiets)
+        .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
         var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
         if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
 
@@ -421,6 +483,7 @@ public class DatBanService
         {
             winDon = new QLNH.Data.Entities.DonHang
             {
+                MaDatBan = b.MaDatBan,
                 NgayTao = b.NgayThanhToan ?? b.NgayTao,
                 TenKhach = b.HoTen,
                 SoDienThoai = b.SoDienThoai,
@@ -532,6 +595,7 @@ public class DatBanService
         }
         await _appDb.SaveChangesAsync();
     }
+    
 
     // ---------- Helpers ----------
     private static KetQuaDatBan Loi(string msg, string? ma = null) => new() { Loi = msg, MaLoi = ma };
