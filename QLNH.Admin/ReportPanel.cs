@@ -357,18 +357,48 @@ namespace QLNH.Admin
         }
 
         private void XuatCsv()
-        {
-            using var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", FileName = $"doanhthu_{DateTime.Now:yyyyMMdd}.csv" };
-            if (dlg.ShowDialog() != DialogResult.OK) return;
+{
+    using var dlg = new SaveFileDialog
+    {
+        Filter = "CSV (*.csv)|*.csv",
+        FileName = $"doanhthu_{DateTime.Now:yyyyMMdd}.csv"
+    };
 
-            var sb = new StringBuilder("Ngay,SoDon,DoanhThu\n");
-            foreach (var x in _ngay) sb.AppendLine($"{x.Ngay:yyyy-MM-dd},{x.SoDon},{x.DoanhThu:0}");
+    if (dlg.ShowDialog() != DialogResult.OK)
+        return;
 
-            sb.AppendLine().AppendLine("Mon,SoLuongBan,DoanhThu");
-            foreach (var m in _mon) sb.AppendLine($"\"{m.TenMon.Replace("\"", "\"\"")}\",{m.SoLuong},{m.DoanhThu:0}");
+    var sb = new StringBuilder();
 
-            File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true));
-            MessageBox.Show("Đã xuất file CSV thành công.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+    // Bảng 1 — Doanh thu theo ngày tạo đơn
+    sb.AppendLine("BẢNG 1 - DOANH THU THEO NGÀY TẠO ĐƠN;;");
+    sb.AppendLine("Ngày;Số đơn đã thanh toán;Doanh thu (VNĐ)");
+
+    foreach (var x in _ngay)
+    {
+        sb.AppendLine(FormattableString.Invariant(
+            $"{x.Ngay:yyyy-MM-dd};{x.SoDon};{x.DoanhThu:0}"));
+    }
+
+    sb.AppendLine();
+
+    // Bảng 2 — Món bán chạy
+    sb.AppendLine("BẢNG 2 - MÓN BÁN CHẠY;;");
+    sb.AppendLine("Tên món;Số lượng bán;Tiền món (VNĐ)");
+
+    foreach (var m in _mon)
+    {
+        var tenMon = m.TenMon.Replace("\"", "\"\"");
+        sb.AppendLine(FormattableString.Invariant(
+            $"\"{tenMon}\";{m.SoLuong};{m.DoanhThu:0}"));
+    }
+
+    File.WriteAllText(dlg.FileName, sb.ToString(), new UTF8Encoding(true));
+
+    MessageBox.Show(
+        "Đã xuất báo cáo doanh thu và món bán chạy.",
+        "Thành công",
+        MessageBoxButtons.OK,
+        MessageBoxIcon.Information);
+}
     }
 }
