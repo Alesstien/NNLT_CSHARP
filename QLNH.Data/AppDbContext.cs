@@ -36,6 +36,7 @@ public class AppDbContext : DbContext
         b.Entity<Ban>().ToTable("Ban");
         b.Entity<DonHang>(e =>
         {
+            e.Property(x => x.GiamGia).HasPrecision(18, 0);
             e.ToTable("DonHang");
             e.Property(x => x.TongTien).HasColumnType("decimal(18,0)");
             e.HasOne(x => x.Ban).WithMany().HasForeignKey(x => x.BanId).OnDelete(DeleteBehavior.SetNull);
@@ -53,5 +54,12 @@ public class AppDbContext : DbContext
             e.ToTable("DatBan");
             e.HasOne(x => x.Ban).WithMany().HasForeignKey(x => x.BanId).OnDelete(DeleteBehavior.SetNull);
         });
+        b.Entity<WebUuDai>(e =>
+{
+    e.ToTable("Web_UuDai", t => t.ExcludeFromMigrations());
+    e.HasIndex(x => x.Ma).IsUnique();
+    e.Property(x => x.GiamToiDa).HasPrecision(18, 0);
+});
     }
+    public DbSet<WebUuDai> WebUuDais => Set<WebUuDai>();
 }
