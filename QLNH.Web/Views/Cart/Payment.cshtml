@@ -50,17 +50,39 @@ var cacCoc = chiDatBan
                 </div>
             </div></div>
 
-            <div class="card mb-3"><div class="card-body">
-                <h5 class="card-title">Mã ưu đãi</h5>
-                <div class="input-group">
-                    <input class="form-control" asp-for="Input.Ma" placeholder="Ví dụ: WELCOME10" />
-                    <button class="btn btn-outline-secondary" name="op" value="refresh">Áp dụng</button>
+            @if (!chiDatBan)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Mã ưu đãi</h5>
+            <div class="input-group">
+                <input class="form-control"
+                       asp-for="Input.Ma"
+                       placeholder="Ví dụ: WELCOME10" />
+                <button type="submit"
+                        class="btn btn-outline-secondary"
+                        name="op"
+                        value="refresh">
+                    Áp dụng
+                </button>
+            </div>
+
+            @if (Model.MaMsg != null)
+            {
+                <div class="small mt-2 @(Model.MaHopLe ? "text-success" : "text-danger")">
+                    @Model.MaMsg
                 </div>
-                @if (Model.MaMsg != null)
-                {
-                    <div class="small mt-2 @(Model.MaHopLe ? "text-success" : "text-danger")">@Model.MaMsg</div>
-                }
-            </div></div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p class="small text-muted mb-3">
+        Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.
+    </p>
+}
+        
 
             <div class="card mb-3"><div class="card-body">
                 <h5 class="card-title">Hình thức đặt cọc</h5>
