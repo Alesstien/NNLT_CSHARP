@@ -1,0 +1,524 @@
+@using QLNH_Web.Models
+@model CartPageVm
+@{
+    ViewData["Title"] = "Giỏ hàng & Đặt bàn";
+    var b = Model.Booking;
+    var kv = Model.KhuVuc;
+    bool quaSucChua = kv != null && b.SoNguoi > kv.SucChua;
+}
+<div id="cart-page-container">
+<h3 class="mb-3">Giỏ hàng & Đặt bàn</h3>
+
+@if (TempData["Loi"] is string loi)
+{
+    <div class="alert alert-danger">@loi</div>
+}
+
+<form asp-action="Apply" method="post" id="formGio">
+    @* Nút ẩn này phải đứng ĐẦU form: phím Enter sẽ kích hoạt nó thay vì nút +/−/Xóa *@
+    <button type="submit" name="op" value="refresh" id="btnRefresh" class="d-none" tabindex="-1" aria-hidden="true">Cập nhật</button>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h5>Món đã chọn</h5>
+            @if (!Model.Lines.Any())
+            {
+                <div class="alert alert-info">
+                    Chưa có món ăn nào trong giỏ. Bạn có thể <strong>đặt bàn trước mà không cần chọn món</strong> (gọi món khi đến nhà hàng), hoặc <a asp-controller="Menu" asp-action="Index" class="fw-bold">xem thực đơn để chọn món trước</a>.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Món</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th>Số lượng</th>
+                                <th class="text-end">Thành tiền</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var l in Model.Lines)
+                        {
+                            <tr>
+                                <td>@l.TenMon</td>
+                                <td class="text-end">@l.DonGia.ToString("N0")</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Số lượng @l.TenMon">
+                                        <button class="btn btn-outline-secondary" name="op" value="dec:@l.MonAnId" aria-label="Giảm">−</button>
+                                        <span class="btn btn-outline-secondary disabled text-body px-3 fw-bold">@l.SoLuong</span>
+                                        <button class="btn btn-outline-secondary" name="op" value="inc:@l.MonAnId" aria-label="Tăng">+</button>
+                                    </div>
+                                </td>
+                                <td class="text-end">@l.ThanhTien.ToString("N0")</td>
+                                <td><button class="btn btn-sm btn-outline-danger" name="op" value="del:@l.MonAnId">Xóa</button></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            <a class="btn btn-outline-secondary" asp-controller="Menu" asp-action="Index">+ Chọn thêm món ăn</a>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Thông tin đặt bàn</h5>
+
+                    <div class="row g-3 mb-3">
+<div class="col-12">
+        @{
+        var ngayHienTai = DateTime.Now;
+        var gioNhanBan = BookingDraft.ChuanHoaGioNhanBan(
+        b.ThoiGianDen, ngayHienTai);
+
+        var ngayChon = gioNhanBan.ToString("yyyy-MM-dd");
+        var gioChon = gioNhanBan.ToString("HH:mm");
+    }
+
+    <div class="booking-time-card">
+        <label class="form-label fw-semibold mb-2" for="ngayNhanBan">
+            Ngày nhận bàn
+        </label>
+
+        <div class="booking-quick-days">
+            <button type="button"
+                    class="booking-day @(ngayChon == ngayHienTai.ToString("yyyy-MM-dd") ? "active" : "")"
+                    onclick="chonNgayNhanBan('@ngayHienTai.ToString("yyyy-MM-dd")')">
+                Hôm nay
+            </button>
+
+            <button type="button"
+                    class="booking-day @(ngayChon == ngayHienTai.AddDays(1).ToString("yyyy-MM-dd") ? "active" : "")"
+                    onclick="chonNgayNhanBan('@ngayHienTai.AddDays(1).ToString("yyyy-MM-dd")')">
+                Ngày mai
+            </button>
+        </div>
+
+    <div class="booking-datetime-row">
+    <div class="booking-datetime-field">
+        <label class="form-label fw-semibold mb-2"
+               for="ngayNhanBan">
+            Ngày nhận bàn
+        </label>
+
+        <input type="date"
+               id="ngayNhanBan"
+               class="form-control booking-date-input"
+               value="@ngayChon"
+               min="@ngayHienTai.ToString("yyyy-MM-dd")"
+               onchange="capNhatNgayGioNhanBan()" />
+    </div>
+
+    <div class="booking-datetime-field">
+        <label class="form-label fw-semibold mb-2"
+               for="gioNhanBan">
+            Giờ nhận bàn
+        </label>
+
+        <select id="gioNhanBan"
+                class="form-select booking-hour-input"
+                onchange="capNhatNgayGioNhanBan()">
+            @for (var phut = BookingDraft.GioMoCua * 60;
+        phut <= BookingDraft.GioNhanBanCuoi * 60;
+        phut += BookingDraft.BuocPhutDatBan)
+            {
+                var gio = TimeSpan.FromMinutes(phut).ToString(@"hh\:mm");
+                var thoiDiem = gioNhanBan.Date.AddMinutes(phut);
+
+                <option value="@gio"
+                        selected="@(gio == gioChon)"
+                        disabled="@(thoiDiem <= ngayHienTai)">
+                    @gio
+                </option>
+            }
+        </select>
+    </div>
+</div>
+
+        <input type="hidden"
+               id="ThoiGianDen"
+               name="ThoiGianDen"
+               value="@gioNhanBan.ToString("yyyy-MM-ddTHH:mm")" />
+
+                <div class="booking-people">                            <label class="form-label small text-secondary d-block" for="SoNguoi">Số người</label>
+                            <div class="input-group" role="group" aria-label="Số người">
+                                <button class="btn btn-outline-secondary" name="op" value="ng-" aria-label="Giảm số người">−</button>
+                                <input type="number" min="1" max="1000" id="SoNguoi" name="SoNguoi" value="@b.SoNguoi"
+                                       class="form-control text-center fw-bold px-1 @(quaSucChua ? "is-invalid" : "")"
+                                       onchange="guiLai()" />
+                                <button class="btn btn-outline-secondary" name="op" value="ng+" aria-label="Tăng số người">+</button>
+                            </div>
+                        </div>
+<div class="booking-event" style="margin-top: 16px;">
+    <label class="form-label fw-semibold mb-2" for="LoaiLe">
+        Loại buổi
+    </label>
+
+    <select id="LoaiLe"
+            name="LoaiLe"
+            class="form-select booking-hour-input"
+            onchange="guiLai()">
+        @foreach (var loai in BookingDraft.CacLoaiLe)
+        {
+            <option value="@loai" selected="@(b.LoaiLe == loai)">
+                @loai
+            </option>
+        }
+    </select>
+</div>
+
+        <div class="booking-time-note">
+    <span class="booking-note-dot"></span>
+    <span>
+        Chọn giờ đến để kiểm tra bàn trống.
+        Mỗi lượt sử dụng bàn dự kiến 2 giờ.
+    </span>
+</div>
+
+<div class="alert alert-warning small mt-3 mb-0 py-2 px-3">
+    <strong>Vui lòng đến đúng giờ hẹn.</strong><br />
+    Nếu quý khách chưa đến sau 15 phút kể từ giờ hẹn,
+    hệ thống sẽ tự động hủy đơn đặt bàn.
+</div>
+    </div>
+</div>
+                        
+                    </div>
+
+                    
+
+                    <label class="form-label small text-secondary">Chọn bàn / khu vực</label>
+                    <div class="row g-2 mb-2">
+                        @foreach (var k in Model.KhuVucs)
+                        {
+                            <div class="col-sm-6 position-relative">
+                                <input type="radio" class="btn-check" name="KhuVucId" id="kv@(k.Id)" value="@k.Id"
+                                       checked="@(kv?.Id == k.Id)" onchange="guiLai()" />
+                                <label class="btn btn-outline-warning text-start w-100 h-100" for="kv@(k.Id)">
+                                    <strong class="d-block">@k.Ten</strong>
+                                    <small class="d-block text-secondary">@k.MoTa</small>
+                                    <small>@(k.PhuThu > 0 ? "Phụ thu " + k.PhuThu.ToString("N0") + " đ" : "Miễn phụ thu") · tối đa @k.SucChua khách</small>
+                                </label>
+                            </div>
+                        }
+                    </div>
+
+                    <label class="form-label small text-secondary mt-2" for="GhiChu">Ghi chú (không bắt buộc)</label>
+                    <textarea class="form-control" id="GhiChu" name="GhiChu" rows="2">@b.GhiChu</textarea>
+
+                    @if (quaSucChua)
+                    {
+                        <div class="alert alert-danger small mt-3 mb-0">⚠ @(kv!.Ten) chỉ chứa tối đa @(kv.SucChua) khách. Hãy giảm số người hoặc chọn bàn/khu vực khác.</div>
+                    }
+                    else if (b.LaTiec)
+                    {
+                        <div class="alert alert-warning small mt-3 mb-0">🎊 @b.SoNguoi khách = @b.SoBan bàn (10 khách/bàn). Tiền món của giỏ được nhân @b.SoBan lần.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Tạm tính</h5>
+                    @if (Model.Bill is Bill bill)
+                    {
+                        <dl class="row mb-0 small">
+                            <dt class="col-7 fw-normal text-secondary">@(kv!.Ten)</dt>
+                            <dd class="col-5 text-end">@(b.LaTiec ? bill.SoBan + " bàn · " : "")@b.SoNguoi khách</dd>
+                            <dt class="col-7 fw-normal text-secondary">Tiền món@(bill.SoBan > 1 ? " (× " + bill.SoBan + " mâm)" : "")</dt>
+                            <dd class="col-5 text-end">@bill.TienMon.ToString("N0") đ</dd>
+                            <dt class="col-7 fw-normal text-secondary">Phụ thu bàn / VIP</dt>
+                            <dd class="col-5 text-end">@bill.PhuThu.ToString("N0") đ</dd>
+                            <dt class="col-7 fw-normal text-secondary">VAT 8%</dt>
+                            <dd class="col-5 text-end">@bill.Vat.ToString("N0") đ</dd>
+                            <dt class="col-7 fw-normal text-secondary">Phí phục vụ 5%</dt>
+                            <dd class="col-5 text-end">@bill.PhiPhucVu.ToString("N0") đ</dd>
+                            <dt class="col-7 border-top pt-2 mt-2">Tổng hóa đơn</dt>
+                            <dd class="col-5 text-end border-top pt-2 mt-2 fs-5 fw-bold text-danger">@bill.Tong.ToString("N0") đ</dd>
+                        </dl>
+                    }
+                    else
+                    {
+                        <div class="text-warning small">Chưa có bàn/khu vực phù hợp.</div>
+                    }
+                    <button class="btn btn-danger w-100 fw-bold mt-3" name="op" value="next"
+                            disabled="@(quaSucChua || Model.Bill == null)">Tiếp tục: Đặt cọc & Thanh toán →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+</div>
+
+<script>
+    // Gửi form ngầm bằng fetch() khi chọn bàn/khu vực, loại buổi, tăng/giảm số người hoặc món ăn
+    // giúp cập nhật tức thì mà KHÔNG tải lại trang và KHÔNG bị nhảy cuộn lên đầu trang.
+    async function capNhatGioHang(submitter) {
+        const form = document.getElementById('formGio');
+        if (!form) return;
+        const scrollPos = window.scrollY;
+        const fd = new FormData(form);
+        if (submitter && submitter.name) {
+            fd.set(submitter.name, submitter.value);
+        } else {
+            fd.set('op', 'refresh');
+        }
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+            });
+            if (res.redirected && res.url && !res.url.toLowerCase().includes('/cart')) {
+                window.location.href = res.url;
+                return;
+            }
+            const html = await res.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newContainer = doc.getElementById('cart-page-container');
+            const curContainer = document.getElementById('cart-page-container');
+            if (newContainer && curContainer) {
+                curContainer.innerHTML = newContainer.innerHTML;
+                const newBadge = doc.querySelector('#cart-btn .cart-badge');
+                const curCartBtn = document.getElementById('cart-btn');
+                if (curCartBtn) {
+                    const curBadge = curCartBtn.querySelector('.cart-badge');
+                    if (newBadge) {
+                        if (curBadge) curBadge.textContent = newBadge.textContent;
+                    } else if (curBadge) {
+                        curBadge.remove();
+                    }
+                }
+                window.scrollTo({ top: scrollPos, behavior: 'instant' });
+            }
+        } catch (err) {
+            form.submit();
+        }
+    }
+
+    function guiLai() {
+        capNhatGioHang(document.getElementById('btnRefresh'));
+    }
+
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form || form.id !== 'formGio') return;
+        const submitter = e.submitter;
+        if (submitter && submitter.name === 'op' && submitter.value === 'next') {
+            return;
+        }
+        e.preventDefault();
+        capNhatGioHang(submitter);
+    });
+
+    function chonNgayNhanBan(ngay) {
+    document.getElementById('ngayNhanBan').value = ngay;
+    capNhatNgayGioNhanBan();
+}
+
+function capNhatNgayGioNhanBan() {
+    const ngayInput = document.getElementById('ngayNhanBan');
+    const gioInput = document.getElementById('gioNhanBan');
+    const giaTriGui = document.getElementById('ThoiGianDen');
+
+    if (!ngayInput || !gioInput || !giaTriGui || !ngayInput.value) {
+        return;
+    }
+
+    const bayGio = new Date();
+
+    for (const option of gioInput.options) {
+        const thoiDiem = new Date(`${ngayInput.value}T${option.value}`);
+        option.disabled = thoiDiem <= bayGio;
+    }
+
+    const luaChonHienTai = gioInput.selectedOptions[0];
+
+    if (!luaChonHienTai || luaChonHienTai.disabled) {
+        const gioConLai = Array.from(gioInput.options)
+            .find(option => !option.disabled);
+
+        if (!gioConLai) {
+            giaTriGui.value = '';
+            ngayInput.setCustomValidity(
+                'Ngày này đã hết khung giờ. Vui lòng chọn ngày khác.'
+            );
+            ngayInput.reportValidity();
+            return;
+        }
+
+        gioInput.value = gioConLai.value;
+    }
+
+    ngayInput.setCustomValidity('');
+    giaTriGui.value = `${ngayInput.value}T${gioInput.value}`;
+    guiLai();
+}
+</script>
+<style>
+    .booking-time-card {
+        padding: 16px;
+        border: 1px solid #e7eaf0;
+        border-radius: 16px;
+        background: #f8fafc;
+    }
+
+    .booking-time-card .form-label {
+        color: #273449;
+        font-size: 14px;
+    }
+
+    .booking-quick-days {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .booking-day {
+        flex: 1;
+        padding: 9px 12px;
+        border: 1px solid #dce3ec;
+        border-radius: 10px;
+        background: #fff;
+        color: #536176;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background .15s, border-color .15s;
+    }
+
+    .booking-day:hover {
+        background: #fff8e8;
+        border-color: #eab64d;
+    }
+
+    .booking-day.active {
+        background: #fff2cf;
+        border-color: #eab64d;
+        color: #815800;
+    }
+
+    .booking-date-input,
+    .booking-hour-input {
+        min-height: 46px;
+        border-color: #dce3ec;
+        border-radius: 10px;
+        background-color: #fff;
+        color: #243247;
+        font-size: 15px;
+    }
+
+    .booking-date-input:focus,
+    .booking-hour-input:focus {
+        border-color: #eab64d;
+        box-shadow: 0 0 0 3px rgba(234, 182, 77, .16);
+    }
+
+    .booking-time-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 12px;
+        color: #69778a;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .booking-note-dot {
+        flex-shrink: 0;
+        width: 7px;
+        height: 7px;
+        margin-top: 6px;
+        border-radius: 50%;
+        background: #d6a233;
+    }
+
+    .booking-people {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.booking-people .form-label {
+    color: #273449;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.booking-people .input-group {
+    width: 100%;
+    max-width: 240px;
+}
+
+.booking-people .input-group > .btn {
+    min-width: 48px;
+    min-height: 46px;
+    border-color: #dce3ec;
+    background: #fff;
+    color: #536176;
+}
+
+.booking-people .input-group > .btn:hover {
+    background: #fff2cf;
+    color: #815800;
+}
+
+.booking-people .input-group > :first-child {
+    border-radius: 10px 0 0 10px;
+}
+
+.booking-people .input-group > :last-child {
+    border-radius: 0 10px 10px 0;
+}
+
+.booking-people .input-group > .form-control {
+    min-height: 46px;
+    border-color: #dce3ec;
+    background: #fff;
+    font-weight: 600;
+    text-align: center;
+} 
+
+.booking-datetime-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+    align-items: start;
+}
+
+.booking-datetime-field {
+    min-width: 0;
+}
+
+.booking-datetime-field .form-control,
+.booking-datetime-field .form-select {
+    width: 100%;
+    height: 50px;
+    min-width: 0;
+}
+
+.booking-event {
+    margin-top: 16px;
+}
+
+.booking-event-select {
+    min-height: 50px;
+    border: 1px solid #dce3ec;
+    border-radius: 10px;
+    background-color: #fff;
+    color: #243247;
+    font-size: 15px;
+}
+
+.booking-event-select:focus {
+    border-color: #eab64d;
+    box-shadow: 0 0 0 3px rgba(234, 182, 77, .16);
+}
+</style>
+
