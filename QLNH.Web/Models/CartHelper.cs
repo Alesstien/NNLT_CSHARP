@@ -30,7 +30,34 @@ public class CartLine
 public class BookingDraft
 {
     private const string Key = "booking";
-    public static readonly string[] CacLoaiLe = { "Ăn uống thường", "Đám cưới", "Đám hỏi", "Sinh nhật", "Hội nghị / Liên hoan" };
+    public const int GioMoCua = 8;
+public const int GioNhanBanCuoi = 21; 
+public const int BuocPhutDatBan = 15;
+
+public static bool TrongGioPhucVu(DateTime gio)
+    => gio.TimeOfDay >= TimeSpan.FromHours(GioMoCua)
+        && gio.TimeOfDay <= TimeSpan.FromHours(GioNhanBanCuoi);
+
+public static DateTime ChuanHoaGioNhanBan(DateTime? gioDaChon, DateTime bayGio)
+{
+    var gio = gioDaChon ?? bayGio.AddHours(2);
+
+    if (gio <= bayGio)
+        gio = bayGio.AddHours(2);
+
+    gio = gio.Date.AddMinutes(
+        Math.Ceiling(gio.TimeOfDay.TotalMinutes / BuocPhutDatBan)
+        * BuocPhutDatBan);
+
+    if (gio.Hour < GioMoCua)
+        return gio.Date.AddHours(GioMoCua);
+
+    if (gio.TimeOfDay > TimeSpan.FromHours(GioNhanBanCuoi))
+    return gio.Date.AddDays(1).AddHours(GioMoCua);
+
+    return gio;
+}
+    public static readonly string[] CacLoaiLe = { "Ăn uống thường", "Sinh nhật", "Hội nghị / Liên hoan" };
 
     public DateTime? ThoiGianDen { get; set; }
     public int SoNguoi { get; set; } = 2;
