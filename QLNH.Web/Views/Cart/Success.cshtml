@@ -65,7 +65,12 @@
             <dt class="col-4 fw-normal text-secondary">Mã giao dịch</dt>
             <dd class="col-8">@Model.MaGiaoDich</dd>
         </dl>
-
+            <div id="arrival-reminder"
+     class="alert alert-warning small py-2 px-3 mb-3 @(Model.TrangThai is "Đang chờ duyệt" or "Đã xác nhận" ? "" : "d-none")">
+    <strong>Vui lòng đến đúng giờ hẹn.</strong><br />
+    Nếu quý khách chưa đến sau 15 phút kể từ giờ hẹn,
+    hệ thống sẽ tự động hủy đơn đặt bàn.
+</div>
         <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
     </div>
 </div>
@@ -110,6 +115,10 @@
                     badge.textContent = currentStatus;
                     badge.className = getBadgeClass(currentStatus);
                     desc.textContent = getDesc(currentStatus);
+                    document.getElementById('arrival-reminder').classList.toggle(
+                    'd-none',
+                    currentStatus !== 'Đang chờ duyệt' && currentStatus !== 'Đã xác nhận'
+                );
                 }
             } catch (e) { }
         }
