@@ -27,6 +27,8 @@ public class CrudPanel<T> : UserControl where T : class, new()
         var btnAdd = Btn("＋ Thêm dòng", Color.SeaGreen, (_, _) => Them());
         var btnSave = Btn("💾 Lưu thay đổi", Color.SteelBlue, (_, _) => Luu());
         var btnDel = Btn("✖ Xoá", Color.Firebrick, (_, _) => Xoa());
+        if (typeof(T) == typeof(WebUuDai))
+        btnDel.Visible = false;
         var btnReload = Btn("⟳ Tải lại", Color.Gray, (_, _) => Tai());
         _txtSearch.TextChanged += (_, _) => Loc();
 
