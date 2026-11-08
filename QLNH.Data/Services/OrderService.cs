@@ -60,12 +60,10 @@ public class OrderService
         _db.SaveChanges();
 
         // Nếu đơn hàng có mã đặt bàn từ Web trong GhiChu (ví dụ: [HV-123456] hoặc [AURA-123456]), đồng bộ trạng thái sang bảng DatBan và Web_DatBan
-        if (!string.IsNullOrEmpty(don.GhiChu) && don.GhiChu.StartsWith('['))
-        {
-            var closeIdx = don.GhiChu.IndexOf(']');
-            if (closeIdx > 1)
-            {
-                var ma = don.GhiChu[1..closeIdx].Trim();
+        
+          var ma = don.MaDatBan;
+          if (!string.IsNullOrWhiteSpace(ma))
+           {
                 var ttDatBanWin = trangThai switch
                 {
                     TrangThaiDon.DaXacNhan or TrangThaiDon.DangCheBien => "Đã xác nhận",
@@ -73,8 +71,7 @@ public class OrderService
                     TrangThaiDon.DaHuy => "Đã hủy",
                     _ => "Chờ xác nhận"
                 };
-                var dbDatBan = _db.DatBans.FirstOrDefault(d => d.GhiChu != null && d.GhiChu.StartsWith("[" + ma + "]"));
-                if (dbDatBan != null)
+var dbDatBan = _db.DatBans.FirstOrDefault(d => d.MaDatBan == ma);                if (dbDatBan != null)
                 {
                     dbDatBan.TrangThai = ttDatBanWin;
                     _db.SaveChanges();
@@ -97,7 +94,7 @@ public class OrderService
                 }
                 catch { /* bỏ qua nếu bảng Web_DatBan chưa khởi tạo */ }
             }
-        }
+        
     }
 
     public List<DoanhThuNgay> DoanhThuTheoNgay(DateTime tu, DateTime den)
