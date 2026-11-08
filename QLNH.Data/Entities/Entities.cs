@@ -69,6 +69,8 @@ public class Ban
 public class DonHang
 {
     public int Id { get; set; }
+    [StringLength(30)]
+    public string? MaDatBan { get; set; }
     public DateTime NgayTao { get; set; } = DateTime.Now;
     [Required(ErrorMessage = "Vui lòng nhập tên khách"), StringLength(100)]
     public string TenKhach { get; set; } = "";
@@ -96,6 +98,8 @@ public class ChiTietDonHang
 public class DatBan
 {
     public int Id { get; set; }
+    [StringLength(30)]
+    public string? MaDatBan { get; set; }
     [Required(ErrorMessage = "Vui lòng nhập họ tên"), StringLength(100)]
     public string TenKhach { get; set; } = "";
     [Required(ErrorMessage = "Vui lòng nhập số điện thoại"), StringLength(20)]
@@ -103,6 +107,8 @@ public class DatBan
     public string SoDienThoai { get; set; } = "";
     public DateTime NgayGio { get; set; } = DateTime.Now.AddHours(2);
     [Range(1, 1000, ErrorMessage = "Số người từ 1 đến 1000")]
+
+    public DateTime? BatDauPhucVuLuc { get; set; }
     public int SoNguoi { get; set; } = 2;
     public int? BanId { get; set; }
     public Ban? Ban { get; set; }
