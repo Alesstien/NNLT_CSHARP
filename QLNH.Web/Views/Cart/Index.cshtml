@@ -75,14 +75,10 @@
         var ngayHienTai = DateTime.Now;
         var gioNhanBan = b.ThoiGianDen ?? ngayHienTai.AddHours(2);
 
-        // Làm tròn lên khung 30 phút.
-        var phutDu = gioNhanBan.Minute % 30;
-        if (phutDu != 0 || gioNhanBan.Second != 0)
-        {
-            gioNhanBan = gioNhanBan
-                .AddMinutes(30 - phutDu)
-                .AddSeconds(-gioNhanBan.Second);
-        }
+        
+        // Làm tròn lên mốc 15 phút.
+        gioNhanBan = gioNhanBan.Date.AddMinutes(
+            Math.Ceiling(gioNhanBan.TimeOfDay.TotalMinutes / 15) * 15);
 
         var ngayChon = gioNhanBan.ToString("yyyy-MM-dd");
         var gioChon = gioNhanBan.ToString("HH:mm");
@@ -131,7 +127,7 @@
         <select id="gioNhanBan"
                 class="form-select booking-hour-input"
                 onchange="capNhatNgayGioNhanBan()">
-            @for (var phut = 0; phut < 24 * 60; phut += 30)
+            @for (var phut = 0; phut < 24 * 60; phut += 15)
             {
                 var gio = TimeSpan.FromMinutes(phut).ToString(@"hh\:mm");
                 var thoiDiem = gioNhanBan.Date.AddMinutes(phut);
@@ -521,3 +517,4 @@ function capNhatNgayGioNhanBan() {
     box-shadow: 0 0 0 3px rgba(234, 182, 77, .16);
 }
 </style>
+
