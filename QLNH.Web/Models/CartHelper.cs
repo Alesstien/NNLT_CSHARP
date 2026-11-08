@@ -66,7 +66,7 @@ public class Bill
 
     public static decimal TinhCoc(string cheDo, decimal tong) => cheDo switch
     {
-        CheDo.CoDinh => tong > 0 ? Math.Min(500_000m, tong) : 500_000m,
+        CheDo.CoDinh => 500_000m,
         CheDo.Ba30 => tong > 0 ? Math.Round(tong * 0.3m) : 500_000m,
         _ => tong > 0 ? tong : 500_000m
     };
