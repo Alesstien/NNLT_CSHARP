@@ -139,6 +139,7 @@ public class CartController : Controller
 
         if (booking.ThoiGianDen != null && booking.ThoiGianDen <= DateTime.Now)
             TempData["Loi"] = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+            
         else
         {
             var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
@@ -168,6 +169,8 @@ public class CartController : Controller
         var kv = ChonKhuVuc(b, kvs);
 
         if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now) loi = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+        else if (!BookingDraft.TrongGioPhucVu(b.ThoiGianDen.Value))
+        loi = "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
         else if (kv == null) loi = "Chưa có khu vực phù hợp với loại buổi này.";
         else if (b.SoNguoi > kv.SucChua) loi = $"{kv.Ten} chỉ chứa tối đa {kv.SucChua} khách.";
 
@@ -201,8 +204,7 @@ inp.CheDoCoc = lines.Count == 0
 
         UuDai? ud = null; string? maMsg = null;
         var ma = inp.Ma?.Trim().ToUpper();
-        if (!string.IsNullOrEmpty(ma))
-        {
+        if (!string.IsNullOrEmpty(ma) && lines.Any())        {
             ud = await _auth.UuDais.FirstOrDefaultAsync(u => u.Ma == ma && u.HoatDong && (u.HanDung == null || u.HanDung >= DateTime.Today));
             maMsg = ud == null
                 ? "Mã ưu đãi không hợp lệ hoặc đã hết hạn."
@@ -250,6 +252,17 @@ var vm = await BuildPaymentVm(inp);
 
 if (vm == null) return RedirectToAction(nameof(Index));
 if (op != "pay") return View(vm);
+if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.Lines.Any())
+{
+    ModelState.AddModelError("", "Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
+    return View(vm);
+}
+if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.MaHopLe)
+{
+    ModelState.AddModelError(
+        "Input.Ma", "Mã ưu đãi không còn hiệu lực. Hãy xóa mã hoặc nhập mã khác.");
+    return View(vm);
+}
 
 if (cheDoDaGui != inp.CheDoCoc)
 {
