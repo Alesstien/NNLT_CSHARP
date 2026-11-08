@@ -165,11 +165,34 @@ namespace QLNH.Admin
                 using var db = Program.NewDb();
 
                 var dsBan = db.Set<Ban>().OrderBy(b => b.TenBan).ToList();
-                foreach (var ban in dsBan)
+                
+                var bayGio = DateTime.Now;
+                var denLuc = bayGio.AddMinutes(30);
+
+                 var gioHenTheoBan = db.DatBans.AsNoTracking()
+                .Where(d => d.BanId.HasValue
+                    && d.TrangThai == "Đã xác nhận"
+                    && d.BatDauPhucVuLuc == null
+                    && d.NgayGio <= denLuc)
+                .GroupBy(d => d.BanId!.Value)
+                .Select(g => new { BanId = g.Key, GioHen = g.Min(d => d.NgayGio) })
+                .ToDictionary(x => x.BanId, x => x.GioHen);
+                            foreach (var ban in dsBan)
                 {
+                 var tinhTrang = ban.TrangThai == "Đã đặt" ? "Trống" : ban.TrangThai;
+
+                    if (gioHenTheoBan.TryGetValue(ban.Id, out var gioHen))
+                    {
+                        if (tinhTrang == "Trống")
+                            tinhTrang = $"Đã đặt · {gioHen:HH:mm}";
+                        else if (tinhTrang == "Đang dùng")
+                            tinhTrang = bayGio >= gioHen.AddMinutes(15)
+                                ? $"Đang dùng\nCần xếp bàn · {gioHen:HH:mm}"
+                                : $"Đang dùng\nCó hẹn · {gioHen:HH:mm}";
+                    }
                     Button btnTable = new Button
                     {
-                        Text = $"{ban.TenBan}\n({ban.TrangThai})",
+                        Text = $"{ban.TenBan}\n{tinhTrang}",
                         Size = new Size(85, 80),
                         Margin = new Padding(5),
                         BackColor = ban.TrangThai == "Trống" ? Color.Gainsboro : Color.Orange,
@@ -211,12 +234,85 @@ namespace QLNH.Admin
             {
                 MessageBox.Show("Lỗi tải dữ liệu từ DB: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
         }
 
+        private static IQueryable<DonHang> TimDonDangPhucVu(
+            QLNH.Data.AppDbContext db, int banId)
+        {
+            var phieuDangPhucVu = db.DatBans.Where(d =>
+        d.BanId == banId
+        && d.TrangThai == "Đã xác nhận"
+        && d.BatDauPhucVuLuc != null);
+
+    return db.DonHangs.Where(o =>
+        o.BanId == banId
+        && o.TrangThai != "Đã thanh toán"
+        && o.TrangThai != "Hoàn thành"
+        && o.TrangThai != "Đã hủy"
+        && o.TrangThai != "Đã huỷ"
+        && db.Bans.Any(b => b.Id == banId && b.TrangThai == "Đang dùng")
+        && (
+            // Đơn đặt trước của đúng phiếu đang phục vụ.
+            (o.MaDatBan != null && o.MaDatBan != ""
+                && phieuDangPhucVu.Any(d => d.MaDatBan == o.MaDatBan))
+            // Đơn khách vãng lai đang sử dụng bàn.
+            || ((o.MaDatBan == null || o.MaDatBan == "")
+                && !phieuDangPhucVu.Any())
+        ));
+    }
+    
+        private static string? KiemTraGiuBan(
+    QLNH.Data.AppDbContext db, int banId, int? donHangId = null)
+{
+    if (donHangId is int id)
+    {
+        return TimDonDangPhucVu(db, banId).Any(o => o.Id == id)
+            ? null
+            : "Đơn đang mở đã thay đổi. Vui lòng chọn lại bàn.";
+    }
+
+    if (db.Bans.Any(b => b.Id == banId && b.TrangThai == "Đang dùng"))
+    {
+        return "Bàn đang dùng nhưng chưa tìm được đơn đang phục vụ. "
+             + "Hãy kiểm tra mã đặt bàn trên phiếu và đơn hàng.";
+    }
+
+    // Giữ phần kiểm tra giờ hẹn hiện có bên dưới.
+    var bayGio = DateTime.Now;
+    var denLuc = bayGio.AddMinutes(30);
+
+    var gioHen = db.DatBans.AsNoTracking()
+        .Where(d => d.BanId == banId
+            && d.TrangThai == "Đã xác nhận"
+            && d.NgayGio <= denLuc)
+        .OrderBy(d => d.NgayGio)
+        .Select(d => (DateTime?)d.NgayGio)
+        .FirstOrDefault();
+
+    if (gioHen is DateTime gio)
+        return $"Bàn đang giữ cho khách có hẹn lúc {gio:HH:mm}. "
+            + "Nếu khách đặt bàn đã tới, hãy chuyển phiếu sang Đã đến.";
+
+    return null;
+}
         private void Table_Click(object? sender, EventArgs e)
         {
             if (sender is Button clickedTable && clickedTable.Tag is Ban ban)
             {
+                using var db = Program.NewDb();
+                var donHangId = TimDonDangPhucVu(db, ban.Id)
+                    .OrderByDescending(o => o.Id)
+                    .Select(o => (int?)o.Id)
+                    .FirstOrDefault();
+    
+                var loi = KiemTraGiuBan(db, ban.Id, donHangId);
+                if (loi != null)
+                {
+                    MessageBox.Show(loi, "Bàn đang được giữ",
+                     MessageBoxButtons.OK, MessageBoxIcon.Information);
+                     return;
+                    }
                 if (currentSelectedTable != null && currentSelectedTable.Tag is Ban oldBan)
                 {
                     currentSelectedTable.BackColor = oldBan.TrangThai == "Trống" ? Color.Gainsboro : Color.Orange;
@@ -242,12 +338,11 @@ namespace QLNH.Admin
             try
             {
                 using var db = Program.NewDb();
-                var openOrder = db.DonHangs
-                    .Include(d => d.ChiTiets)
-                    .ThenInclude(c => c.MonAn)
-                    .Where(d => d.BanId == ban.Id && d.TrangThai != "Đã thanh toán" && d.TrangThai != "Hoàn thành" && d.TrangThai != "Đã hủy" && d.TrangThai != "Đã huỷ")
-                    .OrderByDescending(d => d.Id)
-                    .FirstOrDefault();
+                var openOrder = TimDonDangPhucVu(db, ban.Id)
+                .Include(d => d.ChiTiets)
+                .ThenInclude(c => c.MonAn)
+                .OrderByDescending(d => d.Id)
+                .FirstOrDefault();
 
                 if (openOrder != null)
                 {
@@ -361,6 +456,9 @@ namespace QLNH.Admin
 
         private DonHang LuuDonHangCuaBan(QLNH.Data.AppDbContext db, Ban ban, string trangThaiDon, string trangThaiBan)
         {
+            var loi = KiemTraGiuBan(db, ban.Id, _currentOpenOrderId);
+            if (loi != null)
+            throw new InvalidOperationException(loi);
             decimal totalAmount = TinhTongHoaDon();
             DonHang? donHang = null;
             if (_currentOpenOrderId.HasValue)
@@ -434,7 +532,9 @@ namespace QLNH.Admin
                 .Where(b => b.Id != banCu.Id && b.TrangThai == "Trống")
                 .OrderBy(b => b.TenBan)
                 .ToList();
-
+            dsBanTrong = dsBanTrong
+            .Where(b => KiemTraGiuBan(db, b.Id) == null)
+            .ToList();
             if (dsBanTrong.Count == 0)
             {
                 MessageBox.Show("Hiện không còn bàn trống nào để chuyển sang!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -461,11 +561,18 @@ namespace QLNH.Admin
 
             try
             {
+                var loi = KiemTraGiuBan(db, Chon.Id);
+
+            if (loi != null)
+                {
+                    MessageBox.Show(loi, "Bàn đang được giữ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
                 // Nếu bàn hiện tại có chọn món nhưng chưa lưu đơn, lưu tạm trước khi chuyển
                 if (_currentOpenOrderId == null && dgvOrderDetails.Rows.Count > 0)
                 {
-                    LuuDonHangCuaBan(db, banCu, TrangThaiDon.DangCheBien, "Đang dùng");
-                }
+                LuuDonHangCuaBan(db, banCu, TrangThaiDon.DaXacNhan, "Đang dùng");                }
 
                 if (_currentOpenOrderId.HasValue)
                 {
@@ -519,10 +626,10 @@ namespace QLNH.Admin
             try
             {
                 using var db = Program.NewDb();
-                var don = LuuDonHangCuaBan(db, ban, TrangThaiDon.DangCheBien, "Đang dùng");
-                LoadDataFromDb();
-                lblTableStatus.Text = $"📋 {ban.TenBan} — Đơn #{don.Id} (Đang chế biến)";
-                MessageBox.Show($"Đã lưu order của {ban.TenBan} (Đơn #{don.Id}) và chuyển trạng thái bàn sang 'Đang dùng'.\nBạn có thể chuyển sang phục vụ bàn khác và quay lại gọi thêm món bất cứ lúc nào!", "Đã gửi bếp", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var don = LuuDonHangCuaBan(db, ban, TrangThaiDon.DaXacNhan, "Đang dùng");               
+                 LoadDataFromDb();
+                lblTableStatus.Text = $"📋 {ban.TenBan} — Đơn #{don.Id} (Đã xác nhận)";
+                MessageBox.Show("Đã lưu món. Bạn có thể mở lại bàn để thêm món hoặc thanh toán.");
             }
             catch (Exception ex)
             {
@@ -532,6 +639,7 @@ namespace QLNH.Admin
 
         private void BtnPay_Click(object? sender, EventArgs e)
         {
+            
             if (currentSelectedTable?.Tag is not Ban ban || dgvOrderDetails.Rows.Count == 0)
             {
                 MessageBox.Show("Không có dữ liệu hóa đơn để thanh toán!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -540,11 +648,21 @@ namespace QLNH.Admin
 
             decimal totalAmount = TinhTongHoaDon();
             string tenBan = ban.TenBan;
-
+                using (var dbKiemTra = Program.NewDb())
+                {
+                    var loi = KiemTraGiuBan(dbKiemTra, ban.Id, _currentOpenOrderId);
+                    if (loi != null)
+                    {
+                        MessageBox.Show(loi, "Bàn đang được giữ",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
             using (PaymentForm paymentForm = new PaymentForm(totalAmount, tenBan, _currentDeposit))
             {
                 if (paymentForm.ShowDialog() == DialogResult.OK)
                 {
+                    
                     try
                     {
                         using var db = Program.NewDb();
