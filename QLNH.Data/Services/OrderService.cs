@@ -39,63 +39,82 @@ public class OrderService
         return don;
     }
 
-    public void DoiTrangThai(int donId, string trangThai)
+   public void DoiTrangThai(int donId, string trangThai)
+{
+    if (!TrangThaiDon.TatCa.Contains(trangThai))
+        throw new ArgumentException("Trạng thái không hợp lệ.");
+
+    using var tx = _db.Database.IsSqlServer()
+        && _db.Database.CurrentTransaction is null
+        ? _db.Database.BeginTransaction()
+        : null;
+
+    var don = _db.DonHangs.Find(donId)
+        ?? throw new InvalidOperationException("Không tìm thấy đơn hàng.");
+
+    don.TrangThai = trangThai;
+
+    if (don.BanId is int banId && _db.Bans.Find(banId) is Ban ban)
     {
-        if (!TrangThaiDon.TatCa.Contains(trangThai)) throw new ArgumentException("Trạng thái không hợp lệ.");
-        var don = _db.DonHangs.Find(donId) ?? throw new InvalidOperationException("Không tìm thấy đơn hàng.");
-        don.TrangThai = trangThai;
-        if (don.BanId != null)
+        if (trangThai is TrangThaiDon.DaThanhToan
+            or TrangThaiDon.HoanThanh
+            or TrangThaiDon.DaHuy)
         {
-            var ban = _db.Bans.Find(don.BanId);
-            if (ban != null)
-            {
-                if (trangThai == TrangThaiDon.DaThanhToan || trangThai == TrangThaiDon.HoanThanh || trangThai == TrangThaiDon.DaHuy)
-                    ban.TrangThai = "Trống";
-                else if (trangThai == TrangThaiDon.DangCheBien)
-                    ban.TrangThai = "Đang dùng";
-                else if (trangThai == TrangThaiDon.DaXacNhan && ban.TrangThai == "Trống")
-                    ban.TrangThai = "Đã đặt";
-            }
+            ban.TrangThai = "Trống";
         }
-        _db.SaveChanges();
-
-        // Nếu đơn hàng có mã đặt bàn từ Web trong GhiChu (ví dụ: [HV-123456] hoặc [AURA-123456]), đồng bộ trạng thái sang bảng DatBan và Web_DatBan
-        
-          var ma = don.MaDatBan;
-          if (!string.IsNullOrWhiteSpace(ma))
-           {
-                var ttDatBanWin = trangThai switch
-                {
-                    TrangThaiDon.DaXacNhan or TrangThaiDon.DangCheBien => "Đã xác nhận",
-                    TrangThaiDon.HoanThanh or TrangThaiDon.DaThanhToan => "Đã đến",
-                    TrangThaiDon.DaHuy => "Đã hủy",
-                    _ => "Chờ xác nhận"
-                };
-var dbDatBan = _db.DatBans.FirstOrDefault(d => d.MaDatBan == ma);                if (dbDatBan != null)
-                {
-                    dbDatBan.TrangThai = ttDatBanWin;
-                    _db.SaveChanges();
-                }
-
-                var ttWeb = trangThai switch
-                {
-                    TrangThaiDon.DaXacNhan => "Đã xác nhận",
-                    TrangThaiDon.DangCheBien => "Đang chế biến",
-                    TrangThaiDon.HoanThanh => "Đã hoàn thành",
-                    TrangThaiDon.DaThanhToan => "Đã thanh toán",
-                    TrangThaiDon.DaHuy => "Đã hủy",
-                    _ => "Đang chờ duyệt"
-                };
-                try
-                {
-                    _db.Database.ExecuteSqlRaw(
-                        "IF OBJECT_ID('Web_DatBan', 'U') IS NOT NULL UPDATE Web_DatBan SET TrangThai = {0}, NgayCapNhat = GETDATE() WHERE MaDatBan = {1}",
-                        ttWeb, ma);
-                }
-                catch { /* bỏ qua nếu bảng Web_DatBan chưa khởi tạo */ }
-            }
-        
+        else if (trangThai == TrangThaiDon.DangCheBien)
+        {
+            ban.TrangThai = "Đang dùng";
+        }
+        else if (trangThai == TrangThaiDon.DaXacNhan && ban.TrangThai == "Trống")
+        {
+            ban.TrangThai = "Đã đặt";
+        }
     }
+
+    if (don.MaDatBan is string ma && !string.IsNullOrWhiteSpace(ma))
+    {
+        var trangThaiDatBan = trangThai switch
+        {
+            TrangThaiDon.DaXacNhan or TrangThaiDon.DangCheBien => "Đã xác nhận",
+            TrangThaiDon.DaThanhToan => "Đã đến",
+            TrangThaiDon.HoanThanh => null,
+            TrangThaiDon.DaHuy => "Đã hủy",
+            _ => "Chờ xác nhận"
+        };
+
+        var phieu = _db.DatBans.FirstOrDefault(d => d.MaDatBan == ma);
+
+        if (phieu != null && trangThaiDatBan != null)
+            phieu.TrangThai = trangThaiDatBan;
+
+        var trangThaiWeb = trangThai switch
+        {
+            TrangThaiDon.DaXacNhan => "Đã xác nhận",
+            TrangThaiDon.DangCheBien => "Đang chế biến",
+            TrangThaiDon.HoanThanh => "Đã hoàn thành",
+            TrangThaiDon.DaThanhToan => "Đã thanh toán",
+            TrangThaiDon.DaHuy => "Đã hủy",
+            _ => "Đang chờ duyệt"
+        };
+
+        if (_db.Database.IsSqlServer())
+        {
+            _db.Database.ExecuteSqlInterpolated($"""
+                IF OBJECT_ID(N'dbo.Web_DatBan', N'U') IS NOT NULL
+                BEGIN
+                    UPDATE dbo.Web_DatBan
+                    SET TrangThai = {trangThaiWeb},
+                        NgayCapNhat = GETDATE()
+                    WHERE MaDatBan = {ma};
+                END
+                """);
+        }
+    }
+
+    _db.SaveChanges();
+    tx?.Commit();
+}
 
     public List<DoanhThuNgay> DoanhThuTheoNgay(DateTime tu, DateTime den)
     {
