@@ -240,3 +240,20 @@ DBCC CHECKIDENT ('DonHang', RESEED, 6);
 DBCC CHECKIDENT ('ChiTietDonHang', RESEED, 20);
 DBCC CHECKIDENT ('DatBan', RESEED, 0);
 GO
+
+IF COL_LENGTH(N'dbo.DonHang', N'MaDatBan') IS NULL
+    ALTER TABLE dbo.DonHang ADD MaDatBan NVARCHAR(30) NULL;
+
+IF COL_LENGTH(N'dbo.DonHang', N'MaUuDai') IS NULL
+    ALTER TABLE dbo.DonHang ADD MaUuDai NVARCHAR(30) NULL;
+
+IF COL_LENGTH(N'dbo.DonHang', N'GiamGia') IS NULL
+    ALTER TABLE dbo.DonHang ADD GiamGia DECIMAL(18, 0) NOT NULL
+        CONSTRAINT DF_DonHang_GiamGia DEFAULT (0);
+
+IF COL_LENGTH(N'dbo.DatBan', N'MaDatBan') IS NULL
+    ALTER TABLE dbo.DatBan ADD MaDatBan NVARCHAR(30) NULL;
+
+IF COL_LENGTH(N'dbo.DatBan', N'BatDauPhucVuLuc') IS NULL
+    ALTER TABLE dbo.DatBan ADD BatDauPhucVuLuc DATETIME2 NULL;
+GO
