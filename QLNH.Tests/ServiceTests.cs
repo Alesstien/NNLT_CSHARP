@@ -66,6 +66,42 @@ public class ServiceTests
         Assert.Single(dt);
         Assert.Equal(130000, dt[0].DoanhThu);
     }
+    [Theory]
+[InlineData(TrangThaiDon.DaThanhToan, "Đã đến")]
+[InlineData(TrangThaiDon.DaHuy, "Đã hủy")]
+public void DoiTrangThai_DonCoPhieu_CapNhatPhieuVaGiaiPhongBan(
+    string trangThaiDon, string trangThaiPhieu)
+  {
+    using var db = NewDb();
+    var svc = new OrderService(db);
+    const string maDatBan = "HV-123456";
+
+    var don = svc.TaoDon(
+        "An", "0901234567", 1, null,
+        new[] { new DongDat(1, 2) });
+
+    don.MaDatBan = maDatBan;
+    db.DatBans.Add(new DatBan
+    {
+        MaDatBan = maDatBan,
+        TenKhach = "An",
+        SoDienThoai = "0901234567",
+        BanId = 1,
+        TrangThai = "Đã xác nhận"
+    });
+    db.SaveChanges();
+
+    var donId = don.Id;
+    db.ChangeTracker.Clear();
+
+    svc.DoiTrangThai(donId, trangThaiDon);
+    db.ChangeTracker.Clear();
+
+    Assert.Equal(trangThaiDon, db.DonHangs.Find(donId)!.TrangThai);
+    Assert.Equal(trangThaiPhieu,
+        db.DatBans.Single(d => d.MaDatBan == maDatBan).TrangThai);
+    Assert.Equal("Trống", db.Bans.Find(1)!.TrangThai);
+  }
 }
 
 
