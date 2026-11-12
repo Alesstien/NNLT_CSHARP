@@ -8,7 +8,6 @@ public class AuthService
     private readonly AppDbContext _db;
     public AuthService(AppDbContext db) => _db = db;
 
-    /// <summary>Đăng nhập WinForms cho tài khoản Admin hoặc NhanVien đang hoạt động.</summary>
     public TaiKhoan? DangNhap(string tenDangNhap, string matKhau)
     {
         var tk = _db.TaiKhoans

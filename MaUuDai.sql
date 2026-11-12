@@ -15,7 +15,6 @@ BEGIN
 END;
 GO
 
--- Điền mã và tiền giảm đã chốt trên Web cho đơn cũ có liên kết.
 UPDATE o
 SET o.MaUuDai = w.MaUuDai,
     o.GiamGia = w.GiamGia
@@ -25,7 +24,6 @@ WHERE NULLIF(LTRIM(RTRIM(o.MaUuDai)), N'') IS NULL
   AND NULLIF(LTRIM(RTRIM(w.MaUuDai)), N'') IS NOT NULL;
 GO
 
--- Kiểm tra các đơn đã có voucher.
 SELECT Id, MaDatBan, MaUuDai, GiamGia, TongTien
 FROM dbo.DonHang
 WHERE MaUuDai IS NOT NULL

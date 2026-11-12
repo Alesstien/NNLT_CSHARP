@@ -12,14 +12,14 @@ public class KetQuaDatBan
 {
     public DatBan? DatBan { get; set; }
     public string? Loi { get; set; }
-    public string? MaLoi { get; set; }      // "HET_HAN" khi phiên giữ chỗ đã hết hạn
+    public string? MaLoi { get; set; }
     public bool EmailDaGui { get; set; }
 }
 
 public class DatBanService
 {
     public const int KhachToiDa = 20;
-    public const int ThoiGianGiuCho = 15;   // phút
+    public const int ThoiGianGiuCho = 15;
     public const decimal CocCoDinh = 500_000m;
     public const decimal TyLeCoc30 = 0.30m;
     public const decimal TyLeVat = 0.08m;
@@ -146,7 +146,6 @@ public class DatBanService
         }
     }
 
-    /// <summary>Hủy các lần giữ chỗ đã quá hạn mà chưa xác nhận cọc.</summary>
     public async Task DonDepGiuChoAsync()
     {
         var bayGio = DateTime.Now;

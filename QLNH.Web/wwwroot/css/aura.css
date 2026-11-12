@@ -3,15 +3,30 @@
 body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh}
 .aura a{color:inherit}
 .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.svg-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.text-left{text-align:left}
+.inline-form{margin:0;display:inline-flex}
 
-/* ---- top bar ---- */
 .aura-top{display:flex;align-items:center;gap:22px;padding:14px 28px;max-width:1180px;margin:0 auto;flex-wrap:wrap}
 .aura-logo{font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:22px;color:var(--gold2);text-decoration:none;letter-spacing:.08em}
 .aura-links{display:flex;gap:20px;flex:1;flex-wrap:wrap}
 .aura-links a{color:#b6c2dc;text-decoration:none;font-weight:500;font-size:14px}
 .aura-links a:hover{color:var(--gold2)}
 
-/* ---- hero ---- */
+.auth-box{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.auth-box form{margin:0;display:inline-flex}
+.auth-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 16px;border-radius:999px;font:600 13.5px/1 'Inter','Segoe UI',system-ui,sans-serif;text-decoration:none;border:1.5px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+.auth-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.auth-login{color:#fff3c4;border-color:rgba(248,220,124,.55);background:rgba(255,255,255,.10)}
+.auth-login:hover{background:rgba(248,220,124,.22);border-color:#f8dc7c;color:#fff;transform:translateY(-1px)}
+.auth-register{color:#1a1204;background:linear-gradient(135deg,#f59e0b,#f8dc7c);border-color:#f59e0b;font-weight:700}
+.auth-register:hover{transform:translateY(-1px);color:#1a1204;filter:brightness(1.06)}
+.auth-admin{color:#fff;background:rgba(124,58,237,.9);border-color:rgba(167,139,250,.5)}
+.auth-admin:hover{background:#6d28d9;color:#fff;transform:translateY(-1px)}
+.auth-badge{min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.auth-user-pill{display:inline-flex;align-items:center;gap:8px;height:38px;padding:4px 14px 4px 5px;border-radius:999px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.14);color:#fff;font:500 13.5px/1 'Inter','Segoe UI',sans-serif;white-space:nowrap}
+.auth-avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#f8dc7c);color:#1a1204;font-size:13px;font-weight:800;flex-shrink:0}
+
 .wrap{max-width:1060px;margin:0 auto;padding:10px 18px 60px}
 .hero{text-align:center;padding:16px 0 8px}
 .hero.small{padding:6px 0}
@@ -20,7 +35,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
   background:linear-gradient(90deg,#6b5a1e 0%,#d4af37 55%,#f59e0b 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{margin:0;color:#8da2d0;font-size:15px}
 
-/* ---- tabs ---- */
 .tabs{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:26px 0}
 .tab{width:210px;padding:14px 10px;border-radius:12px;border:1px solid var(--line);background:#0e1424;color:#9fb0cf;text-align:center;font:600 13px 'Inter',sans-serif;cursor:pointer}
 .tab small{display:block;font-weight:700;letter-spacing:.08em;margin-bottom:2px;color:#8aa0c8}
@@ -28,7 +42,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .tab.active small{color:var(--gold)}
 .tab:disabled{opacity:.45;cursor:default}
 
-/* ---- cards & fields ---- */
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 34px;margin-bottom:26px}
 .card h2{display:flex;align-items:center;gap:10px;margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid var(--line);font-family:'Playfair Display',Georgia,serif;font-size:22px;font-weight:700;color:var(--gold)}
 .card h2 .opt{font:500 13px 'Inter',sans-serif;color:var(--muted)}
@@ -46,7 +59,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .stepper button{background:none;border:0;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px}
 .stepper button:hover{color:var(--gold2);background:rgba(212,175,55,.12)}
 
-/* ---- area cards ---- */
 .area{display:block;text-align:left;width:100%;padding:18px 20px;border:1px solid var(--line);background:var(--input);border-radius:14px;color:var(--text);cursor:pointer;font-family:inherit}
 .area:hover{border-color:#4a5578}
 .area.sel{border-color:var(--gold);background:rgba(212,175,55,.12);box-shadow:0 8px 24px rgba(212,175,55,.08)}
@@ -57,7 +69,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .area-head .price.free{font-weight:800}
 .area p{margin:10px 0 0;font-size:13px;line-height:1.5;color:var(--muted)}
 
-/* ---- menu ---- */
 .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
 .chip{padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:var(--input);color:var(--text);font:600 13px 'Inter',sans-serif;cursor:pointer}
 .chip.on{background:var(--gold);border-color:var(--gold);color:#1a1204}
@@ -83,7 +94,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .cart-total{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:10px;font-weight:700}
 .cart-empty{color:var(--muted);font-size:13px;margin:0}
 
-/* ---- buttons ---- */
 .actions{display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
 .actions.right{justify-content:flex-end}.actions.between{justify-content:space-between}.actions.center{justify-content:center;margin-top:24px}
 .btn-main,.btn-ghost{display:inline-flex;align-items:center;gap:10px;padding:16px 28px;border-radius:12px;font:700 16px 'Inter',sans-serif;cursor:pointer;text-decoration:none;border:0}
@@ -95,7 +105,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .btn-ghost.sm{padding:9px 16px;font-size:13px}
 .btn-ghost.danger{color:#fca5a5;border-color:rgba(248,113,113,.4)}
 
-/* ---- step 2 ---- */
 .sum-row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;font-size:14px;border-bottom:1px solid rgba(38,46,69,.6)}
 .sum-row span:first-child{color:var(--muted)}
 .sum-row.total{border:0;font-size:18px;font-weight:800;color:var(--gold2);padding-top:14px}
@@ -105,7 +114,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .pay b{display:block;font-size:15px}.pay small{color:var(--muted)}
 .note{margin:16px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
 
-/* ---- ticket / status ---- */
 .ticket{max-width:720px;margin:0 auto;background:linear-gradient(160deg,#141b33,#0f1527);border:1.5px solid var(--gold);border-radius:22px;padding:26px 30px;box-shadow:0 20px 50px rgba(212,175,55,.12)}
 .ticket-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
 .ticket-body{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
@@ -134,7 +142,7 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
   .card{padding:22px 18px}
   .aura-top{padding:12px 14px}
 }
-/* ---- giỏ món & tab hoàn thành ---- */
+
 .card h2{flex-wrap:wrap}
 .h2-note{margin-left:auto;font:400 13px 'Inter',sans-serif;color:var(--muted)}
 .qstep{display:inline-flex;align-items:center;gap:14px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#0e1424;flex:none}
@@ -166,7 +174,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .kv td{padding:8px 0;border-bottom:1px solid rgba(38,46,69,.6)}.kv td:last-child{text-align:right;font-weight:600}
 .kv td:first-child{color:var(--muted)}
 
-/* ---- bước 2 ---- */
 .back-link{display:inline-flex;align-items:center;gap:8px;background:none;border:0;color:#8da2d0;font:500 14px 'Inter',sans-serif;cursor:pointer;padding:6px 4px;margin:0 0 14px}
 .back-link:hover{color:var(--gold2)}
 .promo{display:flex;gap:12px;margin-bottom:20px}
@@ -203,7 +210,6 @@ body.aura{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','S
 .qrbox img{display:block;max-width:100%}
 .amber{color:#fbbf24}
 
-/* ---- bước 3 ---- */
 .done{text-align:center}
 .done-ic{width:70px;height:70px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.4);color:#4ade80}
 .done-ic .ic{width:32px;height:32px}

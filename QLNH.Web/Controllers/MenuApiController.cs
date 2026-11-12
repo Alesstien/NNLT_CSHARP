@@ -4,7 +4,6 @@ using QLNH.Data;
 
 namespace QLNH.Web.Controllers;
 
-/// <summary>Web API: GET /api/mon-an, GET /api/mon-an/{id}, GET /api/danh-muc, GET /api/ban</summary>
 [ApiController]
 public class MenuApiController : ControllerBase
 {

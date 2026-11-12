@@ -14,7 +14,6 @@ public class DatBanApiController : ControllerBase
 
     public DatBanApiController(DatBanService svc, UserManager<AppUser> users) { _svc = svc; _users = users; }
 
-    // GET /api/dat-ban/kha-dung?ngay=2026-10-17&gio=19:00&khach=2
     [HttpGet("kha-dung")]
     public async Task<IActionResult> KhaDung([FromQuery] string ngay, [FromQuery] string gio, [FromQuery] int khach)
     {
@@ -23,7 +22,6 @@ public class DatBanApiController : ControllerBase
         return Ok(await _svc.KiemTraKhaDungAsync(dt, Math.Clamp(khach, 1, DatBanService.KhachToiDa)));
     }
 
-    // Bước 1 -> 2 (và khi áp mã ưu đãi): giữ chỗ 15 phút, trả về bảng chi phí do máy chủ tính
     [HttpPost("giu-cho"), ValidateAntiForgeryToken]
     public async Task<IActionResult> GiuCho([FromBody] DatBanRequest r)
     {
@@ -49,7 +47,6 @@ public class DatBanApiController : ControllerBase
         });
     }
 
-    // Bước 2 -> 3: khách xác nhận đã thanh toán cọc
     [HttpPost("{id:int}/thanh-toan"), ValidateAntiForgeryToken]
     public async Task<IActionResult> ThanhToan(int id, [FromBody] ThanhToanRequest r)
     {

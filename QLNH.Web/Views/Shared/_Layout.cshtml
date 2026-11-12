@@ -16,7 +16,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-brand sticky-top hv-navbar">
   <div class="container">
     <a class="navbar-brand hv-brand" asp-controller="Home" asp-action="Index">
-      <span class="hv-brand-icon">🍜</span>
       <span>Hương Việt</span>
     </a>
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
@@ -51,7 +50,6 @@
         </form>
 
         <a id="cart-btn" class="hv-cart-btn" asp-controller="Cart" asp-action="Index">
-          <span class="hv-cart-icon">🛒</span>
           <span>Giỏ hàng</span>
           @if (cartCount > 0)
           {
@@ -70,6 +68,7 @@
 </main>
 <footer class="text-center text-muted py-3 border-top">© 2026 Nhà hàng Hương Việt - Đồ án môn Ngôn ngữ lập trình C#</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/cart-fly.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>

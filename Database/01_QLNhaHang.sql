@@ -1,11 +1,3 @@
-﻿/* =============================================================
-   HỆ THỐNG QUẢN LÝ NHÀ HÀNG
-   Cơ sở dữ liệu: SQL Server (Transact-SQL)
-   File: 01_QLNhaHang.sql
-   Mô tả: Tạo cơ sở dữ liệu QLNhaHang, cấu trúc các bảng và dữ liệu mẫu khởi tạo.
-   ============================================================= */
-
--- 1. TẠO CƠ SỞ DỮ LIỆU
 IF DB_ID(N'QLNhaHang') IS NULL
 BEGIN
     CREATE DATABASE QLNhaHang;
@@ -15,9 +7,6 @@ GO
 USE QLNhaHang;
 GO
 
--- 2. TẠO BẢNG CƠ SỞ DỮ LIỆU (NẾU CHƯA TỒN TẠI)
-
--- 2.1 Bảng Vai trò người dùng (Admin, Nhân viên)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'VaiTro')
 BEGIN
     CREATE TABLE VaiTro (
@@ -27,7 +16,6 @@ BEGIN
 END
 GO
 
--- 2.2 Bảng Tài khoản người dùng
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'TaiKhoan')
 BEGIN
     CREATE TABLE TaiKhoan (
@@ -42,7 +30,6 @@ BEGIN
 END
 GO
 
--- 2.3 Bảng Danh mục món ăn
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DanhMuc')
 BEGIN
     CREATE TABLE DanhMuc (
@@ -53,7 +40,6 @@ BEGIN
 END
 GO
 
--- 2.4 Bảng Món ăn
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'MonAn')
 BEGIN
     CREATE TABLE MonAn (
@@ -69,7 +55,6 @@ BEGIN
 END
 GO
 
--- 2.5 Bảng Bàn ăn
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Ban')
 BEGIN
     CREATE TABLE Ban (
@@ -81,7 +66,6 @@ BEGIN
 END
 GO
 
--- 2.6 Bảng Đơn hàng (Hóa đơn)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DonHang')
 BEGIN
     CREATE TABLE DonHang (
@@ -98,7 +82,6 @@ BEGIN
 END
 GO
 
--- 2.7 Bảng Chi tiết đơn hàng
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ChiTietDonHang')
 BEGIN
     CREATE TABLE ChiTietDonHang (
@@ -113,7 +96,6 @@ BEGIN
 END
 GO
 
--- 2.8 Bảng Đặt bàn
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DatBan')
 BEGIN
     CREATE TABLE DatBan (
@@ -130,11 +112,9 @@ BEGIN
 END
 GO
 
--- 3. NẠP DỮ LIỆU MẪU KHỞI TẠO (SEED DATA)
 USE QLNhaHang;
 GO
 
--- Xóa dữ liệu cũ nếu muốn thiết lập lại từ đầu
 DELETE FROM ChiTietDonHang;
 DELETE FROM DonHang;
 DELETE FROM DatBan;
@@ -144,21 +124,18 @@ DELETE FROM Ban;
 DELETE FROM TaiKhoan;
 DELETE FROM VaiTro;
 
--- 3.1 Dữ liệu Vai trò
 SET IDENTITY_INSERT VaiTro ON;
-INSERT INTO VaiTro (Id, TenVaiTro) VALUES 
+INSERT INTO VaiTro (Id, TenVaiTro) VALUES
 (1, N'Admin'),
 (2, N'NhanVien');
 SET IDENTITY_INSERT VaiTro OFF;
 
--- 3.2 Dữ liệu Tài khoản (Mật khẩu băm PBKDF2: admin -> admin123, nhanvien -> nv123)
 SET IDENTITY_INSERT TaiKhoan ON;
 INSERT INTO TaiKhoan (Id, TenDangNhap, MatKhauHash, HoTen, VaiTroId, HoatDong) VALUES
 (1, N'admin', N'AQIDBAUGBwgJCgsMDQ4PEA==$RmblliwioiHcibr884EC00ulmd3CUmcUOwSaMg2nlDM=', N'Quản trị viên', 1, 1),
 (2, N'nhanvien', N'ERITFBUWFxgZGhscHR4fIA==$/GZLFOy39uWPOR5NqVPKmecLLkVqlRnfWT6R4MmUC5w=', N'Nhân viên phục vụ', 2, 1);
 SET IDENTITY_INSERT TaiKhoan OFF;
 
--- 3.3 Dữ liệu Danh mục món ăn
 SET IDENTITY_INSERT DanhMuc ON;
 INSERT INTO DanhMuc (Id, TenDanhMuc, MoTa) VALUES
 (1, N'Khai vị', N'Món nhẹ dùng trước bữa chính'),
@@ -168,7 +145,6 @@ INSERT INTO DanhMuc (Id, TenDanhMuc, MoTa) VALUES
 (5, N'Đồ uống', N'Nước giải khát');
 SET IDENTITY_INSERT DanhMuc OFF;
 
--- 3.4 Dữ liệu Món ăn
 SET IDENTITY_INSERT MonAn ON;
 INSERT INTO MonAn (Id, TenMon, MoTa, Gia, HinhAnh, DanhMucId, ConPhucVu) VALUES
 (1, N'Gỏi cuốn tôm thịt', N'Cuốn tươi với tôm, thịt, bún, rau thơm', 45000, N'/images/goi-cuon.jpg', 1, 1),
@@ -183,9 +159,8 @@ INSERT INTO MonAn (Id, TenMon, MoTa, Gia, HinhAnh, DanhMucId, ConPhucVu) VALUES
 (10, N'Nước ép cam', N'Cam vắt nguyên chất', 42000, N'/images/nuoc-cam.jpg', 5, 1);
 SET IDENTITY_INSERT MonAn OFF;
 
--- 3.5 Dữ liệu Bàn ăn
 SET IDENTITY_INSERT Ban ON;
-INSERT INTO Ban (Id, TenBan, SoGhe, TrangThai) VALUES 
+INSERT INTO Ban (Id, TenBan, SoGhe, TrangThai) VALUES
 (1, N'Bàn 01', 2, N'Trống'),
 (2, N'Bàn 02', 4, N'Trống'),
 (3, N'Bàn 03', 4, N'Trống'),
@@ -194,7 +169,6 @@ INSERT INTO Ban (Id, TenBan, SoGhe, TrangThai) VALUES
 (6, N'VIP 01', 10, N'Trống');
 SET IDENTITY_INSERT Ban OFF;
 
--- 3.6 Dữ liệu Đơn hàng mẫu (đã thanh toán trong 7 ngày gần nhất để phục vụ thống kê doanh thu)
 SET IDENTITY_INSERT DonHang ON;
 INSERT INTO DonHang (Id, NgayTao, TenKhach, SoDienThoai, BanId, TrangThai, TongTien, GhiChu) VALUES
 (1, DATEADD(DAY, -5, SYSDATETIME()), N'Nguyễn Văn An', N'0901234567', 1, N'Đã thanh toán', 249000, N'Khách ăn trưa tại bàn'),
@@ -205,7 +179,6 @@ INSERT INTO DonHang (Id, NgayTao, TenKhach, SoDienThoai, BanId, TrangThai, TongT
 (6, SYSDATETIME(), N'Đặng Quốc Khánh', N'0966554433', 2, N'Đã thanh toán', 383000, N'Khách ăn tại quán');
 SET IDENTITY_INSERT DonHang OFF;
 
--- 3.7 Dữ liệu Chi tiết đơn hàng mẫu
 SET IDENTITY_INSERT ChiTietDonHang ON;
 INSERT INTO ChiTietDonHang (Id, DonHangId, MonAnId, SoLuong, DonGia) VALUES
 (1, 1, 1, 2, 45000),
@@ -230,7 +203,6 @@ INSERT INTO ChiTietDonHang (Id, DonHangId, MonAnId, SoLuong, DonGia) VALUES
 (20, 6, 9, 1, 39000);
 SET IDENTITY_INSERT ChiTietDonHang OFF;
 
--- 3.8 Cập nhật giá trị IDENTITY tiếp theo cho các bảng
 DBCC CHECKIDENT ('VaiTro', RESEED, 2);
 DBCC CHECKIDENT ('TaiKhoan', RESEED, 2);
 DBCC CHECKIDENT ('DanhMuc', RESEED, 5);

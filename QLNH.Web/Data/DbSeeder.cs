@@ -30,16 +30,15 @@ public static class DbSeeder
         {
             const string kv = "Khai vị", mc = "Món chính", rv = "Rượu vang & đồ uống", tm = "Tráng miệng";
             db.MucThucDons.AddRange(
-                new MucThucDon { ThuTu = 1, DanhMuc = kv, Emoji = "🍲", Ten = "Súp Nấm Truffle Dát Vàng 24K", Gia = 490_000, MoTa = "Súp kem nấm Ý cao cấp kết hợp lá vàng 24K và tinh dầu truffle đen." },
-                new MucThucDon { ThuTu = 2, DanhMuc = kv, Emoji = "🦞", Ten = "Gỏi Tôm Hùm Sốt Nấm Truffle", Gia = 950_000, MoTa = "Tôm hùm Nha Trang tươi sống, sốt nấm truffle thơm béo." },
-                new MucThucDon { ThuTu = 3, DanhMuc = mc, Emoji = "🥩", Ten = "Thịt Bò Wagyu A5 Nướng Đá Núi Lửa", Gia = 1_850_000, MoTa = "Bò Wagyu Kagoshima Nhật Bản, nướng trên đá núi lửa nóng, dùng kèm rau củ áp chảo." },
-                new MucThucDon { ThuTu = 4, DanhMuc = mc, Emoji = "🍖", Ten = "Sườn Cừu Úc Đút Lò Thảo Mộc", Gia = 1_250_000, MoTa = "Sườn cừu Úc ướp hương thảo & tỏi, đút lò chậm, sốt vang đỏ." },
-                new MucThucDon { ThuTu = 5, DanhMuc = mc, Emoji = "🐟", Ten = "Cá Hồi Na-uy Áp Chảo Sốt Bơ Chanh", Gia = 780_000, MoTa = "Cá hồi Na-uy da giòn, sò điệp áp chảo, sốt bơ chanh." },
-                new MucThucDon { ThuTu = 6, DanhMuc = rv, Emoji = "🍷", Ten = "Rượu Vang Đỏ Château Margaux", Gia = 6_800_000, MoTa = "Dòng vang Bordeaux thượng hạng, hương trái cây đen và gỗ sồi tinh tế." },
-                new MucThucDon { ThuTu = 7, DanhMuc = rv, Emoji = "🍾", Ten = "Champagne Dom Pérignon Vintage", Gia = 7_900_000, MoTa = "Champagne Pháp hảo hạng, bọt mịn lâu tan, hương bánh brioche." },
-                new MucThucDon { ThuTu = 8, DanhMuc = tm, Emoji = "🍰", Ten = "Bánh Soufflé Sô-cô-la Bỉ & Gelato", Gia = 280_000, MoTa = "Soufflé Valrhona 70% cacao nướng nóng, ăn kèm gelato vani." });
+                new MucThucDon { ThuTu = 1, DanhMuc = kv, Emoji = "", Ten = "Súp Nấm Truffle Dát Vàng 24K", Gia = 490_000, MoTa = "Súp kem nấm Ý cao cấp kết hợp lá vàng 24K và tinh dầu truffle đen." },
+                new MucThucDon { ThuTu = 2, DanhMuc = kv, Emoji = "", Ten = "Gỏi Tôm Hùm Sốt Nấm Truffle", Gia = 950_000, MoTa = "Tôm hùm Nha Trang tươi sống, sốt nấm truffle thơm béo." },
+                new MucThucDon { ThuTu = 3, DanhMuc = mc, Emoji = "", Ten = "Thịt Bò Wagyu A5 Nướng Đá Núi Lửa", Gia = 1_850_000, MoTa = "Bò Wagyu Kagoshima Nhật Bản, nướng trên đá núi lửa nóng, dùng kèm rau củ áp chảo." },
+                new MucThucDon { ThuTu = 4, DanhMuc = mc, Emoji = "", Ten = "Sườn Cừu Úc Đút Lò Thảo Mộc", Gia = 1_250_000, MoTa = "Sườn cừu Úc ướp hương thảo & tỏi, đút lò chậm, sốt vang đỏ." },
+                new MucThucDon { ThuTu = 5, DanhMuc = mc, Emoji = "", Ten = "Cá Hồi Na-uy Áp Chảo Sốt Bơ Chanh", Gia = 780_000, MoTa = "Cá hồi Na-uy da giòn, sò điệp áp chảo, sốt bơ chanh." },
+                new MucThucDon { ThuTu = 6, DanhMuc = rv, Emoji = "", Ten = "Rượu Vang Đỏ Château Margaux", Gia = 6_800_000, MoTa = "Dòng vang Bordeaux thượng hạng, hương trái cây đen và gỗ sồi tinh tế." },
+                new MucThucDon { ThuTu = 7, DanhMuc = rv, Emoji = "", Ten = "Champagne Dom Pérignon Vintage", Gia = 7_900_000, MoTa = "Champagne Pháp hảo hạng, bọt mịn lâu tan, hương bánh brioche." },
+                new MucThucDon { ThuTu = 8, DanhMuc = tm, Emoji = "", Ten = "Bánh Soufflé Sô-cô-la Bỉ & Gelato", Gia = 280_000, MoTa = "Soufflé Valrhona 70% cacao nướng nóng, ăn kèm gelato vani." });
         }
-        // Sửa tên món theo thực đơn mẫu (dữ liệu tạo từ bản trước đặt tên khác)
         var wagyu = await db.MucThucDons.FirstOrDefaultAsync(m => m.Ten == "Thịt Bò Wagyu A5 Nướng Đá Muối");
         if (wagyu != null)
         {
@@ -55,7 +54,6 @@ public static class DbSeeder
         }
         await db.SaveChangesAsync();
 
-        // Tài khoản quản trị mặc định (đổi mật khẩu sau khi chạy lần đầu, hoặc đặt AdminSeed:Email / AdminSeed:Password trong appsettings.json)
         var email = cfg["AdminSeed:Email"] ?? "admin@aura.vn";
         if (await users.FindByEmailAsync(email) == null)
         {
@@ -64,7 +62,6 @@ public static class DbSeeder
             if (r.Succeeded) await users.AddToRoleAsync(admin, AccountController.RoleAdmin);
         }
 
-        // Đồng bộ các đơn đặt bàn, bàn ăn và tài khoản khách trên Web với bảng WinForms (QLNH.Admin)
         if (svc != null)
         {
             await svc.DongBoBanTuAdminAsync();

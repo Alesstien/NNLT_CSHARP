@@ -43,7 +43,7 @@
                     }
                     else
                     {
-                        <form asp-action="Khoa" asp-route-id="@a.Id" method="post" class="d-inline" onsubmit="return confirm('Khóa tài khoản này?');"><button class="btn btn-sm btn-outline-danger">Khóa</button></form>
+                        <form asp-action="Khoa" asp-route-id="@a.Id" method="post" class="d-inline" data-confirm="Khóa tài khoản này?"><button class="btn btn-sm btn-outline-danger">Khóa</button></form>
                     }
                 }
             </td>

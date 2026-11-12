@@ -9,7 +9,6 @@ public class MenuController : Controller
     private readonly AppDbContext _db;
     public MenuController(AppDbContext db) => _db = db;
 
-    // Danh mục + tìm kiếm + lọc theo giá
     public IActionResult Index(string? q, int? danhMucId, decimal? giaTu, decimal? giaDen)
     {
         var query = _db.MonAns.Include(m => m.DanhMuc).Where(m => m.ConPhucVu);

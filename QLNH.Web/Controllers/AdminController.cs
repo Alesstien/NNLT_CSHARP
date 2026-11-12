@@ -19,7 +19,6 @@ public class AdminController : Controller
     public AdminController(AuthDbContext db, UserManager<AppUser> users, DatBanService svc)
     { _db = db; _users = users; _svc = svc; }
 
-    // ---------- Tài khoản khách: xem trạng thái, khóa / mở khóa ----------
     [HttpGet]
     public async Task<IActionResult> Accounts(string? q)
     {
@@ -65,7 +64,7 @@ public class AdminController : Controller
 
         await _users.SetLockoutEnabledAsync(u, true);
         await _users.SetLockoutEndDateAsync(u, DateTimeOffset.MaxValue);
-        await _users.UpdateSecurityStampAsync(u);   // buộc phiên đăng nhập hiện tại hết hiệu lực
+        await _users.UpdateSecurityStampAsync(u);
         await _svc.DongBoTaiKhoanSangWinFormsAsync(u, null, false);
         TempData["Msg"] = $"Đã khóa tài khoản {u.Email}.";
         return RedirectToAction(nameof(Accounts));
@@ -83,7 +82,6 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Accounts));
     }
 
-    // ---------- Đơn đặt bàn ----------
     [HttpGet]
     public async Task<IActionResult> Reservations(string? trangThai)
     {
@@ -96,12 +94,10 @@ public class AdminController : Controller
         return View(await q.OrderByDescending(d => d.NgayThanhToan ?? d.NgayTao).ToListAsync());
     }
 
-    // Trang admin gọi định kỳ để biết có đơn mới cần duyệt hay không
     [HttpGet]
     public async Task<IActionResult> DemChoDuyet()
         => Ok(new { n = await _db.DatBans.CountAsync(d => d.TrangThai == TrangThaiDatBan.ChoDuyet) });
 
-    // Phiếu đặt chỗ đầy đủ của một đơn (giống phiếu khách nhận được, kèm chi tiết hóa đơn và thao tác duyệt/hủy)
     [HttpGet]
     public async Task<IActionResult> Phieu(int id)
     {

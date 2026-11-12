@@ -4,9 +4,6 @@ using QLNH_Web.Models;
 
 namespace QLNH_Web.Data;
 
-// Context riêng của Web (tài khoản khách + đặt bàn), cùng database QLNhaHang
-// nhưng KHÔNG đụng tới AppDbContext của QLNH.Data / WinForms.
-// Bảng Identity dùng tên mặc định (AspNet*), bảng nghiệp vụ có tiền tố Web_ để không trùng bảng sẵn có.
 public class AuthDbContext : IdentityDbContext<AppUser>
 {
     public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }

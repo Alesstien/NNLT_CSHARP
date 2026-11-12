@@ -3,7 +3,6 @@ using System.Text.Json;
 
 namespace QLNH_Web.Models;
 
-/// <summary>Giỏ hàng lưu trong Session: MonAnId -> số lượng.</summary>
 public static class CartHelper
 {
     private const string Key = "cart";
@@ -27,7 +26,6 @@ public class CartLine
     public decimal ThanhTien => DonGia * SoLuong;
 }
 
-/// <summary>Thông tin đặt bàn khách đang nhập ở trang giỏ hàng (lưu tạm trong Session).</summary>
 public class BookingDraft
 {
     private const string Key = "booking";
@@ -67,7 +65,6 @@ public class BookingDraft
     public string? GhiChu { get; set; }
 
     public bool LaTiec => LoaiLe != CacLoaiLe[0];
-    /// <summary>Tiệc: 10 khách / bàn (mâm), làm tròn lên. Ăn thường: 1.</summary>
     public int SoBan => LaTiec ? (int)Math.Ceiling(SoNguoi / 10.0) : 1;
 
     public static BookingDraft Get(ISession s)
@@ -80,7 +77,6 @@ public class BookingDraft
     public static void Clear(ISession s) => s.Remove(Key);
 }
 
-/// <summary>Kết quả tính tiền. Luôn tính ở server, không tin số tiền từ trình duyệt.</summary>
 public class Bill
 {
     public int SoBan { get; set; }

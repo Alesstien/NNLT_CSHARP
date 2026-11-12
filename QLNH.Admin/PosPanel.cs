@@ -24,7 +24,6 @@ public partial class PosPanel : UserControl
     private Button btnRemoveItem = null!;
     private Button btnPay = null!;
 
-    // Biến lưu vết bàn và đơn hàng đang mở của bàn đang được chọn
     private Button? currentSelectedTable = null;
     private int? _selectedBanId = null;
     private int? _currentOpenOrderId = null;
@@ -59,7 +58,7 @@ public partial class PosPanel : UserControl
 
         lblTableStatus = new Label
         {
-            Text = "📋 Chưa chọn bàn",
+            Text = "Chưa chọn bàn",
             Font = new Font("Segoe UI", 11F, FontStyle.Bold),
             ForeColor = Color.DarkSlateGray,
             Dock = DockStyle.Top,
@@ -95,7 +94,7 @@ public partial class PosPanel : UserControl
 
         btnSaveOrder = new Button
         {
-            Text = "💾 LƯU TẠM",
+            Text = "Lưu tạm",
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             BackColor = Color.SteelBlue,
             ForeColor = Color.White,
@@ -109,7 +108,7 @@ public partial class PosPanel : UserControl
 
         btnChangeTable = new Button
         {
-            Text = "🔄 ĐỔI BÀN",
+            Text = "Đổi bàn",
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             BackColor = Color.DarkOrange,
             ForeColor = Color.White,
@@ -123,7 +122,7 @@ public partial class PosPanel : UserControl
 
         btnRemoveItem = new Button
         {
-            Text = "➖ XÓA MÓN",
+            Text = "Xóa món",
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             BackColor = Color.IndianRed,
             ForeColor = Color.White,
@@ -141,7 +140,7 @@ public partial class PosPanel : UserControl
 
         btnPay = new Button
         {
-            Text = "💳 THANH TOÁN & IN HÓA ĐƠN",
+            Text = "Thanh toán & In hóa đơn",
             Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
             BackColor = Color.MediumSeaGreen,
             ForeColor = Color.White,
@@ -268,10 +267,8 @@ public partial class PosPanel : UserControl
             && o.TrangThai != "Đã huỷ"
             && db.Bans.Any(b => b.Id == banId && b.TrangThai == "Đang dùng")
             && (
-                // Đơn đặt trước của đúng phiếu đang phục vụ.
                 (o.MaDatBan != null && o.MaDatBan != ""
                     && phieuDangPhucVu.Any(d => d.MaDatBan == o.MaDatBan))
-                // Đơn khách vãng lai đang sử dụng bàn.
                 || ((o.MaDatBan == null || o.MaDatBan == "")
                     && !phieuDangPhucVu.Any())
             ));
@@ -475,7 +472,7 @@ public partial class PosPanel : UserControl
             {
                 _currentOpenOrderId = openOrder.Id;
                 _currentDeposit = OrdersPanel.TachTienCoc(openOrder.GhiChu);
-                lblTableStatus.Text = $"📋 {ban.TenBan} — Đơn #{openOrder.Id} ({openOrder.TrangThai})";
+                lblTableStatus.Text = $"{ban.TenBan} - Đơn #{openOrder.Id} ({openOrder.TrangThai})";
                 decimal sumMon = 0;
                 foreach (var ct in openOrder.ChiTiets)
                 {
@@ -484,7 +481,6 @@ public partial class PosPanel : UserControl
                     sumMon += tt;
                     dgvOrderDetails.Rows.Add(tenMon, ct.SoLuong, ct.DonGia.ToString("N0"), tt.ToString("N0"));
                 }
-                // Giữ lại phần phụ thu khu vực / VAT / giảm giá từ đơn đặt bàn Web (nếu có)
                 if (openOrder.TongTien > 0 && sumMon > 0)
                 {
                     _currentExtraFee = openOrder.TongTien - sumMon;
@@ -492,7 +488,7 @@ public partial class PosPanel : UserControl
             }
             else
             {
-                lblTableStatus.Text = $"📋 {ban.TenBan} — Bàn mới (chưa gọi món)";
+                lblTableStatus.Text = $"{ban.TenBan} - Bàn mới (chưa gọi món)";
             }
         }
         catch { }
@@ -823,7 +819,7 @@ public partial class PosPanel : UserControl
             using var db = Program.NewDb();
             var don = LuuDonHangCuaBan(db, ban, TrangThaiDon.DaXacNhan, "Đang dùng");
             LoadDataFromDb();
-            lblTableStatus.Text = $"📋 {ban.TenBan} — Đơn #{don.Id} (Đã xác nhận)";
+            lblTableStatus.Text = $"{ban.TenBan} - Đơn #{don.Id} (Đã xác nhận)";
             MessageBox.Show("Đã lưu món. Bạn có thể mở lại bàn để thêm món hoặc thanh toán.");
         }
         catch (Exception ex)
@@ -983,7 +979,7 @@ public partial class PosPanel : UserControl
             _currentOpenOrderId = null;
             _currentDeposit = 0;
             _currentExtraFee = 0;
-            lblTableStatus.Text = "📋 Chưa chọn bàn";
+            lblTableStatus.Text = "Chưa chọn bàn";
             dgvOrderDetails.Rows.Clear();
             UpdateTotal();
             LoadDataFromDb();

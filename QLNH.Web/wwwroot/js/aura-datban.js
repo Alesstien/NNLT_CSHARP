@@ -51,8 +51,6 @@
   }
   function conLaiOf(mode) { return Math.max(0, (S.hold ? S.hold.tongHoaDon : 0) - modeAmount(mode)); }
   function methodCode() { return S.method === 'WALLET' ? S.wallet : S.method === 'CARD' ? 'THE' : 'VIETQR'; }
-
-  /* ---------- Gọi API ---------- */
   function postJson(url, body) {
     return fetch(url, {
       method: 'POST',
@@ -73,8 +71,6 @@
     toast('Vui lòng đăng nhập để tiếp tục đặt cọc…', true);
     setTimeout(function () { location.href = '/Account/Login?returnUrl=' + encodeURIComponent('/DatBan'); }, 900);
   }
-
-  /* ---------- Bước 1: ngày giờ ---------- */
   function buildSlots() {
     var sel = $('#f-gio'), prev = sel.value, ngay = $('#f-ngay').value;
     var limit = new Date(Date.now() + 3600 * 1000);
@@ -88,8 +84,6 @@
     sel.value = (keep || ok[0]).value;
     return true;
   }
-
-  /* ---------- Bước 1: khu vực ---------- */
   function renderAreas() {
     $('#areas').innerHTML = D.areas.map(function (a) {
       var av = S.avail[a.id], off = av && !av.duCho;
@@ -118,8 +112,6 @@
         renderAreas();
       }).catch(function () { renderAreas(); });
   }
-
-  /* ---------- Bước 1: thực đơn ---------- */
   function renderCats() {
     $('#cats').innerHTML = CATS.map(function (c) {
       return '<button type="button" class="chip' + (S.cat === c[0] ? ' on' : '') + '" data-cat="' + esc(c[0]) + '">' + esc(c[1]) + '</button>';
@@ -171,8 +163,6 @@
     if (q <= 0) delete S.cart[id]; else S.cart[id] = Math.min(q, 50);
     saveCart(); renderMenu(); renderCart();
   }
-
-  /* ---------- Điều hướng bước ---------- */
   function go(n) {
     S.step = n;
     [1, 2, 3].forEach(function (i) { $('#p' + i).hidden = i !== n; });
@@ -188,8 +178,6 @@
     return { hoTen: $('#f-ten').value.trim(), soDienThoai: $('#f-sdt').value.trim(), email: $('#f-email').value.trim(),
              ngay: $('#f-ngay').value, gio: $('#f-gio').value, dip: $('#f-dip').value, ghiChu: $('#f-note').value.trim() };
   }
-
-  /* ---------- Giữ chỗ (bước 1 -> 2) ---------- */
   function holdBody(extra) {
     var f = dataForm();
     var b = { id: S.hold ? S.hold.id : null, hoTen: f.hoTen, soDienThoai: f.soDienThoai, email: f.email, ngay: f.ngay, gio: f.gio,
@@ -198,7 +186,6 @@
     if (extra) Object.keys(extra).forEach(function (k) { b[k] = extra[k]; });
     return b;
   }
-  // Trả về Promise<đối tượng giữ chỗ | null>
   function hold(extra) {
     return postJson('/api/dat-ban/giu-cho', holdBody(extra)).then(function (res) {
       if (res.status === 401) { toLogin(); return null; }
@@ -230,8 +217,6 @@
       renderStep2(); go(2);
     });
   }
-
-  /* ---------- Bước 2 ---------- */
   function renderStep2() {
     renderBill(); renderModes(); renderMethods(); renderPayPanel();
   }
@@ -299,7 +284,7 @@
         new QRCode(box, { text: ['NH:' + bank.code, 'STK:' + bank.soTaiKhoan, 'CTK:' + bank.chuTaiKhoan, 'SOTIEN:' + amt, 'ND:' + code].join('\n'), width: 190, height: 190, colorDark: '#0a0d14', colorLight: '#ffffff' });
       } catch (e) { box.textContent = code; }
     }
-    if (/^\d{6,19}$/.test(acc)) {   // tài khoản thật -> QR VietQR quét được bằng app ngân hàng
+    if (/^\d{6,19}$/.test(acc)) {
       var img = new Image(); img.alt = 'VietQR'; img.width = 210; img.onerror = local;
       img.src = 'https://img.vietqr.io/image/' + encodeURIComponent(bank.code) + '-' + acc + '-compact2.png?amount=' + amt +
                 '&addInfo=' + encodeURIComponent(code) + '&accountName=' + encodeURIComponent(bank.chuTaiKhoan);
@@ -334,8 +319,6 @@
         S.booking = res.j; S.cart = {}; saveCart(); renderDone(); go(3);
       }).catch(function () { toast('Lỗi kết nối, vui lòng thử lại.'); reset(); });
   }
-
-  /* ---------- Bước 3: phiếu hoàn tất ---------- */
   function renderDone() {
     var b = S.booking;
     var mail = b.emailDaGui ? 'Thông tin chi tiết đã gửi tới Email: ' + esc(b.email)
@@ -361,8 +344,6 @@
     $('#btnPrint').onclick = function () { window.print(); };
     $('#btnNew').onclick = function () { location.href = '/DatBan'; };
   }
-
-  /* ---------- Lưu nháp khi phải đăng nhập ---------- */
   function saveDraft() {
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ f: dataForm(), guests: S.guests, areaId: S.areaId, cart: S.cart, promo: S.promo, mode: S.mode })); } catch (e) { }
   }
@@ -377,8 +358,6 @@
       return true;
     } catch (e) { return false; }
   }
-
-  /* ---------- Khởi tạo ---------- */
   function init() {
     var today = new Date(), ngay = $('#f-ngay');
     ngay.min = ymd(today); ngay.value = ymd(today);

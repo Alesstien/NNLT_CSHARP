@@ -4,8 +4,7 @@ using QLNH.Data.Entities;
 using QLNH.Data.Services;
 
 namespace QLNH.Admin;
-// AccountPanel.cs: Giao diện phụ trách quản lý tài khoản người dùng (xem, thêm, sửa, phân quyền nhân viên).
-/// <summary>Quản lý tài khoản & phân quyền (chỉ Admin).</summary>
+
 public class AccountPanel : UserControl
 {
     private readonly DataGridView grid = new() { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect, BackgroundColor = Color.White, MultiSelect = false };
@@ -15,10 +14,10 @@ public class AccountPanel : UserControl
     {
         _currentUserId = currentUserId; Dock = DockStyle.Fill;
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
-        var btnAdd = new Button { Text = "＋ Thêm tài khoản", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+        var btnAdd = new Button { Text = "Thêm tài khoản", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         var btnReset = new Button { Text = "Đặt lại mật khẩu", AutoSize = true };
         var btnLock = new Button { Text = "Khoá / Mở khoá", AutoSize = true };
-        var btnReload = new Button { Text = "⟳ Tải lại", AutoSize = true };
+        var btnReload = new Button { Text = "Tải lại", AutoSize = true };
         btnAdd.Click += (_, _) => Them();
         btnReset.Click += (_, _) => DatLaiMatKhau();
         btnLock.Click += (_, _) => Khoa();
@@ -108,7 +107,6 @@ public class AccountPanel : UserControl
         tk.HoatDong = !tk.HoatDong;
         db.SaveChanges();
 
-        // Đồng bộ trạng thái khóa / mở khóa sang bảng AspNetUsers của Web
         try
         {
             if (tk.HoatDong)

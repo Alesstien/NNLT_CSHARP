@@ -7,10 +7,9 @@
   <div class="row g-4 align-items-center">
     <div class="col-md-5">
       <img src="@(string.IsNullOrEmpty(Model.HinhAnh) ? "/images/com-tam.jpg" : Model.HinhAnh)"
-           onerror="this.onerror=null;this.src='/images/com-tam.jpg';"
-           class="img-fluid rounded cart-item-img w-100"
-           alt="@Model.TenMon"
-           style="max-height: 300px; object-fit: cover;" />
+           data-fallback-src="/images/com-tam.jpg"
+           class="img-fluid rounded cart-item-img w-100 mon-detail-img"
+           alt="@Model.TenMon" />
     </div>
     <div class="col-md-7">
       <h2>@Model.TenMon</h2>

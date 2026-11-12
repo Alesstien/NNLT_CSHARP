@@ -25,7 +25,6 @@ public class AppDbContext : DbContext
         return new AppDbContext(opt);
     }
 
-    /// <summary>Đảm bảo các cột mở rộng (MaDatBan, MaUuDai, GiamGia, BatDauPhucVuLuc) tồn tại trong SQL Server.</summary>
     public void EnsureSchemaColumns()
     {
         if (!Database.IsSqlServer()) return;

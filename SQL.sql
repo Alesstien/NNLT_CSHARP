@@ -1,7 +1,6 @@
 USE [QLNhaHang];
 GO
 
--- Bổ sung thêm cột phục vụ đồng bộ đặt bàn và ưu đãi
 IF COL_LENGTH(N'dbo.DatBan', N'BatDauPhucVuLuc') IS NULL
 BEGIN
     ALTER TABLE dbo.DatBan

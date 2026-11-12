@@ -11,7 +11,7 @@
         _ => "bg-warning text-dark"
     };
 }
-<div id="newBanner" class="alert alert-warning py-2" hidden>Có đơn đặt bàn mới hoặc vừa thay đổi. <a href="">Tải lại danh sách</a></div>
+<div id="newBanner" class="alert alert-warning py-2" data-initial-pending="@(ViewBag.ChoDuyet ?? 0)" hidden>Có đơn đặt bàn mới hoặc vừa thay đổi. <a href="">Tải lại danh sách</a></div>
 <div class="alert alert-info py-2 small">Đối chiếu giao dịch ngân hàng / ví (mã giao dịch &amp; nội dung chuyển khoản = mã đặt bàn) trước khi bấm Xác nhận.</div>
 <ul class="nav nav-pills mb-3">
     <li class="nav-item"><a class="nav-link" asp-action="Accounts">Tài khoản</a></li>
@@ -66,7 +66,7 @@
                 }
                 @if (d.TrangThai == TrangThaiDatBan.ChoDuyet || d.TrangThai == TrangThaiDatBan.DaXacNhan)
                 {
-                    <form asp-action="Huy" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="this.lyDo.value = prompt('Lý do hủy (có thể bỏ trống):') ?? ''; return true;">
+                    <form asp-action="Huy" asp-route-id="@d.Id" method="post" class="d-inline" data-prompt-field="lyDo" data-prompt-message="Lý do hủy (có thể bỏ trống):">
                         <input type="hidden" name="lyDo" /><button class="btn btn-sm btn-outline-danger">Hủy</button>
                     </form>
                 }
@@ -78,13 +78,6 @@
 </table>
 </div>
 
-<script>
-    (function () {
-        var n0 = @(ViewBag.ChoDuyet ?? 0);
-        setInterval(function () {
-            fetch('/Admin/DemChoDuyet', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-                if (j && j.n !== n0) { document.getElementById('newBanner').hidden = false; document.title = '(' + j.n + ') Đơn chờ duyệt'; }
-            }).catch(function () { });
-        }, 20000);
-    })();
-</script>
+@section Scripts {
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+}

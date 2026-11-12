@@ -12,7 +12,6 @@ public class OrderService
     private readonly AppDbContext _db;
     public OrderService(AppDbContext db) => _db = db;
 
-    /// <summary>Tạo đơn hàng; đơn giá lấy từ CSDL (không tin dữ liệu từ client).</summary>
     public DonHang TaoDon(string tenKhach, string? sdt, int? banId, string? ghiChu, IEnumerable<DongDat> dong)
     {
         if (string.IsNullOrWhiteSpace(tenKhach))

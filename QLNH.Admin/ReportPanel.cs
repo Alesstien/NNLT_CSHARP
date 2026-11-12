@@ -60,11 +60,11 @@ public partial class ReportPanel : UserControl
         this.BackColor = Color.WhiteSmoke;
 
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 44, Padding = new Padding(6), BackColor = Color.White };
-        var btnXem = new Button { Text = "🔍 Xem thống kê", AutoSize = true, BackColor = Color.SteelBlue, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
+        var btnXem = new Button { Text = "Xem thống kê", AutoSize = true, BackColor = Color.SteelBlue, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
         var btn7Ngay = new Button { Text = "7 ngày", AutoSize = true, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
         var btn30Ngay = new Button { Text = "30 ngày", AutoSize = true, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
         var btnTatCa = new Button { Text = "Tất cả", AutoSize = true, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-        var btnCsv = new Button { Text = "📥 Xuất CSV", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
+        var btnCsv = new Button { Text = "Xuất CSV", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
 
         dtTu.ValueChanged += (_, _) => { if (!_updatingDates) Xem(); };
         dtDen.ValueChanged += (_, _) => { if (!_updatingDates) Xem(); };
@@ -114,12 +114,12 @@ public partial class ReportPanel : UserControl
         pnlGrids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
 
         var panelGridNgay = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8, 4, 4, 8) };
-        var lblGridNgay = new Label { Text = "📅 Chi tiết doanh thu theo ngày", Dock = DockStyle.Top, Height = 26, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.DarkSlateGray };
+        var lblGridNgay = new Label { Text = "Chi tiết doanh thu theo ngày", Dock = DockStyle.Top, Height = 26, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.DarkSlateGray };
         panelGridNgay.Controls.Add(gridNgay);
         panelGridNgay.Controls.Add(lblGridNgay);
 
         var panelGridMon = new Panel { Dock = DockStyle.Fill, Padding = new Padding(4, 4, 8, 8) };
-        var lblGridMon = new Label { Text = "🏆 Xếp hạng món ăn bán chạy", Dock = DockStyle.Top, Height = 26, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.DarkSlateGray };
+        var lblGridMon = new Label { Text = "Xếp hạng món ăn bán chạy", Dock = DockStyle.Top, Height = 26, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.DarkSlateGray };
         panelGridMon.Controls.Add(gridMon);
         panelGridMon.Controls.Add(lblGridMon);
 

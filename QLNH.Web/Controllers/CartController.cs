@@ -24,7 +24,6 @@ public class CartController : Controller
         _svc = svc;
     }
 
-    // Thêm món ăn vào giỏ hàng
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(int id, int soLuong = 1)
@@ -72,7 +71,6 @@ public class CartController : Controller
         return RedirectToAction("Index", "Menu");
     }
 
-    // ---------- Hàm dùng chung ----------
     private async Task<List<CartLine>> LoadLines()
     {
         var cart = CartHelper.Get(HttpContext.Session);
@@ -88,7 +86,6 @@ public class CartController : Controller
         }).ToList();
     }
 
-    /// <summary>Chọn bàn / khu vực từ danh sách bàn của Admin.</summary>
     private static KhuVuc? ChonKhuVuc(BookingDraft b, List<KhuVuc> kvs)
     {
         var kv = kvs.FirstOrDefault(k => k.Id == b.KhuVucId)
@@ -98,7 +95,6 @@ public class CartController : Controller
         return kv;
     }
 
-    // ---------- Bước 1: giỏ hàng + đặt bàn ----------
     public async Task<IActionResult> Index()
     {
         await _svc.DongBoBanTuAdminAsync();
@@ -119,7 +115,6 @@ public class CartController : Controller
         return View(vm);
     }
 
-    /// <summary>Mọi nút trong form giỏ hàng (+, −, xóa, đổi loại lễ, tiếp tục) đều gửi vào đây.</summary>
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Apply(BookingDraft booking, string? op)
     {
@@ -144,7 +139,7 @@ public class CartController : Controller
                 TempData["Loi"] = $"Khu vực \"{kv.Ten}\" không đáp ứng sức chứa (tối đa {kv.SucChua} khách, hiện chọn {booking.SoNguoi} khách).";
         }
 
-        var p = (op ?? "").Split(':'); // "inc:5" | "dec:5" | "del:5"
+        var p = (op ?? "").Split(':');
         if (p.Length == 2 && int.TryParse(p[1], out var id) && cart.ContainsKey(id))
         {
             switch (p[0])
@@ -183,7 +178,6 @@ public class CartController : Controller
         return RedirectToAction(nameof(Payment));
     }
 
-    // ---------- Bước 2: đặt cọc & thanh toán ----------
     private async Task<PaymentVm?> BuildPaymentVm(PaymentInput inp)
     {
         var lines = await LoadLines();
@@ -348,7 +342,6 @@ public class CartController : Controller
         return RedirectToAction(nameof(Success), new { id = datBan.Id });
     }
 
-    // ---------- Lịch sử & Chi tiết đặt bàn ----------
     [Authorize, HttpGet]
     public async Task<IActionResult> History(
         DateTime? tuNgay,
@@ -435,7 +428,6 @@ public class CartController : Controller
         return View(donHang);
     }
 
-    // ---------- Bước 3: phiếu xác nhận ----------
     [Authorize]
     public async Task<IActionResult> Success(int id)
     {

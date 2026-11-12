@@ -4,8 +4,7 @@ using QLNH.Data.Entities;
 using QLNH.Data.Services;
 
 namespace QLNH.Admin;
-//OrderForm.cs / OrdersPanel.cs: Giao diện xử lý đơn hàng (tạo đơn mới, xem danh sách đơn hàng từ khách, cập nhật trạng thái phục vụ/thanh toán).
-/// <summary>Hộp thoại tạo đơn hàng tại quầy.</summary>
+
 public class OrderForm : Form
 {
     private readonly AppDbContext _db = Program.NewDb();
@@ -34,13 +33,12 @@ public class OrderForm : Form
         top.Controls.Add(new Label { Text = "Ghi chú", AutoSize = true }, 2, 1); top.Controls.Add(txtGhiChu, 3, 1);
 
         var addBar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 40, Padding = new Padding(6) };
-        var btnAdd = new Button { Text = "＋ Thêm món", AutoSize = true };
+        var btnAdd = new Button { Text = "Thêm món", AutoSize = true };
         var btnRemove = new Button { Text = "Bỏ dòng chọn", AutoSize = true };
         btnAdd.Click += (_, _) => ThemMon();
         btnRemove.Click += (_, _) => BoMon();
         addBar.Controls.AddRange(new Control[] { new Label { Text = "Món", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, cboMon, new Label { Text = "SL", AutoSize = true, Padding = new Padding(0, 6, 0, 0) }, numSl, btnAdd, btnRemove });
 
-        // FIX LỖI CHỮ KHUYẾT: Tăng Height của FlowLayoutPanel và Height của 2 nút bấm lên 35
         var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 50, Padding = new Padding(6), FlowDirection = FlowDirection.RightToLeft };
         var btnSave = new Button { Text = "Lưu đơn", Width = 100, Height = 35, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         var btnCancel = new Button { Text = "Huỷ", Width = 80, Height = 35 };

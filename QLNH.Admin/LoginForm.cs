@@ -1,4 +1,3 @@
-// LoginForm.cs: Cửa sổ Đăng nhập hệ thống (xác thực tài khoản admin / nhanvien).
 using QLNH.Data.Entities;
 using QLNH.Data.Services;
 
@@ -16,11 +15,30 @@ public class LoginForm : Form
     {
         Text = "Đăng nhập - Quản lý nhà hàng";
         StartPosition = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
         ClientSize = new Size(360, 230);
 
-        var title = new Label { Text = "🍜 HƯƠNG VIỆT", Font = new Font("Segoe UI", 16, FontStyle.Bold), ForeColor = Color.Firebrick, AutoSize = true, Left = 100, Top = 15 };
-        var btn = new Button { Text = "Đăng nhập", Width = 220, Height = 34, BackColor = Color.Firebrick, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+        var title = new Label
+        {
+            Text = "HƯƠNG VIỆT",
+            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+            ForeColor = Color.Firebrick,
+            AutoSize = true,
+            Left = 115,
+            Top = 15
+        };
+
+        var btn = new Button
+        {
+            Text = "Đăng nhập",
+            Width = 220,
+            Height = 34,
+            BackColor = Color.Firebrick,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat
+        };
         btn.Click += (_, _) => DangNhap();
         AcceptButton = btn;
 
@@ -42,24 +60,16 @@ public class LoginForm : Form
         {
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using var pen = new Pen(Color.FromArgb(80, 80, 80), 1.6f)
-            {
-                StartCap = System.Drawing.Drawing2D.LineCap.Round,
-                EndCap = System.Drawing.Drawing2D.LineCap.Round
-            };
+            using var pen = new Pen(Color.FromArgb(80, 80, 80), 1.6f);
             int cx = btnEye.Width / 2;
             int cy = btnEye.Height / 2;
 
-            // Vẽ viền con mắt
             var ptsTop = new[] { new PointF(cx - 9, cy), new PointF(cx, cy - 6), new PointF(cx + 9, cy) };
             var ptsBot = new[] { new PointF(cx - 9, cy), new PointF(cx, cy + 6), new PointF(cx + 9, cy) };
             g.DrawCurve(pen, ptsTop, 0.6f);
             g.DrawCurve(pen, ptsBot, 0.6f);
-
-            // Vẽ con ngươi
             g.DrawEllipse(pen, cx - 2.5f, cy - 2.5f, 5f, 5f);
 
-            // Khi mật khẩu đang ở dạng chấm (ẩn) -> vẽ đường gạch chéo qua mắt
             if (txtPass.UseSystemPasswordChar)
             {
                 g.DrawLine(pen, cx - 8, cy + 6, cx + 8, cy - 6);
@@ -87,7 +97,10 @@ public class LoginForm : Form
     {
         lblErr.Text = "";
         if (string.IsNullOrWhiteSpace(txtUser.Text) || string.IsNullOrEmpty(txtPass.Text))
-        { lblErr.Text = "Vui lòng nhập đủ tài khoản và mật khẩu."; return; }
+        {
+            lblErr.Text = "Vui lòng nhập đủ tài khoản và mật khẩu.";
+            return;
+        }
         try
         {
             using var db = Program.NewDb();
@@ -96,7 +109,11 @@ public class LoginForm : Form
             {
                 soLanSai++;
                 lblErr.Text = "Sai tài khoản hoặc mật khẩu.";
-                if (soLanSai >= 5) { MessageBox.Show("Nhập sai quá 5 lần. Ứng dụng sẽ đóng.", "Cảnh báo"); DialogResult = DialogResult.Cancel; }
+                if (soLanSai >= 5)
+                {
+                    MessageBox.Show("Nhập sai quá 5 lần. Ứng dụng sẽ đóng.", "Cảnh báo");
+                    DialogResult = DialogResult.Cancel;
+                }
                 return;
             }
             NguoiDung = tk;

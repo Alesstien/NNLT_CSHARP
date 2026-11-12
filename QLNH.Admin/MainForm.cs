@@ -1,4 +1,3 @@
-// MainForm.cs: Cửa sổ Giao diện chính sau khi đăng nhập, đóng vai trò là khung chứa các Panel chức năng khác.
 using Microsoft.EntityFrameworkCore;
 using QLNH.Data;
 using QLNH.Data.Entities;
@@ -27,10 +26,9 @@ public class MainForm : Form
         var pnlPos = new PosPanel();
         var pnlDatBan = new CrudPanel<DatBan>(q => q.DatBans.OrderByDescending(d => d.Id), CauHinhDatBan);
 
-        // Phân quyền: nhân viên thấy Đơn hàng, POS & Đặt bàn; Admin thấy toàn bộ
-        AddTab(tabs, "🧾 Đơn hàng", pnlOrders);
-        AddTab(tabs, "🛒 Bán tại bàn (POS)", pnlPos);
-        AddTab(tabs, "📅 Đặt bàn", pnlDatBan);
+        AddTab(tabs, "Đơn hàng", pnlOrders);
+        AddTab(tabs, "Bán tại bàn (POS)", pnlPos);
+        AddTab(tabs, "Đặt bàn", pnlDatBan);
 
         CrudPanel<MonAn>? pnlMonAn = null;
         CrudPanel<DanhMuc>? pnlDanhMuc = null;
@@ -46,14 +44,13 @@ public class MainForm : Form
             pnlReport = new ReportPanel();
             pnlAccount = new AccountPanel(user.Id);
 
-            AddTab(tabs, "🍽 Món ăn", pnlMonAn);
-            AddTab(tabs, "📂 Danh mục", pnlDanhMuc);
-            AddTab(tabs, "🪑 Bàn", pnlBan);
-            AddTab(tabs, "📊 Doanh thu", pnlReport);
-            AddTab(tabs, "👤 Tài khoản", pnlAccount);
+            AddTab(tabs, "Món ăn", pnlMonAn);
+            AddTab(tabs, "Danh mục", pnlDanhMuc);
+            AddTab(tabs, "Bàn", pnlBan);
+            AddTab(tabs, "Doanh thu", pnlReport);
+            AddTab(tabs, "Tài khoản", pnlAccount);
         }
 
-        // Tự động làm mới dữ liệu khi chuyển tab để luôn đồng bộ với Web và các tab khác
         tabs.SelectedIndexChanged += (_, _) =>
         {
             var ctrl = tabs.SelectedTab?.Controls.Count > 0 ? tabs.SelectedTab.Controls[0] : null;
@@ -80,7 +77,7 @@ public class MainForm : Form
         var mnuTroGiup = new ToolStripMenuItem("Trợ giúp");
         mnuTroGiup.DropDownItems.Add("Giới thiệu", null, (_, _) =>
             MessageBox.Show(
-                "Hệ thống quản lý nhà hàng\nĐồ án môn Ngôn ngữ lập trình C#\nC# WinForms + ASP.NET Core MVC + SQL Server + EF Core",
+                "Hệ thống quản lý nhà hàng\nĐồ án môn Ngôn ngữ lập trình C#",
                 "Giới thiệu"));
 
         menu.Items.AddRange(new ToolStripItem[] { mnuHeThong, mnuTroGiup });
@@ -93,7 +90,7 @@ public class MainForm : Form
     {
         using var dlg = new Form
         {
-            Text = "Quản lý mã ưu đãi (Voucher)",
+            Text = "Quản lý mã ưu đãi",
             Size = new Size(880, 520),
             MinimumSize = new Size(720, 400),
             StartPosition = FormStartPosition.CenterParent

@@ -9,8 +9,8 @@ public record BaoGia(decimal TongMon, decimal PhuThu, decimal Vat, decimal PhiPh
 
 public class BankInfo
 {
-    public string Code { get; set; } = "";          // VCB, MB (mã dùng cho VietQR)
-    public string Ten { get; set; } = "";           // tên ngắn trên tab
+    public string Code { get; set; } = "";
+    public string Ten { get; set; } = "";
     public string TenDayDu { get; set; } = "";
     public string SoTaiKhoan { get; set; } = "";
     public string ChuTaiKhoan { get; set; } = "";
@@ -22,15 +22,14 @@ public class MonChonDto
     [Range(1, 50)] public int SoLuong { get; set; }
 }
 
-// Dùng cho bước 1 -> 2 (giữ chỗ) và khi áp mã ưu đãi (cập nhật giữ chỗ)
 public class DatBanRequest
 {
-    public int? Id { get; set; }                    // có giá trị khi cập nhật lần giữ chỗ đang có
+    public int? Id { get; set; }
     [Required, StringLength(100)] public string HoTen { get; set; } = "";
     [Required, RegularExpression(@"^(0|\+84)\d{9}$", ErrorMessage = "Số điện thoại không hợp lệ")] public string SoDienThoai { get; set; } = "";
     [Required, EmailAddress] public string Email { get; set; } = "";
-    [Required] public string Ngay { get; set; } = "";          // yyyy-MM-dd
-    [Required] public string Gio { get; set; } = "";           // HH:mm
+    [Required] public string Ngay { get; set; } = "";
+    [Required] public string Gio { get; set; } = "";
     [Range(1, 20)] public int SoKhach { get; set; }
     public int KhuVucId { get; set; }
     [StringLength(100)] public string? DipDacBiet { get; set; }
@@ -42,7 +41,7 @@ public class DatBanRequest
 
 public class ThanhToanRequest
 {
-    [Required] public string PhuongThuc { get; set; } = "";    // VIETQR | MOMO | VNPAY | THE
+    [Required] public string PhuongThuc { get; set; } = "";
     public string? NganHang { get; set; }
     [Required] public string CheDoCoc { get; set; } = CheDo.CoDinh;
 }

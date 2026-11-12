@@ -5,12 +5,9 @@ namespace QLNH_Web.Services;
 
 public interface IMailSender
 {
-    /// <summary>Trả về true nếu email đã được gửi đi.</summary>
     Task<bool> SendAsync(string to, string subject, string htmlBody);
 }
 
-// Cấu hình trong appsettings.json (bỏ trống Host thì chỉ ghi log, không gửi):
-// "Smtp": { "Host": "smtp.gmail.com", "Port": 587, "User": "...", "Password": "mật-khẩu-ứng-dụng", "From": "..." }
 public class SmtpMailSender : IMailSender
 {
     private readonly IConfiguration _cfg;

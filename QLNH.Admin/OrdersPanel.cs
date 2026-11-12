@@ -79,13 +79,13 @@ public class OrdersPanel : UserControl
 
     private readonly Button btnTruoc = new()
     {
-        Text = "← Trước",
+        Text = "Trước",
         AutoSize = true
     };
 
     private readonly Button btnSau = new()
     {
-        Text = "Sau →",
+        Text = "Sau",
         AutoSize = true
     };
 
@@ -101,10 +101,10 @@ public class OrdersPanel : UserControl
         cboTrangThai.SelectedIndex = 0;
 
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
-        var btnNew = new Button { Text = "＋ Tạo đơn", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-        var btnStatus = new Button { Text = "Đổi trạng thái →", AutoSize = true, Cursor = Cursors.Hand };
-        var btnPrint = new Button { Text = "🖨 In hóa đơn", AutoSize = true, BackColor = Color.SteelBlue, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-        var btnReload = new Button { Text = "⟳ Tải lại", AutoSize = true, Cursor = Cursors.Hand };
+        var btnNew = new Button { Text = "Tạo đơn", AutoSize = true, BackColor = Color.SeaGreen, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
+        var btnStatus = new Button { Text = "Đổi trạng thái", AutoSize = true, Cursor = Cursors.Hand };
+        var btnPrint = new Button { Text = "In hóa đơn", AutoSize = true, BackColor = Color.SteelBlue, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
+        var btnReload = new Button { Text = "Tải lại", AutoSize = true, Cursor = Cursors.Hand };
 
         btnNew.Click += (_, _) => { using var f = new OrderForm(); if (f.ShowDialog(this) == DialogResult.OK) Tai(); };
         btnStatus.Click += (_, _) => DoiTrangThai();
@@ -505,7 +505,7 @@ public class OrdersPanel : UserControl
                     $"Điện thoại: {don.SoDienThoai}",
                     $"Bàn: {don.Ban?.TenBan ?? "Online/Mang về"}",
                     $"Trạng thái: {don.TrangThai}",
-                    $"Mã ưu đãi: {don.MaUuDai ?? "—"}  |  Giảm giá: {don.GiamGia:N0} đ",
+                    $"Mã ưu đãi: {don.MaUuDai ?? "Không có"}  |  Giảm giá: {don.GiamGia:N0} đ",
                     $"Tổng giá trị đơn: {don.TongTien:N0} đ",
                     $"Tiền cọc đọc từ ghi chú: {tienCoc:N0} đ",
                     $"Ghi chú: {don.GhiChu}"

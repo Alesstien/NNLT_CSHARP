@@ -1,48 +1,6 @@
 (function () {
   "use strict";
 
-  const style = document.createElement("style");
-
-  style.textContent = `
-        .cart-fly-clone {
-            position: fixed;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-            pointer-events: none;
-            z-index: 9999;
-            transition:
-                left 0.7s ease,
-                top 0.7s ease,
-                width 0.7s ease,
-                height 0.7s ease,
-                opacity 0.7s ease;
-        }
-
-        #cart-btn {
-            position: relative;
-        }
-
-        .cart-badge {
-            position: absolute;
-            top: -6px;
-            right: -8px;
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            font-size: 12px;
-            min-width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 3px;
-            font-weight: bold;
-        }
-    `;
-
-  document.head.appendChild(style);
-
   function getCartBtn() {
     return document.getElementById("cart-btn");
   }
@@ -104,7 +62,7 @@
 
   async function ajaxAdd(form, button, img) {
     const submitButton = form.querySelector(
-      'button[type="submit"], input[type="submit"]',
+      'button[type="submit"], input[type="submit"]'
     );
 
     if (submitButton) {
@@ -132,17 +90,14 @@
 
       if (!contentType.includes("application/json")) {
         const body = await response.text();
-
         console.error("Máy chủ không trả về JSON:", {
           status: response.status,
           response: body,
         });
-
         alert(
           body ||
-            "Không nhận được phản hồi hợp lệ từ máy chủ. Vui lòng thử lại.",
+            "Không nhận được phản hồi hợp lệ từ máy chủ. Vui lòng thử lại."
         );
-
         return;
       }
 
@@ -150,9 +105,7 @@
 
       if (!response.ok || result.success !== true) {
         console.error("Lỗi thêm món:", response.status, result);
-
         alert(result.message || "Không thể thêm món vào giỏ hàng.");
-
         return;
       }
 
@@ -163,8 +116,7 @@
       updateBadge(button, result.cartCount);
     } catch (error) {
       console.error("Lỗi khi thêm món vào giỏ hàng:", error);
-
-      alert("Có lỗi khi thêm món. " + "Vui lòng mở F12 > Console để kiểm tra.");
+      alert("Có lỗi khi thêm món. Vui lòng mở F12 > Console để kiểm tra.");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -174,16 +126,12 @@
 
   document.addEventListener("submit", function (event) {
     const target = event.target;
-
     if (!(target instanceof HTMLFormElement)) return;
 
     const form = target.closest("form.cart-add-form");
-
     if (!form) return;
 
     const button = getCartBtn();
-
-    // Nếu không tìm thấy nút giỏ hàng, để form gửi bình thường.
     if (!button) return;
 
     event.preventDefault();
@@ -191,7 +139,6 @@
     const card = form.closest(".card");
     const img = card ? card.querySelector("img.cart-item-img") : null;
 
-    // Gửi yêu cầu thêm món đến máy chủ (chỉ bay vào giỏ khi máy chủ chấp nhận).
     ajaxAdd(form, button, img);
   });
 })();

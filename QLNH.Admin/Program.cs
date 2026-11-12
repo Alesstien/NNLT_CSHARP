@@ -1,4 +1,3 @@
-// Program.cs: Điểm khởi chạy chính của ứng dụng WinForms, chịu trách nhiệm kích hoạt giao diện đăng nhập khi mở phần mềm.
 using Microsoft.Extensions.Configuration;
 using QLNH.Data;
 
@@ -25,7 +24,6 @@ internal static class Program
         }
         catch
         {
-            // Bỏ qua nếu chưa kết nối được SQL Server; LoginForm sẽ thông báo cụ thể.
         }
 
         while (true)
@@ -34,7 +32,7 @@ internal static class Program
             if (login.ShowDialog() != DialogResult.OK || login.NguoiDung == null) return;
             using var main = new MainForm(login.NguoiDung);
             Application.Run(main);
-            if (!main.DangXuat) return; // đóng cửa sổ = thoát; "Đăng xuất" = quay lại đăng nhập
+            if (!main.DangXuat) return;
         }
     }
 

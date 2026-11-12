@@ -1,4 +1,3 @@
-// CrudPanel.cs: Giao diện quản lý danh mục, món ăn, bàn, đặt bàn và mã ưu đãi.
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +6,6 @@ using QLNH.Data.Entities;
 
 namespace QLNH.Admin;
 
-/// <summary>Panel CRUD dùng chung (Generic): hiển thị, thêm, sửa, xoá, tìm kiếm cho một thực thể bất kỳ.</summary>
 public class CrudPanel<T> : UserControl where T : class, new()
 {
     private readonly AppDbContext _db = Program.NewDb();
@@ -33,17 +31,17 @@ public class CrudPanel<T> : UserControl where T : class, new()
         Dock = DockStyle.Fill;
 
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
-        var btnAdd = Btn("＋ Thêm dòng", Color.SeaGreen, (_, _) => Them());
-        var btnSave = Btn("💾 Lưu thay đổi", Color.SteelBlue, (_, _) => Luu());
-        var btnDel = Btn("✖ Xoá", Color.Firebrick, (_, _) => Xoa());
+        var btnAdd = Btn("Thêm dòng", Color.SeaGreen, (_, _) => Them());
+        var btnSave = Btn("Lưu thay đổi", Color.SteelBlue, (_, _) => Luu());
+        var btnDel = Btn("Xóa", Color.Firebrick, (_, _) => Xoa());
         if (typeof(T) == typeof(WebUuDai))
             btnDel.Visible = false;
-        var btnReload = Btn("⟳ Tải lại", Color.Gray, (_, _) => Tai());
+        var btnReload = Btn("Tải lại", Color.Gray, (_, _) => Tai());
         _txtSearch.TextChanged += (_, _) => Loc();
 
         if (typeof(T) == typeof(MonAn))
         {
-            var btnImg = Btn("🖼 Chọn ảnh...", Color.DarkOrange, (_, _) => ChonAnhMon());
+            var btnImg = Btn("Chọn ảnh...", Color.DarkOrange, (_, _) => ChonAnhMon());
             bar.Controls.AddRange(new Control[] { btnAdd, btnImg, btnSave, btnDel, btnReload, _txtSearch });
         }
         else
@@ -314,7 +312,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
             }
             mon.HinhAnh = "/images/" + fileName;
             _grid.Refresh();
-            MessageBox.Show($"Đã gán ảnh '{mon.HinhAnh}'. Hãy bấm '💾 Lưu thay đổi' để cập nhật lên Web.", "Chọn ảnh thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"Đã gán ảnh '{mon.HinhAnh}'. Hãy bấm 'Lưu thay đổi' để cập nhật lên Web.", "Chọn ảnh thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
@@ -401,7 +399,6 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
         tx.Commit();
 
-        // ExecuteUpdate dùng context riêng, cần bỏ dữ liệu cũ trên lưới.
         _db.ChangeTracker.Clear();
         Tai();
     }
@@ -413,7 +410,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
         {
             if (x is MonAn mon && mon.Gia < 0)
             {
-                MessageBox.Show("• Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("- Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (x is WebUuDai ud)
@@ -424,7 +421,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
             var results = new List<ValidationResult>();
             if (!Validator.TryValidateObject(x, new ValidationContext(x), results, true))
             {
-                MessageBox.Show(string.Join("\n", results.Select(r => "• " + r.ErrorMessage)), "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(string.Join("\n", results.Select(r => "- " + r.ErrorMessage)), "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
         }
@@ -476,12 +473,12 @@ public class CrudPanel<T> : UserControl where T : class, new()
                             UPDATE Web_MucThucDon SET Gia = {1}, MoTa = {2}, DanhMuc = {3}, HinhAnh = {4}, ConPhucVu = {5} WHERE Ten = {0};
                         ELSE
                             INSERT INTO Web_MucThucDon (Ten, MoTa, Gia, DanhMuc, HinhAnh, Emoji, ThuTu, ConPhucVu)
-                            VALUES ({0}, {2}, {1}, {3}, {4}, N'🍽️', {6}, {5});
+                            VALUES ({0}, {2}, {1}, {3}, {4}, N'', {6}, {5});
                     END",
                     m.TenMon, m.Gia, moTa, tenDm, hinhAnh, m.ConPhucVu, m.Id + 10);
             }
         }
-        catch { /* bỏ qua nếu bảng Web_MucThucDon chưa tạo */ }
+        catch { }
     }
 
     private void DongBoBanSangWeb()
@@ -514,7 +511,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
                     ten, moTa, phuThu, ban.SoGhe, hoatDong, choTiec);
             }
         }
-        catch { /* bỏ qua nếu bảng Web_KhuVuc chưa tạo */ }
+        catch { }
     }
 
     private void DongBoDatBanSangWeb()
@@ -585,7 +582,6 @@ public class CrudPanel<T> : UserControl where T : class, new()
     {
         if (_grid.CurrentRow?.DataBoundItem is not T item) return;
 
-        // Nếu dòng mới thêm chưa lưu vào DB thì chỉ cần gỡ khỏi lưới
         if (_db.Entry(item).State == EntityState.Added)
         {
             _db.Entry(item).State = EntityState.Detached;

@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 
 namespace QLNH.Data.Services;
 
-/// <summary>Băm mật khẩu bằng PBKDF2-SHA256 (định dạng: base64(salt)$base64(hash)).</summary>
 public static class PasswordHasher
 {
     private const int Iterations = 100_000;

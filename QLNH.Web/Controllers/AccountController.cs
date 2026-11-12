@@ -23,7 +23,6 @@ public class AccountController : Controller
         _svc = svc;
     }
 
-    // ---------- Đăng ký ----------
     [HttpGet, AllowAnonymous]
     public IActionResult Register()
         => User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Home") : View(new RegisterVM());
@@ -63,7 +62,6 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
-    // ---------- Đăng nhập ----------
     [HttpGet, AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
         => User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Home") : View(new LoginVM { ReturnUrl = returnUrl });
@@ -73,7 +71,6 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid) return View(m);
 
-        // Cho phép đăng nhập bằng email hoặc số điện thoại
         var key = m.TaiKhoan.Trim();
         AppUser? user = key.Contains('@')
             ? await _users.FindByEmailAsync(key)
@@ -104,7 +101,6 @@ public class AccountController : Controller
         return View(m);
     }
 
-    // ---------- Đăng xuất ----------
     [HttpPost, Authorize, ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
@@ -115,8 +111,6 @@ public class AccountController : Controller
     [HttpGet, AllowAnonymous]
     public IActionResult AccessDenied() => Content("Bạn không có quyền truy cập trang này.");
 
-    // ---------- Helpers ----------
-    // 0912345678 và +84912345678 được coi là cùng một số
     private static string ChuanHoaSdt(string s)
     {
         s = s.Trim().Replace(" ", "").Replace("-", "");

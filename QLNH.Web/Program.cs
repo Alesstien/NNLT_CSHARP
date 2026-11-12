@@ -19,7 +19,6 @@ builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<OrderService>();
 
-// ---- Đăng nhập / đăng ký (ASP.NET Core Identity) ----
 builder.Services.AddDbContext<AuthDbContext>(o => o.UseSqlServer(
     builder.Configuration.GetConnectionString("Default"),
     s => s.MigrationsHistoryTable("__EFMigrationsHistory_Auth")));
@@ -45,10 +44,8 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.SlidingExpiration = true;
 });
 
-// Kiểm tra lại tài khoản mỗi phút: admin khóa tài khoản thì phiên đang đăng nhập bị đăng xuất sau tối đa ~1 phút
 builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
 
-// ---- Đặt bàn ----
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddScoped<DatBanService>();
 builder.Services.AddHostedService<TuHuyDatBanWorker>();
@@ -56,7 +53,6 @@ builder.Services.AddHostedService<TuHuyDatBanWorker>();
 var app = builder.Build();
 if (!app.Environment.IsDevelopment()) app.UseExceptionHandler("/Home/Error");
 
-// Tự áp migration, tạo role, dữ liệu mẫu (khu vực, thực đơn) và tài khoản admin khi khởi động
 using (var scope = app.Services.CreateScope())
 {
     var sp = scope.ServiceProvider;
@@ -80,7 +76,6 @@ using (var scope = app.Services.CreateScope())
         sp.GetRequiredService<DatBanService>());
 }
 
-// Đường dẫn cũ của trang đặt bàn / lịch sử đặt bàn -> chuyển về Trang chủ hoặc Giỏ hàng
 app.Use(async (ctx, next) =>
 {
     var p = ctx.Request.Path;
