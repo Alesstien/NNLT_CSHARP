@@ -1,4 +1,4 @@
-//CrudPanel.cs: Giao diện quản lý danh mục và món ăn (thêm món mới, cập nhật giá, sửa mô tả, xóa món).
+// CrudPanel.cs: Giao diện quản lý danh mục, món ăn, bàn, đặt bàn và mã ưu đãi.
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +12,14 @@ public class CrudPanel<T> : UserControl where T : class, new()
 {
     private readonly AppDbContext _db = Program.NewDb();
     private readonly BindingList<T> _list = new();
-    private readonly DataGridView _grid = new() { Dock = DockStyle.Fill, AutoGenerateColumns = false, AllowUserToAddRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect, BackgroundColor = Color.White };
+    private readonly DataGridView _grid = new()
+    {
+        Dock = DockStyle.Fill,
+        AutoGenerateColumns = false,
+        AllowUserToAddRows = false,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        BackgroundColor = Color.White
+    };
     private readonly TextBox _txtSearch = new() { Width = 220, PlaceholderText = "Tìm kiếm..." };
     private readonly Func<AppDbContext, IQueryable<T>>? _query;
     private readonly Action<DataGridView, AppDbContext>? _configure;
@@ -20,7 +27,9 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
     public CrudPanel(Func<AppDbContext, IQueryable<T>>? query = null, Action<DataGridView, AppDbContext>? configure = null, bool canEdit = true)
     {
-        _query = query; _configure = configure; _canEdit = canEdit;
+        _query = query;
+        _configure = configure;
+        _canEdit = canEdit;
         Dock = DockStyle.Fill;
 
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
@@ -28,7 +37,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
         var btnSave = Btn("💾 Lưu thay đổi", Color.SteelBlue, (_, _) => Luu());
         var btnDel = Btn("✖ Xoá", Color.Firebrick, (_, _) => Xoa());
         if (typeof(T) == typeof(WebUuDai))
-        btnDel.Visible = false;
+            btnDel.Visible = false;
         var btnReload = Btn("⟳ Tải lại", Color.Gray, (_, _) => Tai());
         _txtSearch.TextChanged += (_, _) => Loc();
 
@@ -42,41 +51,48 @@ public class CrudPanel<T> : UserControl where T : class, new()
             bar.Controls.AddRange(new Control[] { btnAdd, btnSave, btnDel, btnReload, _txtSearch });
         }
 
-        if (!canEdit) { btnAdd.Visible = btnSave.Visible = btnDel.Visible = false; _grid.ReadOnly = true; }
+        if (!canEdit)
+        {
+            btnAdd.Visible = btnSave.Visible = btnDel.Visible = false;
+            _grid.ReadOnly = true;
+        }
+
         if (canEdit && typeof(T) == typeof(DatBan))
         {
-            bar.Controls.Add(Btn(
-                "Bắt đầu phục vụ",
-                Color.DarkOrange,
-                (_, _) => BatDauPhucVu()));
+            bar.Controls.Add(Btn("Bắt đầu phục vụ", Color.DarkOrange, (_, _) => BatDauPhucVu()));
         }
+
         BuildColumns();
+
         if (typeof(T) == typeof(DatBan))
-{
-    _grid.Columns.Insert(0, new DataGridViewTextBoxColumn
-    {
-        Name = "STT",
-        HeaderText = "STT",
-        Width = 55,
-        ReadOnly = true,
-        SortMode = DataGridViewColumnSortMode.NotSortable
-    });
+        {
+            _grid.Columns.Insert(0, new DataGridViewTextBoxColumn
+            {
+                Name = "STT",
+                HeaderText = "STT",
+                Width = 55,
+                ReadOnly = true,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
 
-    _grid.CellFormatting += (_, e) =>
-    {
-        if (e.RowIndex < 0 || _grid.Columns[e.ColumnIndex].Name != "STT")
-            return;
+            _grid.CellFormatting += (_, e) =>
+            {
+                if (e.RowIndex < 0 || _grid.Columns[e.ColumnIndex].Name != "STT")
+                    return;
 
-        e.Value = (e.RowIndex + 1).ToString();
-        e.FormattingApplied = true;
-    };
-}
+                e.Value = (e.RowIndex + 1).ToString();
+                e.FormattingApplied = true;
+            };
+        }
+
         _grid.DataError += (_, e) => { e.ThrowException = false; };
         _grid.CellValidating += Grid_CellValidating;
         _grid.CellBeginEdit += Grid_CellBeginEdit;
         _grid.CurrentCellDirtyStateChanged += Grid_CurrentCellDirtyStateChanged;
         _grid.CellValueChanged += Grid_CellValueChanged;
-        Controls.Add(_grid); Controls.Add(bar);
+
+        Controls.Add(_grid);
+        Controls.Add(bar);
         Tai();
     }
 
@@ -113,38 +129,34 @@ public class CrudPanel<T> : UserControl where T : class, new()
             catch { }
         }
     }
-   private void Grid_CellBeginEdit(
-    object? sender, DataGridViewCellCancelEventArgs e)
-{
-    var cell = _grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
 
-    if (_grid.Rows[e.RowIndex].DataBoundItem is not DatBan datBan)
-        return;
-
-    var trangThaiDaLuu = _db.Entry(datBan)
-        .Property(d => d.TrangThai).OriginalValue;
-
-    var daDen = datBan.TrangThai == "Đã đến"
-        || trangThaiDaLuu == "Đã đến";
-
-    if (cell.OwningColumn.Name == nameof(DatBan.BanId))
+    private void Grid_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
     {
-        e.Cancel = daDen;
-        return;
-    }
+        var cell = _grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+        if (_grid.Rows[e.RowIndex].DataBoundItem is not DatBan datBan)
+            return;
 
-    if (cell.OwningColumn.Name == nameof(DatBan.TrangThai)
-        && cell is DataGridViewComboBoxCell combo)
-    {
-        if (daDen)
+        var trangThaiDaLuu = _db.Entry(datBan).Property(d => d.TrangThai).OriginalValue;
+        var daDen = datBan.TrangThai == "Đã đến" || trangThaiDaLuu == "Đã đến";
+
+        if (cell.OwningColumn.Name == nameof(DatBan.BanId))
         {
-            e.Cancel = true;
+            e.Cancel = daDen;
             return;
         }
 
-        combo.DataSource = new[] { "Chờ xác nhận", "Đã xác nhận", "Đã hủy" };
+        if (cell.OwningColumn.Name == nameof(DatBan.TrangThai) && cell is DataGridViewComboBoxCell combo)
+        {
+            if (daDen)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            combo.DataSource = new[] { "Chờ xác nhận", "Đã xác nhận", "Đã hủy" };
+        }
     }
-}
+
     private void Grid_CellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
     {
         if (e.RowIndex < 0 || e.ColumnIndex < 0 || !_grid.IsCurrentCellInEditMode) return;
@@ -172,10 +184,10 @@ public class CrudPanel<T> : UserControl where T : class, new()
     private static Button Btn(string text, Color c, EventHandler h)
     {
         var b = new Button { Text = text, AutoSize = true, BackColor = c, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-        b.Click += h; return b;
+        b.Click += h;
+        return b;
     }
 
-    // Chỉ sinh cột cho thuộc tính đơn giản (bỏ navigation property và thuộc tính chỉ đọc)
     private void BuildColumns()
     {
         foreach (var p in typeof(T).GetProperties())
@@ -184,7 +196,9 @@ public class CrudPanel<T> : UserControl where T : class, new()
             bool simple = t.IsPrimitive || t == typeof(string) || t == typeof(decimal) || t == typeof(DateTime);
             if (!simple || !p.CanWrite) continue;
             DataGridViewColumn col = t == typeof(bool) ? new DataGridViewCheckBoxColumn() : new DataGridViewTextBoxColumn();
-            col.DataPropertyName = p.Name; col.Name = p.Name; col.HeaderText = p.Name;
+            col.DataPropertyName = p.Name;
+            col.Name = p.Name;
+            col.HeaderText = p.Name;
             col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             if (p.Name == "Id") col.ReadOnly = true;
             if (t == typeof(decimal)) col.DefaultCellStyle.Format = "N0";
@@ -215,7 +229,10 @@ public class CrudPanel<T> : UserControl where T : class, new()
             }
             _txtSearch.Clear();
         }
-        catch (Exception ex) { MessageBox.Show(ex.GetBaseException().Message, "Lỗi tải dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.GetBaseException().Message, "Lỗi tải dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void Them()
@@ -249,6 +266,15 @@ public class CrudPanel<T> : UserControl where T : class, new()
         {
             ban.SoGhe = 4;
             ban.TrangThai = "Trống";
+        }
+        else if (item is WebUuDai voucher)
+        {
+            voucher.Ma = "UUDAI10";
+            voucher.MoTa = "Giảm 10% tiền món";
+            voucher.PhanTramGiam = 10;
+            voucher.GiamToiDa = 200000;
+            voucher.HanDung = DateTime.Today.AddMonths(1);
+            voucher.HoatDong = true;
         }
 
         _db.Add(item);
@@ -307,81 +333,79 @@ public class CrudPanel<T> : UserControl where T : class, new()
         }
         return @"D:\QuanLyNhaHang\QuanLyNhaHang\QLNH.Web\wwwroot\images";
     }
+
     private void KiemTraBanTruocKhiLuu()
-{
-    foreach (var entry in _db.ChangeTracker.Entries<DatBan>())
     {
-        if (entry.State != EntityState.Modified)
-            continue;
+        foreach (var entry in _db.ChangeTracker.Entries<DatBan>())
+        {
+            if (entry.State != EntityState.Modified)
+                continue;
 
-        var trangThai = entry.Property(d => d.TrangThai);
-        var banId = entry.Property(d => d.BanId);
+            var trangThai = entry.Property(d => d.TrangThai);
+            var banId = entry.Property(d => d.BanId);
 
-        var daDen = trangThai.CurrentValue == "Đã đến"
-            || trangThai.OriginalValue == "Đã đến";
+            var daDen = trangThai.CurrentValue == "Đã đến" || trangThai.OriginalValue == "Đã đến";
+            if (!daDen || banId.CurrentValue == banId.OriginalValue)
+                continue;
 
-        if (!daDen || banId.CurrentValue == banId.OriginalValue)
-            continue;
+            banId.CurrentValue = banId.OriginalValue;
+            banId.IsModified = false;
 
-        banId.CurrentValue = banId.OriginalValue;
-        banId.IsModified = false;
-
-        MessageBox.Show(
-            $"Phiếu #{entry.Entity.Id} đã đến. Hệ thống giữ bàn đã lưu.",
-            "Không thể đổi bàn",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Warning);
+            MessageBox.Show(
+                $"Phiếu #{entry.Entity.Id} đã đến. Hệ thống giữ bàn đã lưu.",
+                "Không thể đổi bàn",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
-}   
+
     private void BatDauPhucVu()
-{
-    if (_grid.CurrentRow?.DataBoundItem is not DatBan phieu
-        || phieu.BanId is not int banId)
     {
-        MessageBox.Show("Hãy chọn phiếu đã được xếp bàn.");
-        return;
+        if (_grid.CurrentRow?.DataBoundItem is not DatBan phieu || phieu.BanId is not int banId)
+        {
+            MessageBox.Show("Hãy chọn phiếu đã được xếp bàn.");
+            return;
+        }
+
+        using var db = Program.NewDb();
+        using var tx = db.Database.BeginTransaction();
+
+        var bayGio = DateTime.Now;
+        var denLuc = bayGio.AddMinutes(30);
+
+        var soPhieu = db.DatBans
+            .Where(d => d.Id == phieu.Id
+                        && d.BanId == banId
+                        && d.TrangThai == "Đã xác nhận"
+                        && d.BatDauPhucVuLuc == null
+                        && d.NgayGio <= denLuc)
+            .ExecuteUpdate(s => s.SetProperty(d => d.BatDauPhucVuLuc, (DateTime?)bayGio));
+
+        if (soPhieu == 0)
+        {
+            tx.Rollback();
+            MessageBox.Show("Phiếu chưa tới giờ tiếp nhận hoặc trạng thái đã thay đổi.");
+            return;
+        }
+
+        var soBan = db.Bans
+            .Where(b => b.Id == banId && (b.TrangThai == "Trống" || b.TrangThai == "Đã đặt"))
+            .ExecuteUpdate(s => s.SetProperty(b => b.TrangThai, "Đang dùng"));
+
+        if (soBan == 0)
+        {
+            tx.Rollback();
+            MessageBox.Show("Bàn đang có khách hoặc đang bảo trì.");
+            return;
+        }
+
+        tx.Commit();
+
+        // ExecuteUpdate dùng context riêng, cần bỏ dữ liệu cũ trên lưới.
+        _db.ChangeTracker.Clear();
+        Tai();
     }
 
-    using var db = Program.NewDb();
-    using var tx = db.Database.BeginTransaction();
-
-    var bayGio = DateTime.Now;
-    var denLuc = bayGio.AddMinutes(30);
-
-    var soPhieu = db.DatBans
-        .Where(d => d.Id == phieu.Id
-            && d.BanId == banId
-            && d.TrangThai == "Đã xác nhận"
-            && d.BatDauPhucVuLuc == null
-            && d.NgayGio <= denLuc)
-        .ExecuteUpdate(s => s.SetProperty(
-            d => d.BatDauPhucVuLuc, (DateTime?)bayGio));
-
-    if (soPhieu == 0)
-    {
-        tx.Rollback();
-        MessageBox.Show("Phiếu chưa tới giờ tiếp nhận hoặc trạng thái đã thay đổi.");
-        return;
-    }
-
-    var soBan = db.Bans
-        .Where(b => b.Id == banId
-            && (b.TrangThai == "Trống" || b.TrangThai == "Đã đặt"))
-        .ExecuteUpdate(s => s.SetProperty(b => b.TrangThai, "Đang dùng"));
-
-    if (soBan == 0)
-    {
-        tx.Rollback();
-        MessageBox.Show("Bàn đang có khách hoặc đang bảo trì.");
-        return;
-    }
-
-    tx.Commit();
-
-    // ExecuteUpdate dùng context riêng, cần bỏ dữ liệu cũ trên lưới.
-    _db.ChangeTracker.Clear();
-    Tai();
-    }
     private void Luu()
     {
         if (!_grid.EndEdit()) return;
@@ -392,6 +416,11 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 MessageBox.Show("• Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (x is WebUuDai ud)
+            {
+                ud.Ma = (ud.Ma ?? "").Trim().ToUpperInvariant();
+                ud.MoTa = (ud.MoTa ?? "").Trim();
+            }
             var results = new List<ValidationResult>();
             if (!Validator.TryValidateObject(x, new ValidationContext(x), results, true))
             {
@@ -401,6 +430,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
         }
         try
         {
+            KiemTraBanTruocKhiLuu();
             _db.SaveChanges();
 
             if (typeof(T) == typeof(MonAn) || typeof(T) == typeof(DanhMuc))
@@ -419,8 +449,14 @@ public class CrudPanel<T> : UserControl where T : class, new()
             MessageBox.Show("Đã lưu thay đổi và đồng bộ lên Web thành công.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
             Tai();
         }
-        catch (DbUpdateException ex) { MessageBox.Show("Không lưu được (trùng dữ liệu hoặc vi phạm ràng buộc):\n" + ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-        catch (Exception ex) { MessageBox.Show(ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        catch (DbUpdateException ex)
+        {
+            MessageBox.Show("Không lưu được (trùng dữ liệu hoặc vi phạm ràng buộc):\n" + ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.GetBaseException().Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void DongBoMonAnSangWeb()
@@ -486,13 +522,12 @@ public class CrudPanel<T> : UserControl where T : class, new()
         foreach (var item in _list.OfType<DatBan>())
         {
             if (item.TrangThai == "Đã đến")
-             continue;
-           var ma = item.MaDatBan;
+                continue;
 
+            var ma = item.MaDatBan;
             var ttWeb = item.TrangThai switch
             {
                 "Đã xác nhận" => "Đã xác nhận",
-               
                 "Đã huỷ" or "Đã hủy" => "Đã hủy",
                 _ => "Đang chờ duyệt"
             };
@@ -520,17 +555,15 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 catch { }
             }
             else
-{
-    ma = $"WF-{100000 + item.Id}";
-    item.MaDatBan = ma;
+            {
+                ma = $"WF-{100000 + item.Id}";
+                item.MaDatBan = ma;
+                item.GhiChu = string.IsNullOrWhiteSpace(item.GhiChu)
+                    ? $"[{ma}] Tạo từ WinForms"
+                    : $"[{ma}] {item.GhiChu}";
 
-    item.GhiChu = string.IsNullOrWhiteSpace(item.GhiChu)
-        ? $"[{ma}] Tạo từ WinForms"
-        : $"[{ma}] {item.GhiChu}";
+                _db.SaveChanges();
 
-    _db.SaveChanges();
-
-    // Giữ khối try/catch chứa câu INSERT Web_DatBan phía dưới.
                 try
                 {
                     _db.Database.ExecuteSqlRaw(@"
@@ -557,6 +590,12 @@ public class CrudPanel<T> : UserControl where T : class, new()
         {
             _db.Entry(item).State = EntityState.Detached;
             _list.Remove(item);
+            return;
+        }
+
+        if (item is DatBan dbItem && (dbItem.BatDauPhucVuLuc != null || dbItem.TrangThai == "Đã đến"))
+        {
+            MessageBox.Show("Phiếu đã tiếp nhận phục vụ, không thể xoá.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 

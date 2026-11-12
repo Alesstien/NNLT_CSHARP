@@ -11,7 +11,6 @@ using QLNH_Web.ViewModels;
 
 namespace QLNH_Web.Controllers;
 
-
 public class CartController : Controller
 {
     private readonly AppDbContext _db;
@@ -40,9 +39,7 @@ public class CartController : Controller
             return BadRequest(msg);
         }
 
-        var mon = await _db.MonAns
-            .FirstOrDefaultAsync(m => m.Id == id && m.ConPhucVu);
-
+        var mon = await _db.MonAns.FirstOrDefaultAsync(m => m.Id == id && m.ConPhucVu);
         if (mon == null)
         {
             const string msg = "Món ăn không tồn tại hoặc đã ngừng phục vụ.";
@@ -52,7 +49,6 @@ public class CartController : Controller
         }
 
         soLuong = Math.Clamp(soLuong, 1, 100);
-
         var cart = CartHelper.Get(HttpContext.Session);
 
         if (cart.TryGetValue(id, out var soLuongCu))
@@ -75,7 +71,6 @@ public class CartController : Controller
         TempData["Msg"] = "Đã thêm món vào giỏ hàng.";
         return RedirectToAction("Index", "Menu");
     }
-
 
     // ---------- Hàm dùng chung ----------
     private async Task<List<CartLine>> LoadLines()
@@ -108,19 +103,19 @@ public class CartController : Controller
     {
         await _svc.DongBoBanTuAdminAsync();
         var b = BookingDraft.Get(HttpContext.Session);
-        if (b.ThoiGianDen == null)
-            b.ThoiGianDen = DateTime.Now.AddHours(2);
+        b.ThoiGianDen = BookingDraft.ChuanHoaGioNhanBan(b.ThoiGianDen, DateTime.Now);
+
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).OrderBy(k => k.Id).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
         b.Save(HttpContext.Session);
         var lines = await LoadLines();
 
         var vm = new CartPageVm { Lines = lines, Booking = b, KhuVucs = kvs, KhuVuc = kv };
-       if (kv != null)
-{
-    var cheDoMacDinh = lines.Count == 0 ? CheDo.CoDinh : CheDo.Ba30;
-    vm.Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, null, cheDoMacDinh);
-}
+        if (kv != null)
+        {
+            var cheDoMacDinh = lines.Count == 0 ? CheDo.CoDinh : CheDo.Ba30;
+            vm.Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, null, cheDoMacDinh);
+        }
         return View(vm);
     }
 
@@ -138,8 +133,9 @@ public class CartController : Controller
         if (op == "next") return await TiepTuc(booking, cart);
 
         if (booking.ThoiGianDen != null && booking.ThoiGianDen <= DateTime.Now)
+        {
             TempData["Loi"] = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
-            
+        }
         else
         {
             var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
@@ -148,7 +144,7 @@ public class CartController : Controller
                 TempData["Loi"] = $"Khu vực \"{kv.Ten}\" không đáp ứng sức chứa (tối đa {kv.SucChua} khách, hiện chọn {booking.SoNguoi} khách).";
         }
 
-        var p = (op ?? "").Split(':');   // "inc:5" | "dec:5" | "del:5"
+        var p = (op ?? "").Split(':'); // "inc:5" | "dec:5" | "del:5"
         if (p.Length == 2 && int.TryParse(p[1], out var id) && cart.ContainsKey(id))
         {
             switch (p[0])
@@ -168,13 +164,21 @@ public class CartController : Controller
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
 
-        if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now) loi = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+        if (b.ThoiGianDen == null || b.ThoiGianDen <= DateTime.Now)
+            loi = "Hãy chọn ngày giờ nhận bàn trong tương lai.";
         else if (!BookingDraft.TrongGioPhucVu(b.ThoiGianDen.Value))
-        loi = "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
-        else if (kv == null) loi = "Chưa có khu vực phù hợp với loại buổi này.";
-        else if (b.SoNguoi > kv.SucChua) loi = $"{kv.Ten} chỉ chứa tối đa {kv.SucChua} khách.";
+            loi = "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
+        else if (kv == null)
+            loi = "Chưa có khu vực phù hợp với loại buổi này.";
+        else if (b.SoNguoi > kv.SucChua)
+            loi = $"{kv.Ten} chỉ chứa tối đa {kv.SucChua} khách.";
 
-        if (loi != null) { TempData["Loi"] = loi; return RedirectToAction(nameof(Index)); }
+        if (loi != null)
+        {
+            TempData["Loi"] = loi;
+            return RedirectToAction(nameof(Index));
+        }
+
         b.Save(HttpContext.Session);
         return RedirectToAction(nameof(Payment));
     }
@@ -192,19 +196,24 @@ public class CartController : Controller
 
         var maGd = HttpContext.Session.GetString("ma_gd");
         if (!DateTime.TryParse(HttpContext.Session.GetString("giu_cho"), null, DateTimeStyles.RoundtripKind, out var hetHan)
-            || string.IsNullOrEmpty(maGd)) return null;
+            || string.IsNullOrEmpty(maGd))
+        {
+            return null;
+        }
 
-inp.CheDoCoc = lines.Count == 0
-    ? CheDo.CoDinh
-    : inp.CheDoCoc == CheDo.Tra100
-        ? CheDo.Tra100
-        : CheDo.Ba30;
+        inp.CheDoCoc = lines.Count == 0
+            ? CheDo.CoDinh
+            : inp.CheDoCoc == CheDo.Tra100
+                ? CheDo.Tra100
+                : CheDo.Ba30;
         inp.PhuongThuc = "VIETQR";
         inp.NganHang = "TIMO";
 
-        UuDai? ud = null; string? maMsg = null;
+        UuDai? ud = null;
+        string? maMsg = null;
         var ma = inp.Ma?.Trim().ToUpper();
-        if (!string.IsNullOrEmpty(ma) && lines.Any())        {
+        if (!string.IsNullOrEmpty(ma) && lines.Any())
+        {
             ud = await _auth.UuDais.FirstOrDefaultAsync(u => u.Ma == ma && u.HoatDong && (u.HanDung == null || u.HanDung >= DateTime.Today));
             maMsg = ud == null
                 ? "Mã ưu đãi không hợp lệ hoặc đã hết hạn."
@@ -213,9 +222,15 @@ inp.CheDoCoc = lines.Count == 0
 
         return new PaymentVm
         {
-            Input = inp, Lines = lines, Booking = b, KhuVuc = kv,
+            Input = inp,
+            Lines = lines,
+            Booking = b,
+            KhuVuc = kv,
             Bill = Bill.Tinh(lines.Sum(l => l.ThanhTien), b, kv, ud, inp.CheDoCoc),
-            MaMsg = maMsg, MaHopLe = ud != null, MaGiaoDich = maGd, GiuChoDen = hetHan
+            MaMsg = maMsg,
+            MaHopLe = ud != null,
+            MaGiaoDich = maGd,
+            GiuChoDen = hetHan
         };
     }
 
@@ -237,7 +252,6 @@ inp.CheDoCoc = lines.Count == 0
             }
         }
 
-    
         var vm = await BuildPaymentVm(inp);
         return vm == null ? RedirectToAction(nameof(Index)) : View(vm);
     }
@@ -247,29 +261,27 @@ inp.CheDoCoc = lines.Count == 0
     {
         if (op != "pay") ModelState.Clear();
 
-var cheDoDaGui = inp.CheDoCoc;
-var vm = await BuildPaymentVm(inp);
+        var cheDoDaGui = inp.CheDoCoc;
+        var vm = await BuildPaymentVm(inp);
 
-if (vm == null) return RedirectToAction(nameof(Index));
-if (op != "pay") return View(vm);
-if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.Lines.Any())
-{
-    ModelState.AddModelError("", "Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
-    return View(vm);
-}
-if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.MaHopLe)
-{
-    ModelState.AddModelError(
-        "Input.Ma", "Mã ưu đãi không còn hiệu lực. Hãy xóa mã hoặc nhập mã khác.");
-    return View(vm);
-}
+        if (vm == null) return RedirectToAction(nameof(Index));
+        if (op != "pay") return View(vm);
 
-if (cheDoDaGui != inp.CheDoCoc)
-{
-    ModelState.AddModelError("",
-        "Hình thức đặt cọc đã thay đổi. Vui lòng kiểm tra lại số tiền trước khi xác nhận.");
-    return View(vm);
-}
+        if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.Lines.Any())
+        {
+            ModelState.AddModelError("", "Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
+            return View(vm);
+        }
+        if (!string.IsNullOrWhiteSpace(inp.Ma) && !vm.MaHopLe)
+        {
+            ModelState.AddModelError("Input.Ma", "Mã ưu đãi không còn hiệu lực. Hãy xóa mã hoặc nhập mã khác.");
+            return View(vm);
+        }
+        if (cheDoDaGui != inp.CheDoCoc)
+        {
+            ModelState.AddModelError("", "Hình thức đặt cọc đã thay đổi. Vui lòng kiểm tra lại số tiền trước khi xác nhận.");
+            return View(vm);
+        }
         if (!ModelState.IsValid) return View(vm);
         if (vm.GiuChoDen < DateTime.Now)
         {
@@ -278,21 +290,36 @@ if (cheDoDaGui != inp.CheDoCoc)
         }
 
         var webMons = await _auth.MucThucDons.AsNoTracking().ToListAsync();
-        var b = vm.Booking; var bill = vm.Bill;
+        var b = vm.Booking;
+        var bill = vm.Bill;
         var datBan = new DatBan
         {
             UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
-            HoTen = inp.HoTen.Trim(), SoDienThoai = inp.SoDienThoai.Trim(), Email = inp.Email.Trim(),
-            NgayGio = b.ThoiGianDen!.Value, SoKhach = b.SoNguoi, SoBan = bill.SoBan,
-            KhuVucId = vm.KhuVuc.Id, DipDacBiet = b.LoaiLe, GhiChu = b.GhiChu,
-            TongMon = bill.TienMon, PhuThuKhuVuc = bill.PhuThu, Vat = bill.Vat, PhiPhucVu = bill.PhiPhucVu,
-            MaUuDai = vm.MaHopLe ? inp.Ma!.Trim().ToUpper() : null, GiamGia = bill.Giam, TongHoaDon = bill.Tong,
-            CheDoCoc = inp.CheDoCoc, TienCoc = bill.Coc, ConLai = bill.ConLai,
+            HoTen = inp.HoTen.Trim(),
+            SoDienThoai = inp.SoDienThoai.Trim(),
+            Email = inp.Email.Trim(),
+            NgayGio = b.ThoiGianDen!.Value,
+            SoKhach = b.SoNguoi,
+            SoBan = bill.SoBan,
+            KhuVucId = vm.KhuVuc.Id,
+            DipDacBiet = b.LoaiLe,
+            GhiChu = b.GhiChu,
+            TongMon = bill.TienMon,
+            PhuThuKhuVuc = bill.PhuThu,
+            Vat = bill.Vat,
+            PhiPhucVu = bill.PhiPhucVu,
+            MaUuDai = vm.MaHopLe ? inp.Ma!.Trim().ToUpper() : null,
+            GiamGia = bill.Giam,
+            TongHoaDon = bill.Tong,
+            CheDoCoc = inp.CheDoCoc,
+            TienCoc = bill.Coc,
+            ConLai = bill.ConLai,
             PhuongThucThanhToan = inp.PhuongThuc,
             NganHang = inp.PhuongThuc == "VIETQR" ? inp.NganHang : null,
             MaGiaoDich = vm.MaGiaoDich,
-            DaThanhToanCoc = true, NgayThanhToan = DateTime.Now,
-            TrangThai = TrangThaiDatBan.ChoDuyet,     // admin đối chiếu tiền rồi chuyển sang "Đã xác nhận"
+            DaThanhToanCoc = true,
+            NgayThanhToan = DateTime.Now,
+            TrangThai = TrangThaiDatBan.ChoDuyet,
             Mons = vm.Lines.Select(l =>
             {
                 var wm = webMons.FirstOrDefault(w => string.Equals(w.Ten.Trim(), l.TenMon.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -306,110 +333,107 @@ if (cheDoDaGui != inp.CheDoCoc)
                 };
             }).ToList()
         };
-      var loiDatBan = await _svc.ThuLuuDatBanTuGioHangAsync(datBan);
 
-if (loiDatBan != null)
-{
-    ModelState.AddModelError("", loiDatBan);
-    return View(vm);
-}
+        var loiDatBan = await _svc.ThuLuuDatBanTuGioHangAsync(datBan);
+        if (loiDatBan != null)
+        {
+            ModelState.AddModelError("", loiDatBan);
+            return View(vm);
+        }
 
-await _svc.DongBoSangWinFormsAsync(datBan);
+        await _svc.DongBoSangWinFormsAsync(datBan);
 
         CartHelper.Clear(HttpContext.Session);
         BookingDraft.Clear(HttpContext.Session);
         return RedirectToAction(nameof(Success), new { id = datBan.Id });
     }
 
-[Authorize, HttpGet]
-public async Task<IActionResult> History(
-    DateTime? tuNgay,
-    DateTime? denNgay,
-    string? trangThai,
-    int trang = 1)
-{
-    const int kichThuocTrang = 5;
-
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(userId))
-        return Challenge();
-
-    tuNgay = tuNgay?.Date;
-    denNgay = denNgay?.Date;
-
-    if (tuNgay.HasValue && denNgay.HasValue && tuNgay > denNgay)
+    // ---------- Lịch sử & Chi tiết đặt bàn ----------
+    [Authorize, HttpGet]
+    public async Task<IActionResult> History(
+        DateTime? tuNgay,
+        DateTime? denNgay,
+        string? trangThai,
+        int trang = 1)
     {
-        ModelState.AddModelError("",
-            "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
-    }
+        const int kichThuocTrang = 5;
 
-    if (!string.IsNullOrEmpty(trangThai)
-        && !TrangThaiDatBan.TatCa.Contains(trangThai))
-    {
-        trangThai = null;
-    }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Challenge();
 
-    var vm = new LichSuDatBanVm
-    {
-        TuNgay = tuNgay,
-        DenNgay = denNgay,
-        TrangThai = trangThai
-    };
+        tuNgay = tuNgay?.Date;
+        denNgay = denNgay?.Date;
 
-    if (!ModelState.IsValid)
+        if (tuNgay.HasValue && denNgay.HasValue && tuNgay > denNgay)
+        {
+            ModelState.AddModelError("", "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+        }
+
+        if (!string.IsNullOrEmpty(trangThai) && !TrangThaiDatBan.TatCa.Contains(trangThai))
+        {
+            trangThai = null;
+        }
+
+        var vm = new LichSuDatBanVm
+        {
+            TuNgay = tuNgay,
+            DenNgay = denNgay,
+            TrangThai = trangThai
+        };
+
+        if (!ModelState.IsValid)
+            return View(vm);
+
+        var query = _auth.DatBans
+            .AsNoTracking()
+            .Where(d => d.UserId == userId);
+
+        if (tuNgay.HasValue)
+            query = query.Where(d => d.NgayGio >= tuNgay.Value);
+
+        if (denNgay.HasValue && denNgay.Value < DateTime.MaxValue.Date)
+        {
+            var ngayKeTiep = denNgay.Value.AddDays(1);
+            query = query.Where(d => d.NgayGio < ngayKeTiep);
+        }
+
+        if (!string.IsNullOrEmpty(trangThai))
+            query = query.Where(d => d.TrangThai == trangThai);
+
+        vm.TongDon = await query.CountAsync();
+        vm.TongTrang = (int)Math.Ceiling(vm.TongDon / (double)kichThuocTrang);
+        vm.Trang = Math.Clamp(trang, 1, Math.Max(1, vm.TongTrang));
+
+        vm.DonHangs = await query
+            .Include(d => d.KhuVuc)
+            .OrderByDescending(d => d.NgayTao)
+            .ThenByDescending(d => d.Id)
+            .Skip((vm.Trang - 1) * kichThuocTrang)
+            .Take(kichThuocTrang)
+            .ToListAsync();
+
         return View(vm);
-
-    var query = _auth.DatBans
-        .AsNoTracking()
-        .Where(d => d.UserId == userId);
-
-    if (tuNgay.HasValue)
-        query = query.Where(d => d.NgayGio >= tuNgay.Value);
-
-    if (denNgay.HasValue && denNgay.Value < DateTime.MaxValue.Date)
-    {
-        var ngayKeTiep = denNgay.Value.AddDays(1);
-        query = query.Where(d => d.NgayGio < ngayKeTiep);
     }
 
-    if (!string.IsNullOrEmpty(trangThai))
-        query = query.Where(d => d.TrangThai == trangThai);
+    [Authorize, HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Challenge();
 
-    vm.TongDon = await query.CountAsync();
-    vm.TongTrang = (int)Math.Ceiling(
-        vm.TongDon / (double)kichThuocTrang);
-    vm.Trang = Math.Clamp(trang, 1, Math.Max(1, vm.TongTrang));
+        var donHang = await _auth.DatBans
+            .AsNoTracking()
+            .Include(d => d.KhuVuc)
+            .Include(d => d.Mons)
+            .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
 
-    vm.DonHangs = await query
-        .Include(d => d.KhuVuc)
-        .OrderByDescending(d => d.NgayTao)
-        .ThenByDescending(d => d.Id)
-        .Skip((vm.Trang - 1) * kichThuocTrang)
-        .Take(kichThuocTrang)
-        .ToListAsync();
+        if (donHang == null)
+            return NotFound();
 
-    return View(vm);
-}
-
-[Authorize, HttpGet]
-public async Task<IActionResult> Details(int id)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (string.IsNullOrEmpty(userId))
-        return Challenge();
-
-    var donHang = await _auth.DatBans
-        .AsNoTracking()
-        .Include(d => d.KhuVuc)
-        .Include(d => d.Mons)
-        .FirstOrDefaultAsync(d =>
-            d.Id == id && d.UserId == userId);
-
-    if (donHang == null)
-        return NotFound();
-
-    return View(donHang);
-}
+        return View(donHang);
+    }
 
     // ---------- Bước 3: phiếu xác nhận ----------
     [Authorize]

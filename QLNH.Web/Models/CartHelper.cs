@@ -13,6 +13,7 @@ public static class CartHelper
         var json = s.GetString(Key);
         return string.IsNullOrEmpty(json) ? new() : JsonSerializer.Deserialize<Dictionary<int, int>>(json) ?? new();
     }
+
     public static void Save(ISession s, Dictionary<int, int> cart) => s.SetString(Key, JsonSerializer.Serialize(cart));
     public static void Clear(ISession s) => s.Remove(Key);
 }
@@ -31,32 +32,32 @@ public class BookingDraft
 {
     private const string Key = "booking";
     public const int GioMoCua = 8;
-public const int GioNhanBanCuoi = 21; 
-public const int BuocPhutDatBan = 15;
+    public const int GioNhanBanCuoi = 21;
+    public const int BuocPhutDatBan = 15;
 
-public static bool TrongGioPhucVu(DateTime gio)
-    => gio.TimeOfDay >= TimeSpan.FromHours(GioMoCua)
-        && gio.TimeOfDay <= TimeSpan.FromHours(GioNhanBanCuoi);
+    public static bool TrongGioPhucVu(DateTime gio)
+        => gio.TimeOfDay >= TimeSpan.FromHours(GioMoCua)
+           && gio.TimeOfDay <= TimeSpan.FromHours(GioNhanBanCuoi);
 
-public static DateTime ChuanHoaGioNhanBan(DateTime? gioDaChon, DateTime bayGio)
-{
-    var gio = gioDaChon ?? bayGio.AddHours(2);
+    public static DateTime ChuanHoaGioNhanBan(DateTime? gioDaChon, DateTime bayGio)
+    {
+        var gio = gioDaChon ?? bayGio.AddHours(2);
 
-    if (gio <= bayGio)
-        gio = bayGio.AddHours(2);
+        if (gio <= bayGio)
+            gio = bayGio.AddHours(2);
 
-    gio = gio.Date.AddMinutes(
-        Math.Ceiling(gio.TimeOfDay.TotalMinutes / BuocPhutDatBan)
-        * BuocPhutDatBan);
+        gio = gio.Date.AddMinutes(
+            Math.Ceiling(gio.TimeOfDay.TotalMinutes / BuocPhutDatBan) * BuocPhutDatBan);
 
-    if (gio.Hour < GioMoCua)
-        return gio.Date.AddHours(GioMoCua);
+        if (gio.Hour < GioMoCua)
+            return gio.Date.AddHours(GioMoCua);
 
-    if (gio.TimeOfDay > TimeSpan.FromHours(GioNhanBanCuoi))
-    return gio.Date.AddDays(1).AddHours(GioMoCua);
+        if (gio.TimeOfDay > TimeSpan.FromHours(GioNhanBanCuoi))
+            return gio.Date.AddDays(1).AddHours(GioMoCua);
 
-    return gio;
-}
+        return gio;
+    }
+
     public static readonly string[] CacLoaiLe = { "Ăn uống thường", "Sinh nhật", "Hội nghị / Liên hoan" };
 
     public DateTime? ThoiGianDen { get; set; }
@@ -74,6 +75,7 @@ public static DateTime ChuanHoaGioNhanBan(DateTime? gioDaChon, DateTime bayGio)
         var json = s.GetString(Key);
         return string.IsNullOrEmpty(json) ? new() : JsonSerializer.Deserialize<BookingDraft>(json) ?? new();
     }
+
     public void Save(ISession s) => s.SetString(Key, JsonSerializer.Serialize(this));
     public static void Clear(ISession s) => s.Remove(Key);
 }
@@ -139,8 +141,8 @@ public class PaymentInput
 
     public string? Ma { get; set; }
     public string CheDoCoc { get; set; } = CheDo.CoDinh;
-    public string PhuongThuc { get; set; } = "VIETQR";   // VIETQR | MOMO | VNPAY | THE
-    public string NganHang { get; set; } = "VCB";        // VCB | MB (khi VietQR)
+    public string PhuongThuc { get; set; } = "VIETQR";
+    public string NganHang { get; set; } = "TIMO";
 }
 
 public class PaymentVm

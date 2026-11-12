@@ -61,17 +61,24 @@
             <dt class="col-4 fw-normal text-secondary">Đã thanh toán</dt>
             <dd class="col-8 fw-bold">@Model.TienCoc.ToString("N0") đ qua @Model.PhuongThucThanhToan</dd>
             <dt class="col-4 fw-normal text-secondary">Còn lại</dt>
-            <dd class="col-8">@Model.ConLai.ToString("N0") đ (trả tại nhà hàng)</dd>
+            <dd class="col-8">@(Model.Mons.Any() ? Model.ConLai.ToString("N0") + " đ (trả tại nhà hàng)" : "Tính theo hóa đơn thực tế tại nhà hàng")</dd>
             <dt class="col-4 fw-normal text-secondary">Mã giao dịch</dt>
             <dd class="col-8">@Model.MaGiaoDich</dd>
         </dl>
-            <div id="arrival-reminder"
-     class="alert alert-warning small py-2 px-3 mb-3 @(Model.TrangThai is "Đang chờ duyệt" or "Đã xác nhận" ? "" : "d-none")">
-    <strong>Vui lòng đến đúng giờ hẹn.</strong><br />
-    Nếu quý khách chưa đến sau 15 phút kể từ giờ hẹn,
-    hệ thống sẽ tự động hủy đơn đặt bàn.
-</div>
-        <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+
+        <div id="arrival-reminder"
+             class="alert alert-warning small py-2 px-3 mb-3 @(Model.TrangThai is "Đang chờ duyệt" or "Đã xác nhận" ? "" : "d-none")">
+            <strong>Vui lòng đến đúng giờ hẹn.</strong><br />
+            Nếu quý khách chưa đến sau 15 phút kể từ giờ hẹn, hệ thống sẽ tự động hủy đơn đặt bàn.
+        </div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-danger" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn btn-outline-secondary" asp-controller="Cart" asp-action="History">Lịch sử đặt bàn</a>
+            }
+        </div>
     </div>
 </div>
 
@@ -116,9 +123,9 @@
                     badge.className = getBadgeClass(currentStatus);
                     desc.textContent = getDesc(currentStatus);
                     document.getElementById('arrival-reminder').classList.toggle(
-                    'd-none',
-                    currentStatus !== 'Đang chờ duyệt' && currentStatus !== 'Đã xác nhận'
-                );
+                        'd-none',
+                        currentStatus !== 'Đang chờ duyệt' && currentStatus !== 'Đã xác nhận'
+                    );
                 }
             } catch (e) { }
         }

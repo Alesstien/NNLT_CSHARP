@@ -19,7 +19,7 @@ public class KetQuaDatBan
 public class DatBanService
 {
     public const int KhachToiDa = 20;
-    public const int ThoiGianGiuCho = 15;              // phút
+    public const int ThoiGianGiuCho = 15;   // phút
     public const decimal CocCoDinh = 500_000m;
     public const decimal TyLeCoc30 = 0.30m;
     public const decimal TyLeVat = 0.08m;
@@ -32,7 +32,6 @@ public class DatBanService
         new("20:00", "20:00 - Buổi tối"), new("21:00", "21:00 - Buổi tối"),
     };
 
-    // Chặn 2 yêu cầu cùng giành chỗ cuối cùng (đủ dùng cho 1 máy chủ)
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
     private readonly AuthDbContext _db;
@@ -46,7 +45,6 @@ public class DatBanService
         _mail = mail;
     }
 
-    // ---------- Tính tiền (giống hệt công thức ở trình duyệt) ----------
     private static decimal Lam(decimal x) => Math.Round(x, 0, MidpointRounding.AwayFromZero);
 
     public static BaoGia TinhGia(decimal tongMon, decimal phuThu, UuDai? ud)
@@ -75,9 +73,6 @@ public class DatBanService
     public static bool TryParseNgayGio(string ngay, string gio, out DateTime kq)
         => DateTime.TryParseExact($"{ngay} {gio}", "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out kq);
 
-    // ---------- Chỗ trống ----------
-    // Mỗi bàn dùng bữa ~2 giờ: các đơn lệch nhau dưới 2 giờ tính là cùng lúc.
-    // Đơn "Chờ đặt cọc" còn hạn giữ chỗ cũng được tính là đã chiếm chỗ.
     public async Task<List<KhaDungItem>> KiemTraKhaDungAsync(DateTime ngayGio, int soKhach, int? boQuaId = null)
     {
         var khuVucs = await _db.KhuVucs.AsNoTracking().Where(k => k.HoatDong).OrderBy(k => k.Id).ToListAsync();
@@ -100,60 +95,56 @@ public class DatBanService
         }).ToList();
     }
 
-public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
-{
-    if (!BookingDraft.TrongGioPhucVu(datBan.NgayGio))
-    return "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
-    await Gate.WaitAsync();
-
-    try
+    public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
     {
-        var ban = await _db.KhuVucs
-            .AsNoTracking()
-            .FirstOrDefaultAsync(k =>
-                k.Id == datBan.KhuVucId && k.HoatDong);
+        if (!BookingDraft.TrongGioPhucVu(datBan.NgayGio))
+            return "Nhà hàng nhận bàn từ 08:00 đến trước 22:00. Vui lòng chọn lại giờ.";
 
-        if (ban == null)
-            return "Bàn đã chọn không còn phục vụ. Vui lòng chọn bàn khác.";
+        await Gate.WaitAsync();
+        try
+        {
+            var ban = await _db.KhuVucs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(k => k.Id == datBan.KhuVucId && k.HoatDong);
 
-        var bayGio = DateTime.Now;
+            if (ban == null)
+                return "Bàn đã chọn không còn phục vụ. Vui lòng chọn bàn khác.";
 
-        if (datBan.NgayGio <= bayGio)
-            return "Hãy chọn ngày giờ nhận bàn trong tương lai.";
+            var bayGio = DateTime.Now;
+            if (datBan.NgayGio <= bayGio)
+                return "Hãy chọn ngày giờ nhận bàn trong tương lai.";
 
-        if (datBan.SoKhach <= 0 || datBan.SoKhach > ban.SucChua)
-            return $"{ban.Ten} chỉ phục vụ từ 1 đến {ban.SucChua} khách.";
+            if (datBan.SoKhach <= 0 || datBan.SoKhach > ban.SucChua)
+                return $"{ban.Ten} chỉ phục vụ từ 1 đến {ban.SucChua} khách.";
 
-        var tu = datBan.NgayGio.AddHours(-2);
-        var den = datBan.NgayGio.AddHours(2);
+            var tu = datBan.NgayGio.AddHours(-2);
+            var den = datBan.NgayGio.AddHours(2);
 
-        var daCoDon = await _db.DatBans
-            .AsNoTracking()
-            .AnyAsync(d =>
-                d.KhuVucId == datBan.KhuVucId
-                && d.TrangThai != TrangThaiDatBan.DaHuy
-                && d.TrangThai != TrangThaiDatBan.HoanThanh
-                && d.TrangThai != "Đã thanh toán"
-                && (d.TrangThai != TrangThaiDatBan.ChoCoc
-                    || d.GiuChoDen > bayGio)
-                && d.NgayGio > tu
-                && d.NgayGio < den);
+            var daCoDon = await _db.DatBans
+                .AsNoTracking()
+                .AnyAsync(d =>
+                    d.KhuVucId == datBan.KhuVucId
+                    && d.TrangThai != TrangThaiDatBan.DaHuy
+                    && d.TrangThai != TrangThaiDatBan.HoanThanh
+                    && d.TrangThai != "Đã thanh toán"
+                    && (d.TrangThai != TrangThaiDatBan.ChoCoc || d.GiuChoDen > bayGio)
+                    && d.NgayGio > tu
+                    && d.NgayGio < den);
 
-        if (daCoDon)
-            return $"{ban.Ten} đã có người đặt trong khung giờ này. "
-                + "Vui lòng chọn bàn khác hoặc đổi giờ.";
+            if (daCoDon)
+                return $"{ban.Ten} đã có người đặt trong khung giờ này. Vui lòng chọn bàn khác hoặc đổi giờ.";
 
-        datBan.MaDatBan = await TaoMaAsync();
-        _db.DatBans.Add(datBan);
-        await _db.SaveChangesAsync();
+            datBan.MaDatBan = await TaoMaAsync();
+            _db.DatBans.Add(datBan);
+            await _db.SaveChangesAsync();
 
-        return null;
+            return null;
+        }
+        finally
+        {
+            Gate.Release();
+        }
     }
-    finally
-    {
-        Gate.Release();
-    }
-}
 
     /// <summary>Hủy các lần giữ chỗ đã quá hạn mà chưa xác nhận cọc.</summary>
     public async Task DonDepGiuChoAsync()
@@ -166,7 +157,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
                 .SetProperty(d => d.LyDoHuy, "Quá hạn đặt cọc"));
     }
 
-    // ---------- Bước 1 -> 2: giữ chỗ (tạo mới hoặc cập nhật lần giữ chỗ đang có) ----------
     public async Task<KetQuaDatBan> GiuChoAsync(DatBanRequest r, string userId)
     {
         if (!TryParseNgayGio(r.Ngay, r.Gio, out var ngayGio) || !Slots.Any(s => s.Value == r.Gio))
@@ -204,11 +194,10 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
                     ? $"Khu vực \"{kv.Ten}\" đã hết chỗ vào khung giờ này. Vui lòng chọn khu vực hoặc giờ khác."
                     : $"Khu vực \"{kv.Ten}\" chỉ còn {kd.ConLai} chỗ vào khung giờ này.");
 
-            // Mã ưu đãi
             UuDai? ud = null;
             var ma = r.MaUuDai?.Trim().ToUpperInvariant();
             if (!string.IsNullOrEmpty(ma) && chon.Count == 0)
-            return Loi("Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
+                return Loi("Mã ưu đãi chỉ áp dụng khi đặt bàn kèm món ăn.");
             if (!string.IsNullOrEmpty(ma))
             {
                 var homNay = DateTime.Today;
@@ -216,7 +205,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
                 if (ud == null) return Loi("Mã ưu đãi không hợp lệ hoặc đã hết hạn.");
             }
 
-            // Giá luôn lấy từ CSDL, không tin giá do trình duyệt gửi lên
             var ids = chon.Select(m => m.MucThucDonId).ToList();
             var mons = await _db.MucThucDons.Where(m => ids.Contains(m.Id) && m.ConPhucVu).ToListAsync();
             var adminMons = await _appDb.MonAns.AsNoTracking().Where(m => m.ConPhucVu).ToListAsync();
@@ -267,7 +255,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         finally { Gate.Release(); }
     }
 
-    // ---------- Bước 2 -> 3: xác nhận đã thanh toán cọc ----------
     public async Task<KetQuaDatBan> ThanhToanAsync(int id, string userId, ThanhToanRequest r)
     {
         if (!PhuongThucHopLe.Contains(r.PhuongThuc)) return Loi("Phương thức thanh toán không hợp lệ.");
@@ -285,7 +272,7 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         b.TienCoc = TinhCoc(r.CheDoCoc, b.TongHoaDon);
         b.ConLai = Math.Max(0, b.TongHoaDon - b.TienCoc);
         b.PhuongThucThanhToan = r.PhuongThuc;
-        b.NganHang = r.PhuongThuc == "VIETQR" && (r.NganHang == "VCB" || r.NganHang == "MB") ? r.NganHang : null;
+        b.NganHang = r.PhuongThuc == "VIETQR" && (r.NganHang == "VCB" || r.NganHang == "MB" || r.NganHang == "TIMO") ? r.NganHang : null;
         b.MaGiaoDich = "GD" + DateTime.Now.ToString("yyMMddHHmmss") + RandomCode(4);
         b.DaThanhToanCoc = true;
         b.NgayThanhToan = DateTime.Now;
@@ -299,8 +286,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         return new KetQuaDatBan { DatBan = b, EmailDaGui = sent };
     }
 
-    // ---------- Hủy / duyệt / hoàn thành ----------
-    /// <summary>Trả về null nếu thành công, ngược lại là thông báo lỗi.</summary>
     public async Task<string?> HuyAsync(int id, string? userId, bool laAdmin, string? lyDo)
     {
         var b = await _db.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons).FirstOrDefaultAsync(x => x.Id == id);
@@ -312,11 +297,11 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
 
         var daCoc = b.DaThanhToanCoc;
         if (await _appDb.DatBans.AsNoTracking().AnyAsync(d =>
-            d.MaDatBan == b.MaDatBan
-            && (d.BatDauPhucVuLuc != null || d.TrangThai == "Đã đến")))
+            d.MaDatBan == b.MaDatBan && (d.BatDauPhucVuLuc != null || d.TrangThai == "Đã đến")))
         {
             return "Phiếu đã được tiếp nhận. Vui lòng xử lý tại POS.";
         }
+
         b.TrangThai = TrangThaiDatBan.DaHuy;
         b.LyDoHuy = string.IsNullOrWhiteSpace(lyDo) ? (laAdmin ? "Nhà hàng hủy đơn" : "Khách hủy đơn") : lyDo.Trim();
         b.NgayCapNhat = DateTime.Now;
@@ -351,7 +336,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         return null;
     }
 
-    // ---------- Đồng bộ danh sách Bàn từ Admin sang Web_KhuVuc ----------
     public async Task DongBoBanTuAdminAsync()
     {
         var adminBans = await _appDb.Bans.AsNoTracking().OrderBy(b => b.Id).ToListAsync();
@@ -399,7 +383,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
             if (hoatDong) activeNames.Add(ten);
         }
 
-        // Ẩn các khu vực mẫu cũ không có trong bảng Ban của QLNH.Admin
         foreach (var kv in webKvs)
         {
             if (!activeNames.Contains(kv.Ten.Trim()))
@@ -411,7 +394,6 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         await _db.SaveChangesAsync();
     }
 
-    // ---------- Đồng bộ sang bảng của WinForms (QLNH.Admin) ----------
     public async Task DongBoSangWinFormsAsync(DatBan b)
     {
         var kvTen = b.KhuVuc?.Ten
@@ -444,9 +426,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         };
 
         var prefix = $"[{b.MaDatBan}]";
-        var winDatBan = await _appDb.DatBans
-    .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
-          var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
+        var winDatBan = await _appDb.DatBans.FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
+        var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
         var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
         var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
         if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
@@ -478,8 +459,8 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         }
 
         var winDon = await _appDb.DonHangs
-        .Include(d => d.ChiTiets)
-        .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
+            .Include(d => d.ChiTiets)
+            .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
         var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
         if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
 
@@ -541,8 +522,10 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
 
             _appDb.DonHangs.Add(winDon);
         }
-        else if (winDon != null)
+        else
         {
+            winDon.MaUuDai = b.MaUuDai;
+            winDon.GiamGia = b.GiamGia;
             winDon.TrangThai = ttDonWin;
             winDon.TongTien = b.TongHoaDon > 0 ? b.TongHoaDon : b.TienCoc;
             winDon.GhiChu = ghiChuDon;
@@ -601,9 +584,7 @@ public async Task<string?> ThuLuuDatBanTuGioHangAsync(DatBan datBan)
         }
         await _appDb.SaveChangesAsync();
     }
-    
 
-    // ---------- Helpers ----------
     private static KetQuaDatBan Loi(string msg, string? ma = null) => new() { Loi = msg, MaLoi = ma };
 
     private async Task<string> TaoMaAsync()

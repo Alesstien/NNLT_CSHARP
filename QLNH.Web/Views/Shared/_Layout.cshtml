@@ -30,6 +30,12 @@
         <li class="nav-item">
           <a class="nav-link @(ctrl == "Menu" ? "active" : "")" asp-controller="Menu" asp-action="Index">Thực đơn</a>
         </li>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+          <li class="nav-item">
+            <a class="nav-link @(ctrl == "Cart" && (act == "History" || act == "Details") ? "active" : "")" asp-controller="Cart" asp-action="History">Lịch sử đặt bàn</a>
+          </li>
+        }
       </ul>
 
       <div class="hv-header-actions">

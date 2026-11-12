@@ -9,14 +9,20 @@ using QLNH_Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
-builder.Services.AddSession(o => { o.IdleTimeout = TimeSpan.FromMinutes(60); o.Cookie.HttpOnly = true; o.Cookie.IsEssential = true; });
-builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-builder.Services.AddScoped<OrderService>();   // Dependency Injection
+builder.Services.AddSession(o =>
+{
+    o.IdleTimeout = TimeSpan.FromMinutes(60);
+    o.Cookie.HttpOnly = true;
+    o.Cookie.IsEssential = true;
+});
+builder.Services.AddDbContext<AppDbContext>(o =>
+    o.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddScoped<OrderService>();
 
 // ---- Đăng nhập / đăng ký (ASP.NET Core Identity) ----
 builder.Services.AddDbContext<AuthDbContext>(o => o.UseSqlServer(
     builder.Configuration.GetConnectionString("Default"),
-    s => s.MigrationsHistoryTable("__EFMigrationsHistory_Auth")));   // tách lịch sử migration khỏi AppDbContext
+    s => s.MigrationsHistoryTable("__EFMigrationsHistory_Auth")));
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(o =>
 {
@@ -38,12 +44,14 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.ExpireTimeSpan = TimeSpan.FromDays(14);
     o.SlidingExpiration = true;
 });
+
 // Kiểm tra lại tài khoản mỗi phút: admin khóa tài khoản thì phiên đang đăng nhập bị đăng xuất sau tối đa ~1 phút
 builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
 
 // ---- Đặt bàn ----
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddScoped<DatBanService>();
+builder.Services.AddHostedService<TuHuyDatBanWorker>();
 
 var app = builder.Build();
 if (!app.Environment.IsDevelopment()) app.UseExceptionHandler("/Home/Error");
@@ -52,12 +60,24 @@ if (!app.Environment.IsDevelopment()) app.UseExceptionHandler("/Home/Error");
 using (var scope = app.Services.CreateScope())
 {
     var sp = scope.ServiceProvider;
+    var appDb = sp.GetRequiredService<AppDbContext>();
+    appDb.EnsureSchemaColumns();
+
     var auth = sp.GetRequiredService<AuthDbContext>();
     auth.Database.Migrate();
+
     var roles = sp.GetRequiredService<RoleManager<IdentityRole>>();
     foreach (var r in new[] { AccountController.RoleKhach, AccountController.RoleAdmin })
-        if (!await roles.RoleExistsAsync(r)) await roles.CreateAsync(new IdentityRole(r));
-    await DbSeeder.SeedAsync(auth, sp.GetRequiredService<UserManager<AppUser>>(), app.Configuration, sp.GetRequiredService<DatBanService>());
+    {
+        if (!await roles.RoleExistsAsync(r))
+            await roles.CreateAsync(new IdentityRole(r));
+    }
+
+    await DbSeeder.SeedAsync(
+        auth,
+        sp.GetRequiredService<UserManager<AppUser>>(),
+        app.Configuration,
+        sp.GetRequiredService<DatBanService>());
 }
 
 // Đường dẫn cũ của trang đặt bàn / lịch sử đặt bàn -> chuyển về Trang chủ hoặc Giỏ hàng
@@ -70,10 +90,16 @@ app.Use(async (ctx, next) =>
             p.Equals("/Reservation/Create", StringComparison.OrdinalIgnoreCase) ||
             p.Equals("/DatBan", StringComparison.OrdinalIgnoreCase) ||
             p.Equals("/DatBan/Index", StringComparison.OrdinalIgnoreCase))
-        { ctx.Response.Redirect("/Cart"); return; }
+        {
+            ctx.Response.Redirect("/Cart");
+            return;
+        }
 
         if (p.StartsWithSegments("/DatBan", StringComparison.OrdinalIgnoreCase))
-        { ctx.Response.Redirect("/"); return; }
+        {
+            ctx.Response.Redirect("/");
+            return;
+        }
     }
     await next();
 });
@@ -83,6 +109,6 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();   // Web API (attribute routing)
+app.MapControllers();
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 app.Run();

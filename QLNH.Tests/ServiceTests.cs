@@ -10,12 +10,15 @@ public class ServiceTests
 {
     private static AppDbContext NewDb()
     {
-        var opt = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        var opt = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
         var db = new AppDbContext(opt);
         db.DanhMucs.Add(new DanhMuc { Id = 1, TenDanhMuc = "Món chính" });
-        db.MonAns.AddRange(new MonAn { Id = 1, TenMon = "Cơm tấm", Gia = 65000, DanhMucId = 1 },
-                           new MonAn { Id = 2, TenMon = "Trà đào", Gia = 39000, DanhMucId = 1 },
-                           new MonAn { Id = 3, TenMon = "Món ngừng bán", Gia = 10000, DanhMucId = 1, ConPhucVu = false });
+        db.MonAns.AddRange(
+            new MonAn { Id = 1, TenMon = "Cơm tấm", Gia = 65000, DanhMucId = 1 },
+            new MonAn { Id = 2, TenMon = "Trà đào", Gia = 39000, DanhMucId = 1 },
+            new MonAn { Id = 3, TenMon = "Món ngừng bán", Gia = 10000, DanhMucId = 1, ConPhucVu = false });
         db.Bans.Add(new Ban { Id = 1, TenBan = "Bàn 01", SoGhe = 4 });
         db.SaveChanges();
         return db;
@@ -34,7 +37,8 @@ public class ServiceTests
     public void TaoDon_TinhTongTheoGiaTrongCsdl_VaGomMonTrung()
     {
         using var db = NewDb();
-        var don = new OrderService(db).TaoDon("An", "0901234567", 1, null, new[] { new DongDat(1, 2), new DongDat(2, 1), new DongDat(1, 1) });
+        var don = new OrderService(db).TaoDon("An", "0901234567", 1, null,
+            new[] { new DongDat(1, 2), new DongDat(2, 1), new DongDat(1, 1) });
         Assert.Equal(3 * 65000 + 39000, don.TongTien);
         Assert.Equal(2, don.ChiTiets.Count);
         Assert.Equal("Đang dùng", db.Bans.Find(1)!.TrangThai);
@@ -44,14 +48,16 @@ public class ServiceTests
     public void TaoDon_DonRong_NemLoi()
     {
         using var db = NewDb();
-        Assert.Throws<ArgumentException>(() => new OrderService(db).TaoDon("An", null, null, null, Array.Empty<DongDat>()));
+        Assert.Throws<ArgumentException>(() =>
+            new OrderService(db).TaoDon("An", null, null, null, Array.Empty<DongDat>()));
     }
 
     [Fact]
     public void TaoDon_MonNgungPhucVu_NemLoi()
     {
         using var db = NewDb();
-        Assert.Throws<InvalidOperationException>(() => new OrderService(db).TaoDon("An", null, null, null, new[] { new DongDat(3, 1) }));
+        Assert.Throws<InvalidOperationException>(() =>
+            new OrderService(db).TaoDon("An", null, null, null, new[] { new DongDat(3, 1) }));
     }
 
     [Fact]
@@ -66,42 +72,36 @@ public class ServiceTests
         Assert.Single(dt);
         Assert.Equal(130000, dt[0].DoanhThu);
     }
+
     [Theory]
-[InlineData(TrangThaiDon.DaThanhToan, "Đã đến")]
-[InlineData(TrangThaiDon.DaHuy, "Đã hủy")]
-public void DoiTrangThai_DonCoPhieu_CapNhatPhieuVaGiaiPhongBan(
-    string trangThaiDon, string trangThaiPhieu)
-  {
-    using var db = NewDb();
-    var svc = new OrderService(db);
-    const string maDatBan = "HV-123456";
-
-    var don = svc.TaoDon(
-        "An", "0901234567", 1, null,
-        new[] { new DongDat(1, 2) });
-
-    don.MaDatBan = maDatBan;
-    db.DatBans.Add(new DatBan
+    [InlineData(TrangThaiDon.DaThanhToan, "Đã đến")]
+    [InlineData(TrangThaiDon.DaHuy, "Đã hủy")]
+    public void DoiTrangThai_DonCoPhieu_CapNhatPhieuVaGiaiPhongBan(string trangThaiDon, string trangThaiPhieu)
     {
-        MaDatBan = maDatBan,
-        TenKhach = "An",
-        SoDienThoai = "0901234567",
-        BanId = 1,
-        TrangThai = "Đã xác nhận"
-    });
-    db.SaveChanges();
+        using var db = NewDb();
+        var svc = new OrderService(db);
+        const string maDatBan = "HV-123456";
 
-    var donId = don.Id;
-    db.ChangeTracker.Clear();
+        var don = svc.TaoDon("An", "0901234567", 1, null, new[] { new DongDat(1, 2) });
+        don.MaDatBan = maDatBan;
+        db.DatBans.Add(new DatBan
+        {
+            MaDatBan = maDatBan,
+            TenKhach = "An",
+            SoDienThoai = "0901234567",
+            BanId = 1,
+            TrangThai = "Đã xác nhận"
+        });
+        db.SaveChanges();
 
-    svc.DoiTrangThai(donId, trangThaiDon);
-    db.ChangeTracker.Clear();
+        var donId = don.Id;
+        db.ChangeTracker.Clear();
 
-    Assert.Equal(trangThaiDon, db.DonHangs.Find(donId)!.TrangThai);
-    Assert.Equal(trangThaiPhieu,
-        db.DatBans.Single(d => d.MaDatBan == maDatBan).TrangThai);
-    Assert.Equal("Trống", db.Bans.Find(1)!.TrangThai);
-  }
+        svc.DoiTrangThai(donId, trangThaiDon);
+        db.ChangeTracker.Clear();
+
+        Assert.Equal(trangThaiDon, db.DonHangs.Find(donId)!.TrangThai);
+        Assert.Equal(trangThaiPhieu, db.DatBans.Single(d => d.MaDatBan == maDatBan).TrangThai);
+        Assert.Equal("Trống", db.Bans.Find(1)!.TrangThai);
+    }
 }
-
-
