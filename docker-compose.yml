@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: qlnh_sqlserver
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Pass123!
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  web:
+    build:
+      context: .
+      dockerfile: QLNH.Web/Dockerfile
+    container_name: qlnh_web
+    restart: always
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=QLNhaHang;User Id=sa;Password=YourStrong@Pass123!;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+
+volumes:
+  sql_data:
