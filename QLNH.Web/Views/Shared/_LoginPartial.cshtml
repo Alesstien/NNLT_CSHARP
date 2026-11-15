@@ -1,8 +1,6 @@
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using QLNH_Web.Models
-@using Microsoft.EntityFrameworkCore
 @inject UserManager<AppUser> UserManager
-@inject QLNH_Web.Data.AuthDbContext Db
 
 <div class="auth-box">
 @if (User.Identity?.IsAuthenticated == true)
@@ -14,14 +12,6 @@
         <span class="auth-avatar">@chuCai</span>
         <span>Xin chào, <b>@ten</b></span>
     </div>
-    if (User.IsInRole("Admin"))
-    {
-        var choDuyet = await Db.DatBans.CountAsync(d => d.TrangThai == TrangThaiDatBan.ChoDuyet);
-        <a class="auth-btn auth-admin" asp-controller="Admin" asp-action="Reservations">
-            Quản trị
-            @if (choDuyet > 0) { <span class="auth-badge">@choDuyet</span> }
-        </a>
-    }
     <form asp-controller="Account" asp-action="Logout" method="post">
         <button type="submit" class="auth-btn auth-login">Đăng xuất</button>
     </form>

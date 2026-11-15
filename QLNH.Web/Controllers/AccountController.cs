@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +35,7 @@ public class AccountController : Controller
         var sdt = ChuanHoaSdt(m.SoDienThoai);
         if (await _users.Users.AnyAsync(u => u.PhoneNumber == sdt))
         {
-            ModelState.AddModelError(nameof(m.SoDienThoai), "Số điện thoại đã được đăng ký");
+            ModelState.AddModelError(nameof(m.SoDienThoai), "Sá»‘ Ä‘iá»‡n thoáº¡i Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½");
             return View(m);
         }
 
@@ -91,13 +91,13 @@ public class AccountController : Controller
             {
                 var end = await _users.GetLockoutEndDateAsync(user);
                 ModelState.AddModelError("", end > DateTimeOffset.UtcNow.AddYears(50)
-                    ? "Tài khoản đã bị quản trị viên khóa. Vui lòng liên hệ nhà hàng."
-                    : "Tài khoản tạm khóa do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 5 phút.");
+                    ? "TÃ i khoáº£n Ä‘Ã£ bá»‹ quáº£n trá»‹ viÃªn khÃ³a. Vui lÃ²ng liÃªn há»‡ nhÃ  hÃ ng."
+                    : "TÃ i khoáº£n táº¡m khÃ³a do nháº­p sai máº­t kháº©u nhiá»u láº§n. Vui lÃ²ng thá»­ láº¡i sau 5 phÃºt.");
                 return View(m);
             }
         }
 
-        ModelState.AddModelError("", "Tài khoản hoặc mật khẩu không đúng");
+        ModelState.AddModelError("", "TÃ i khoáº£n hoáº·c máº­t kháº©u khÃ´ng Ä‘Ãºng");
         return View(m);
     }
 
@@ -109,7 +109,7 @@ public class AccountController : Controller
     }
 
     [HttpGet, AllowAnonymous]
-    public IActionResult AccessDenied() => Content("Bạn không có quyền truy cập trang này.");
+    public IActionResult AccessDenied() => Content("Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p trang nÃ y.");
 
     private static string ChuanHoaSdt(string s)
     {
@@ -119,9 +119,10 @@ public class AccountController : Controller
 
     private static string DichLoi(IdentityError e) => e.Code switch
     {
-        "DuplicateUserName" or "DuplicateEmail" => "Email đã được đăng ký",
-        "PasswordTooShort" => "Mật khẩu quá ngắn",
-        "PasswordRequiresDigit" => "Mật khẩu cần ít nhất một chữ số",
+        "DuplicateUserName" or "DuplicateEmail" => "Email Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½",
+        "PasswordTooShort" => "Máº­t kháº©u quÃ¡ ngáº¯n",
+        "PasswordRequiresDigit" => "Máº­t kháº©u cáº§n Ã­t nháº¥t má»™t chá»¯ sá»‘",
         _ => e.Description
     };
 }
+
