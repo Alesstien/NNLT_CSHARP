@@ -1,3 +1,5 @@
+@using System.Security.Claims
+@using QLNH_Web.Models
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -8,11 +10,18 @@
   <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
 </head>
 <body>
+
 @{
-  var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-  var act = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-  var cartCount = QLNH_Web.Models.CartHelper.Get(Context.Session).Values.Sum();
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var act = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    var cartCount = string.IsNullOrEmpty(userId)
+        ? 0
+        : CartHelper.Get(Context.Session, userId).Values.Sum();
 }
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-brand sticky-top hv-navbar">
   <div class="container">
     <a class="navbar-brand hv-brand" asp-controller="Home" asp-action="Index">
