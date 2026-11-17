@@ -3,19 +3,42 @@ using System.Text.Json;
 
 namespace QLNH_Web.Models;
 
+
 public static class CartHelper
 {
-    private const string Key = "cart";
+    // Tạo Session Key riêng cho từng tài khoản
+    public static string GetKey(string userId)
+        => $"cart_{userId}";
 
-    public static Dictionary<int, int> Get(ISession s)
+    // Lấy giỏ hàng theo UserId
+    public static Dictionary<int, int> Get(
+        ISession s, string userId)
     {
-        var json = s.GetString(Key);
-        return string.IsNullOrEmpty(json) ? new() : JsonSerializer.Deserialize<Dictionary<int, int>>(json) ?? new();
+        var json = s.GetString(GetKey(userId));
+
+        return string.IsNullOrEmpty(json)
+            ? new()
+            : JsonSerializer.Deserialize<Dictionary<int, int>>(json) ?? new();
     }
 
-    public static void Save(ISession s, Dictionary<int, int> cart) => s.SetString(Key, JsonSerializer.Serialize(cart));
-    public static void Clear(ISession s) => s.Remove(Key);
+    // Lưu giỏ hàng theo UserId
+    public static void Save(
+        ISession s,
+        string userId,
+        Dictionary<int, int> cart)
+    {
+        s.SetString(
+            GetKey(userId),
+            JsonSerializer.Serialize(cart));
+    }
+
+    // Xóa giỏ hàng theo UserId
+    public static void Clear(ISession s, string userId)
+    {
+        s.Remove(GetKey(userId));
+    }
 }
+
 
 public class CartLine
 {
@@ -75,6 +98,7 @@ public class BookingDraft
 
     public void Save(ISession s) => s.SetString(Key, JsonSerializer.Serialize(this));
     public static void Clear(ISession s) => s.Remove(Key);
+    
 }
 
 public class Bill
