@@ -24,6 +24,7 @@ public class CartController : Controller
         _svc = svc;
     }
 
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(int id, int soLuong = 1)
@@ -47,15 +48,24 @@ public class CartController : Controller
             return NotFound(msg);
         }
 
-        soLuong = Math.Clamp(soLuong, 1, 100);
-        var cart = CartHelper.Get(HttpContext.Session);
+        // Lấy ID tài khoản đang đăng nhập
+var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (cart.TryGetValue(id, out var soLuongCu))
-            cart[id] = Math.Min(soLuongCu + soLuong, 100);
-        else
-            cart[id] = soLuong;
+if (string.IsNullOrEmpty(userId))
+    return Challenge();
 
-        CartHelper.Save(HttpContext.Session, cart);
+soLuong = Math.Clamp(soLuong, 1, 100);
+
+// Lấy giỏ hàng riêng của tài khoản
+var cart = CartHelper.Get(HttpContext.Session, userId);
+
+if (cart.TryGetValue(id, out var soLuongCu))
+    cart[id] = Math.Min(soLuongCu + soLuong, 100);
+else
+    cart[id] = soLuong;
+
+// Lưu giỏ hàng theo UserId
+CartHelper.Save(HttpContext.Session, userId, cart);
 
         if (isAjax)
         {
@@ -71,20 +81,39 @@ public class CartController : Controller
         return RedirectToAction("Index", "Menu");
     }
 
-    private async Task<List<CartLine>> LoadLines()
+    
+private async Task<List<CartLine>> LoadLines()
+{
+    // Lấy UserId hiện tại
+    var userId = User.FindFirstValue(
+        ClaimTypes.NameIdentifier);
+
+    if (string.IsNullOrEmpty(userId))
+        return new();
+
+    // Chỉ lấy giỏ hàng của tài khoản hiện tại
+    var cart = CartHelper.Get(
+        HttpContext.Session, userId);
+
+    var ids = cart.Keys.ToList();
+
+    if (ids.Count == 0)
+        return new();
+
+    var mons = await _db.MonAns
+        .Where(m => ids.Contains(m.Id) && m.ConPhucVu)
+        .OrderBy(m => m.Id)
+        .ToListAsync();
+
+    return mons.Select(m => new CartLine
     {
-        var cart = CartHelper.Get(HttpContext.Session);
-        var ids = cart.Keys.ToList();
-        if (ids.Count == 0) return new();
-        var mons = await _db.MonAns.Where(m => ids.Contains(m.Id) && m.ConPhucVu).OrderBy(m => m.Id).ToListAsync();
-        return mons.Select(m => new CartLine
-        {
-            MonAnId = m.Id,
-            TenMon = m.TenMon,
-            DonGia = m.Gia,
-            SoLuong = cart[m.Id]
-        }).ToList();
-    }
+        MonAnId = m.Id,
+        TenMon = m.TenMon,
+        DonGia = m.Gia,
+        SoLuong = cart[m.Id]
+    }).ToList();
+}
+
 
     private static KhuVuc? ChonKhuVuc(BookingDraft b, List<KhuVuc> kvs)
     {
@@ -95,6 +124,7 @@ public class CartController : Controller
         return kv;
     }
 
+    [Authorize]
     public async Task<IActionResult> Index()
     {
         await _svc.DongBoBanTuAdminAsync();
@@ -115,6 +145,7 @@ public class CartController : Controller
         return View(vm);
     }
 
+    [Authorize]
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Apply(BookingDraft booking, string? op)
     {
@@ -124,7 +155,10 @@ public class CartController : Controller
         if (!BookingDraft.CacLoaiLe.Contains(booking.LoaiLe)) booking.LoaiLe = BookingDraft.CacLoaiLe[0];
         booking.Save(HttpContext.Session);
 
-        var cart = CartHelper.Get(HttpContext.Session);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+        var cart = CartHelper.Get(HttpContext.Session, userId);
         if (op == "next") return await TiepTuc(booking, cart);
 
         if (booking.ThoiGianDen != null && booking.ThoiGianDen <= DateTime.Now)
@@ -148,7 +182,7 @@ public class CartController : Controller
                 case "dec": if (--cart[id] <= 0) cart.Remove(id); break;
                 case "del": cart.Remove(id); break;
             }
-            CartHelper.Save(HttpContext.Session, cart);
+            CartHelper.Save(HttpContext.Session, userId, cart);
         }
         return RedirectToAction(nameof(Index));
     }
@@ -337,9 +371,21 @@ public class CartController : Controller
 
         await _svc.DongBoSangWinFormsAsync(datBan);
 
-        CartHelper.Clear(HttpContext.Session);
-        BookingDraft.Clear(HttpContext.Session);
-        return RedirectToAction(nameof(Success), new { id = datBan.Id });
+       // Lấy UserId của người vừa thanh toán
+var userId = User.FindFirstValue(
+    ClaimTypes.NameIdentifier);
+
+if (string.IsNullOrEmpty(userId))
+    return Challenge();
+
+// Chỉ xóa giỏ hàng của tài khoản hiện tại
+CartHelper.Clear(HttpContext.Session, userId);
+
+BookingDraft.Clear(HttpContext.Session);
+
+return RedirectToAction(
+    nameof(Success),
+    new { id = datBan.Id });
     }
 
     [Authorize, HttpGet]
