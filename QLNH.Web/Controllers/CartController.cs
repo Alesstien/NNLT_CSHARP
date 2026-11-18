@@ -127,13 +127,17 @@ private async Task<List<CartLine>> LoadLines()
     [Authorize]
     public async Task<IActionResult> Index()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Challenge();
+
         await _svc.DongBoBanTuAdminAsync();
-        var b = BookingDraft.Get(HttpContext.Session);
+        var b = BookingDraft.Get(HttpContext.Session, userId);
         b.ThoiGianDen = BookingDraft.ChuanHoaGioNhanBan(b.ThoiGianDen, DateTime.Now);
 
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).OrderBy(k => k.Id).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
-        b.Save(HttpContext.Session);
+        b.Save(HttpContext.Session, userId);
         var lines = await LoadLines();
 
         var vm = new CartPageVm { Lines = lines, Booking = b, KhuVucs = kvs, KhuVuc = kv };
@@ -153,13 +157,14 @@ private async Task<List<CartLine>> LoadLines()
         else if (op == "ng-") booking.SoNguoi--;
         booking.SoNguoi = Math.Clamp(booking.SoNguoi, 1, 1000);
         if (!BookingDraft.CacLoaiLe.Contains(booking.LoaiLe)) booking.LoaiLe = BookingDraft.CacLoaiLe[0];
-        booking.Save(HttpContext.Session);
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Challenge();
 
-        if (string.IsNullOrEmpty(userId)) return Challenge();
+        booking.Save(HttpContext.Session, userId);
         var cart = CartHelper.Get(HttpContext.Session, userId);
-        if (op == "next") return await TiepTuc(booking, cart);
+        if (op == "next") return await TiepTuc(booking, cart, userId);
 
         if (booking.ThoiGianDen != null && booking.ThoiGianDen <= DateTime.Now)
         {
@@ -187,7 +192,10 @@ private async Task<List<CartLine>> LoadLines()
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<IActionResult> TiepTuc(BookingDraft b, Dictionary<int, int> cart)
+    private async Task<IActionResult> TiepTuc(
+        BookingDraft b,
+        Dictionary<int, int> cart,
+        string userId)
     {
         string? loi = null;
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
@@ -208,22 +216,30 @@ private async Task<List<CartLine>> LoadLines()
             return RedirectToAction(nameof(Index));
         }
 
-        b.Save(HttpContext.Session);
+        b.Save(HttpContext.Session, userId);
         return RedirectToAction(nameof(Payment));
     }
 
     private async Task<PaymentVm?> BuildPaymentVm(PaymentInput inp)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
         var lines = await LoadLines();
-        var b = BookingDraft.Get(HttpContext.Session);
+        var b = BookingDraft.Get(HttpContext.Session, userId);
         if (b.ThoiGianDen == null) return null;
 
         var kvs = await _auth.KhuVucs.Where(k => k.HoatDong).ToListAsync();
         var kv = ChonKhuVuc(b, kvs);
         if (kv == null) return null;
 
-        var maGd = HttpContext.Session.GetString("ma_gd");
-        if (!DateTime.TryParse(HttpContext.Session.GetString("giu_cho"), null, DateTimeStyles.RoundtripKind, out var hetHan)
+        var maGd = HttpContext.Session.GetString($"ma_gd_{userId}");
+        if (!DateTime.TryParse(
+                HttpContext.Session.GetString($"giu_cho_{userId}"),
+                null,
+                DateTimeStyles.RoundtripKind,
+                out var hetHan)
             || string.IsNullOrEmpty(maGd))
         {
             return null;
@@ -265,10 +281,20 @@ private async Task<List<CartLine>> LoadLines()
     [Authorize, HttpGet]
     public async Task<IActionResult> Payment()
     {
-        HttpContext.Session.SetString("giu_cho", DateTime.Now.AddMinutes(15).ToString("o"));
-        HttpContext.Session.SetString("ma_gd", "HV" + DateTime.Now.ToString("yyMMddHHmmss"));
-        var inp = new PaymentInput();
         var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(uid))
+            return Challenge();
+
+        // Mã giao dịch và thời gian giữ chỗ được tách theo từng tài khoản.
+        HttpContext.Session.SetString(
+            $"giu_cho_{uid}",
+            DateTime.Now.AddMinutes(15).ToString("o"));
+
+        HttpContext.Session.SetString(
+            $"ma_gd_{uid}",
+            "HV" + DateTime.Now.ToString("yyMMddHHmmss"));
+
+        var inp = new PaymentInput();
         if (!string.IsNullOrEmpty(uid))
         {
             var u = await _auth.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == uid);
@@ -287,6 +313,10 @@ private async Task<List<CartLine>> LoadLines()
     [Authorize, HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Payment([Bind(Prefix = "Input")] PaymentInput inp, string? op)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Challenge();
+
         if (op != "pay") ModelState.Clear();
 
         var cheDoDaGui = inp.CheDoCoc;
@@ -322,7 +352,7 @@ private async Task<List<CartLine>> LoadLines()
         var bill = vm.Bill;
         var datBan = new DatBan
         {
-            UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+            UserId = userId,
             HoTen = inp.HoTen.Trim(),
             SoDienThoai = inp.SoDienThoai.Trim(),
             Email = inp.Email.Trim(),
@@ -371,21 +401,16 @@ private async Task<List<CartLine>> LoadLines()
 
         await _svc.DongBoSangWinFormsAsync(datBan);
 
-       // Lấy UserId của người vừa thanh toán
-var userId = User.FindFirstValue(
-    ClaimTypes.NameIdentifier);
+        // Chỉ xóa dữ liệu của tài khoản vừa thanh toán.
+        CartHelper.Clear(HttpContext.Session, userId);
+        BookingDraft.Clear(HttpContext.Session, userId);
 
-if (string.IsNullOrEmpty(userId))
-    return Challenge();
+        HttpContext.Session.Remove($"giu_cho_{userId}");
+        HttpContext.Session.Remove($"ma_gd_{userId}");
 
-// Chỉ xóa giỏ hàng của tài khoản hiện tại
-CartHelper.Clear(HttpContext.Session, userId);
-
-BookingDraft.Clear(HttpContext.Session);
-
-return RedirectToAction(
-    nameof(Success),
-    new { id = datBan.Id });
+        return RedirectToAction(
+            nameof(Success),
+            new { id = datBan.Id });
     }
 
     [Authorize, HttpGet]
