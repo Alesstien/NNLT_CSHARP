@@ -463,9 +463,10 @@ input[type="password"]::-ms-clear {
     width: 100%;
   }
 }
+
 .hv-brand-logo {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-    flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
