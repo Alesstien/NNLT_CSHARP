@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using QLNH.Data;
 using QLNH.Data.Entities;
@@ -17,14 +18,19 @@ public class MainForm : Form
     public MainForm(TaiKhoan user)
     {
         bool isAdmin = user.VaiTro?.TenVaiTro == "Admin";
+
         Text = $"Quản lý nhà hàng - {user.HoTen} ({user.VaiTro?.TenVaiTro})";
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(900, 600);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
+
         var pnlOrders = new OrdersPanel();
         var pnlPos = new PosPanel();
-        var pnlDatBan = new CrudPanel<DatBan>(q => q.DatBans.OrderByDescending(d => d.Id), CauHinhDatBan);
+
+        var pnlDatBan = new CrudPanel<DatBan>(
+            q => q.DatBans.OrderByDescending(d => d.Id),
+            CauHinhDatBan);
 
         AddTab(tabs, "Đơn hàng", pnlOrders);
         AddTab(tabs, "Bán tại bàn (POS)", pnlPos);
@@ -38,76 +44,152 @@ public class MainForm : Form
 
         if (isAdmin)
         {
-            pnlMonAn = new CrudPanel<MonAn>(q => q.MonAns.OrderBy(m => m.DanhMucId).ThenBy(m => m.Id), CauHinhMonAn);
-            pnlDanhMuc = new CrudPanel<DanhMuc>(q => q.DanhMucs.OrderBy(d => d.TenDanhMuc));
-            pnlBan = new CrudPanel<Ban>(q => q.Bans.OrderBy(b => b.TenBan), CauHinhBan);
+            pnlMonAn = new CrudPanel<MonAn>(
+                q => q.MonAns
+                    .OrderBy(m => m.DanhMucId)
+                    .ThenBy(m => m.Id),
+                CauHinhMonAn);
+
+            pnlDanhMuc = new CrudPanel<DanhMuc>(
+                q => q.DanhMucs.OrderBy(d => d.TenDanhMuc));
+
+            pnlBan = new CrudPanel<Ban>(
+                q => q.Bans.OrderBy(b => b.TenBan),
+                CauHinhBan);
+
             pnlReport = new ReportPanel();
             pnlAccount = new AccountPanel(user.Id);
 
             AddTab(tabs, "Món ăn", pnlMonAn);
             AddTab(tabs, "Danh mục", pnlDanhMuc);
             AddTab(tabs, "Bàn", pnlBan);
-            AddTab(tabs, "Doanh thu", pnlReport);
+            AddTab(tabs, "Dashboard", pnlReport);
             AddTab(tabs, "Tài khoản", pnlAccount);
         }
 
         tabs.SelectedIndexChanged += (_, _) =>
         {
-            var ctrl = tabs.SelectedTab?.Controls.Count > 0 ? tabs.SelectedTab.Controls[0] : null;
-            if (ctrl == pnlOrders) pnlOrders.Tai();
-            else if (ctrl == pnlPos) pnlPos.LoadDataFromDb();
-            else if (ctrl == pnlDatBan) pnlDatBan.Tai();
-            else if (ctrl == pnlMonAn) pnlMonAn?.Tai();
-            else if (ctrl == pnlDanhMuc) pnlDanhMuc?.Tai();
-            else if (ctrl == pnlBan) pnlBan?.Tai();
-            else if (ctrl == pnlReport) pnlReport?.Xem();
-            else if (ctrl == pnlAccount) pnlAccount?.Tai();
+            var ctrl = tabs.SelectedTab?.Controls.Count > 0
+                ? tabs.SelectedTab.Controls[0]
+                : null;
+
+            if (ctrl == pnlOrders)
+                pnlOrders.Tai();
+            else if (ctrl == pnlPos)
+                pnlPos.LoadDataFromDb();
+            else if (ctrl == pnlDatBan)
+                pnlDatBan.Tai();
+            else if (ctrl == pnlMonAn)
+                pnlMonAn?.Tai();
+            else if (ctrl == pnlDanhMuc)
+                pnlDanhMuc?.Tai();
+            else if (ctrl == pnlBan)
+                pnlBan?.Tai();
+            else if (ctrl == pnlReport)
+                pnlReport?.Xem();
+            else if (ctrl == pnlAccount)
+                pnlAccount?.Tai();
         };
 
         var menu = new MenuStrip();
+
         var mnuHeThong = new ToolStripMenuItem("Hệ thống");
+
         if (isAdmin)
         {
-            mnuHeThong.DropDownItems.Add("Quản lý mã ưu đãi", null, (_, _) => MoQuanLyUuDai());
+            mnuHeThong.DropDownItems.Add(
+                "Quản lý mã ưu đãi",
+                null,
+                (_, _) => MoQuanLyUuDai());
+
             mnuHeThong.DropDownItems.Add(new ToolStripSeparator());
         }
-        mnuHeThong.DropDownItems.Add("Đăng xuất", null, (_, _) => { DangXuat = true; Close(); });
-        mnuHeThong.DropDownItems.Add("Thoát", null, (_, _) => Close());
+
+        mnuHeThong.DropDownItems.Add(
+            "Đăng xuất",
+            null,
+            (_, _) =>
+            {
+                DangXuat = true;
+                Close();
+            });
+
+        mnuHeThong.DropDownItems.Add(
+            "Thoát",
+            null,
+            (_, _) => Close());
 
         var mnuTroGiup = new ToolStripMenuItem("Trợ giúp");
-        mnuTroGiup.DropDownItems.Add("Giới thiệu", null, (_, _) =>
-            MessageBox.Show(
-                "Hệ thống quản lý nhà hàng\nĐồ án môn Ngôn ngữ lập trình C#",
-                "Giới thiệu"));
 
-        menu.Items.AddRange(new ToolStripItem[] { mnuHeThong, mnuTroGiup });
+        mnuTroGiup.DropDownItems.Add(
+            "Giới thiệu",
+            null,
+            (_, _) =>
+                MessageBox.Show(
+                    "Hệ thống quản lý nhà hàng\n" +
+                    "Đồ án môn Ngôn ngữ lập trình C#",
+                    "Giới thiệu"));
+
+        menu.Items.AddRange(
+            new ToolStripItem[]
+            {
+                mnuHeThong,
+                mnuTroGiup
+            });
+
         MainMenuStrip = menu;
+
         Controls.Add(tabs);
         Controls.Add(menu);
     }
 
+    // QUẢN LÝ MÃ ƯU ĐÃI
     private void MoQuanLyUuDai()
     {
         using var dlg = new Form
         {
             Text = "Quản lý mã ưu đãi",
-            Size = new Size(880, 520),
-            MinimumSize = new Size(720, 400),
-            StartPosition = FormStartPosition.CenterParent
+
+            // Tăng kích thước cửa sổ
+            Size = new Size(1180, 680),
+
+            // Kích thước nhỏ nhất
+            MinimumSize = new Size(1000, 560),
+
+            // Vị trí xuất hiện
+            StartPosition = FormStartPosition.CenterParent,
+
+            // Cho phép phóng to cửa sổ
+            MaximizeBox = true,
+
+            // Cho phép thu nhỏ cửa sổ
+            MinimizeBox = true
         };
-        var pnl = new CrudPanel<WebUuDai>(q => q.WebUuDais.OrderBy(u => u.Id));
+
+        var pnl = new CrudPanel<WebUuDai>(
+            q => q.WebUuDais.OrderBy(u => u.Id));
+
         dlg.Controls.Add(pnl);
+
         dlg.ShowDialog(this);
     }
 
-    private static void AddTab(TabControl tabs, string title, Control c)
+    private static void AddTab(
+        TabControl tabs,
+        string title,
+        Control c)
     {
         var page = new TabPage(title);
+
         page.Controls.Add(c);
+
         tabs.TabPages.Add(page);
     }
 
-    private static void ThayCot(DataGridView g, string name, DataGridViewComboBoxColumn cotMoi)
+    private static void ThayCot(
+        DataGridView g,
+        string name,
+        DataGridViewComboBoxColumn cotMoi)
     {
         if (g.Columns[name] is DataGridViewComboBoxColumn existing)
         {
@@ -116,32 +198,90 @@ public class MainForm : Form
             existing.ValueMember = cotMoi.ValueMember;
             return;
         }
+
         int idx = g.Columns[name]?.Index ?? -1;
-        if (idx < 0) return;
+
+        if (idx < 0)
+            return;
+
         cotMoi.DataPropertyName = name;
         cotMoi.Name = name;
         cotMoi.HeaderText = name;
+
         g.Columns.RemoveAt(idx);
         g.Columns.Insert(idx, cotMoi);
     }
 
-    private static DataGridViewComboBoxColumn Combo(object nguon, string hien, string tri) =>
-        new() { DataSource = nguon, DisplayMember = hien, ValueMember = tri, FlatStyle = FlatStyle.Flat, Width = 140 };
+    private static DataGridViewComboBoxColumn Combo(
+        object nguon,
+        string hien,
+        string tri) =>
+        new()
+        {
+            DataSource = nguon,
+            DisplayMember = hien,
+            ValueMember = tri,
+            FlatStyle = FlatStyle.Flat,
+            Width = 140
+        };
 
-    private static void CauHinhMonAn(DataGridView g, AppDbContext db) =>
-        ThayCot(g, "DanhMucId", Combo(db.DanhMucs.AsNoTracking().OrderBy(d => d.TenDanhMuc).ToList(), "TenDanhMuc", "Id"));
+    private static void CauHinhMonAn(
+        DataGridView g,
+        AppDbContext db) =>
+        ThayCot(
+            g,
+            "DanhMucId",
+            Combo(
+                db.DanhMucs
+                    .AsNoTracking()
+                    .OrderBy(d => d.TenDanhMuc)
+                    .ToList(),
+                "TenDanhMuc",
+                "Id"));
 
-    private static void CauHinhBan(DataGridView g, AppDbContext db) =>
-        ThayCot(g, "TrangThai", Combo(new[] { "Trống", "Đang dùng", "Đã đặt", "Bảo trì" }, "", ""));
+    private static void CauHinhBan(
+        DataGridView g,
+        AppDbContext db) =>
+        ThayCot(
+            g,
+            "TrangThai",
+            Combo(
+                new[] { "Trống", "Đang dùng", "Đã đặt", "Bảo trì" },
+                "",
+                ""));
 
-    private static void CauHinhDatBan(DataGridView g, AppDbContext db)
+    private static void CauHinhDatBan(
+        DataGridView g,
+        AppDbContext db)
     {
-        var trangThai = Combo(new[] { "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Đã hủy" }, "", "");
+        var trangThai = Combo(
+            new[] { "Chờ xác nhận", "Đã xác nhận", "Đã đến", "Đã hủy" },
+            "",
+            "");
+
         ThayCot(g, "TrangThai", trangThai);
-        var bans = db.Bans.AsNoTracking().OrderBy(b => b.TenBan)
-            .Select(b => new BanLookup { Id = b.Id, TenBan = b.TenBan })
+
+        var bans = db.Bans
+            .AsNoTracking()
+            .OrderBy(b => b.TenBan)
+            .Select(b => new BanLookup
+            {
+                Id = b.Id,
+                TenBan = b.TenBan
+            })
             .ToList();
-        bans.Insert(0, new BanLookup { Id = null, TenBan = "(Chưa xếp bàn)" });
-        ThayCot(g, "BanId", Combo(bans, "TenBan", "Id"));
+
+        bans.Insert(
+            0,
+            new BanLookup
+            {
+                Id = null,
+                TenBan = "(Chưa xếp bàn)"
+            });
+
+        ThayCot(
+            g,
+            "BanId",
+            Combo(bans, "TenBan", "Id"));
     }
 }
