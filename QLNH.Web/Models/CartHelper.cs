@@ -51,7 +51,14 @@ public class CartLine
 
 public class BookingDraft
 {
-    private const string Key = "booking";
+    // Mỗi tài khoản có một bản nháp đặt bàn riêng trong Session.
+    private static string GetSessionKey(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("UserId không hợp lệ.", nameof(userId));
+
+        return $"booking_{userId}";
+    }
     public const int GioMoCua = 8;
     public const int GioNhanBanCuoi = 21;
     public const int BuocPhutDatBan = 15;
@@ -90,14 +97,25 @@ public class BookingDraft
     public bool LaTiec => LoaiLe != CacLoaiLe[0];
     public int SoBan => LaTiec ? (int)Math.Ceiling(SoNguoi / 10.0) : 1;
 
-    public static BookingDraft Get(ISession s)
+    public static BookingDraft Get(ISession s, string userId)
     {
-        var json = s.GetString(Key);
-        return string.IsNullOrEmpty(json) ? new() : JsonSerializer.Deserialize<BookingDraft>(json) ?? new();
+        var json = s.GetString(GetSessionKey(userId));
+        return string.IsNullOrEmpty(json)
+            ? new()
+            : JsonSerializer.Deserialize<BookingDraft>(json) ?? new();
     }
 
-    public void Save(ISession s) => s.SetString(Key, JsonSerializer.Serialize(this));
-    public static void Clear(ISession s) => s.Remove(Key);
+    public void Save(ISession s, string userId)
+    {
+        s.SetString(
+            GetSessionKey(userId),
+            JsonSerializer.Serialize(this));
+    }
+
+    public static void Clear(ISession s, string userId)
+    {
+        s.Remove(GetSessionKey(userId));
+    }
     
 }
 
