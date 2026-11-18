@@ -990,78 +990,465 @@ public partial class PosPanel : UserControl
         }
     }
 
-    private static void PrintBill(string tenBan, decimal tongTien, decimal tienCoc, DataGridViewRowCollection rows)
+
+private static void PrintBill(
+    string tenBan,
+    decimal tongTien,
+    decimal tienCoc,
+    DataGridViewRowCollection rows)
+{
+    // Lấy dữ liệu món ăn từ bảng hóa đơn
+    var items = rows.Cast<DataGridViewRow>()
+        .Where(row => !row.IsNewRow)
+        .Select(row => new
+        {
+            TenMon = Convert.ToString(row.Cells["TenMon"].Value) ?? "",
+            SoLuong = Convert.ToString(row.Cells["SoLuong"].Value) ?? "0",
+            Gia = Convert.ToString(row.Cells["Gia"].Value) ?? "0",
+            ThanhTien = Convert.ToString(row.Cells["ThanhTien"].Value) ?? "0"
+        })
+        .ToList();
+
+    using var pd = new PrintDocument();
+
+    pd.DocumentName = $"Hoa don {tenBan}";
+
+    // Thiết lập vùng in
+    pd.DefaultPageSettings.Landscape = false;
+    pd.DefaultPageSettings.Margins = new Margins(40, 40, 40, 40);
+
+    // Theo dõi món ăn khi hóa đơn có nhiều trang
+    int currentIndex = 0;
+
+    pd.BeginPrint += (_, _) =>
     {
-        using var pd = new PrintDocument();
-        pd.PrintPage += (_, e) =>
+        currentIndex = 0;
+    };
+
+    pd.PrintPage += (_, e) =>
+    {
+        Graphics g = e.Graphics!;
+
+        Rectangle bounds = e.MarginBounds;
+
+        float left = bounds.Left;
+        float right = bounds.Right;
+        float width = bounds.Width;
+        float y = bounds.Top;
+
+        float center = left + width / 2;
+
+        using var fontTitle = new Font(
+            "Segoe UI", 16, FontStyle.Bold);
+
+        using var fontSub = new Font(
+            "Segoe UI", 11, FontStyle.Bold);
+
+        using var fontHeader = new Font(
+            "Segoe UI", 9.5F, FontStyle.Bold);
+
+        using var fontNormal = new Font(
+            "Segoe UI", 9.5F, FontStyle.Regular);
+
+        using var fontTotal = new Font(
+            "Segoe UI", 11, FontStyle.Bold);
+
+        using var fontFooter = new Font(
+            "Segoe UI", 9, FontStyle.Italic);
+
+        using var formatCenter = new StringFormat
         {
-            Graphics g = e.Graphics!;
-            using var fontTitle = new Font("Segoe UI", 16, FontStyle.Bold);
-            using var fontSub = new Font("Segoe UI", 12, FontStyle.Bold);
-            using var fontHeader = new Font("Segoe UI", 11, FontStyle.Bold);
-            using var fontNormal = new Font("Segoe UI", 11, FontStyle.Regular);
-            using var formatRight = new StringFormat { Alignment = StringAlignment.Far };
-            using var formatCenter = new StringFormat { Alignment = StringAlignment.Center };
-
-            int y = 20;
-            int pageCenter = e.PageBounds.Width / 2;
-
-            g.DrawString("NHÀ HÀNG HƯƠNG VIỆT", fontTitle, Brushes.Black, new PointF(pageCenter, y), formatCenter);
-            y += 38;
-            g.DrawString("HÓA ĐƠN THANH TOÁN", fontSub, Brushes.Black, new PointF(pageCenter, y), formatCenter);
-            y += 36;
-            g.DrawString($"Bàn: {tenBan}   |   Thời gian: {DateTime.Now:dd/MM/yyyy HH:mm}", fontNormal, Brushes.Black, new PointF(20, y));
-            y += 30;
-            g.DrawString(new string('-', 115), fontNormal, Brushes.Black, new PointF(20, y));
-            y += 20;
-
-            int colTenMon = 20;
-            int colSL = 430;
-            int colGia = 580;
-            int colThanhTien = 750;
-
-            g.DrawString("Tên món", fontHeader, Brushes.Black, new PointF(colTenMon, y));
-            g.DrawString("SL", fontHeader, Brushes.Black, new PointF(colSL, y), formatRight);
-            g.DrawString("Đơn giá", fontHeader, Brushes.Black, new PointF(colGia, y), formatRight);
-            g.DrawString("Thành tiền", fontHeader, Brushes.Black, new PointF(colThanhTien, y), formatRight);
-            y += 30;
-            g.DrawString(new string('-', 115), fontNormal, Brushes.Black, new PointF(20, y));
-            y += 20;
-
-            foreach (DataGridViewRow row in rows)
-            {
-                g.DrawString(row.Cells["TenMon"].Value.ToString()!, fontNormal, Brushes.Black, new PointF(colTenMon, y));
-                g.DrawString(row.Cells["SoLuong"].Value.ToString()!, fontNormal, Brushes.Black, new PointF(colSL, y), formatRight);
-                g.DrawString(row.Cells["Gia"].Value.ToString()!, fontNormal, Brushes.Black, new PointF(colGia, y), formatRight);
-                g.DrawString(row.Cells["ThanhTien"].Value.ToString()!, fontNormal, Brushes.Black, new PointF(colThanhTien, y), formatRight);
-                y += 30;
-            }
-
-            g.DrawString(new string('-', 115), fontNormal, Brushes.Black, new PointF(20, y));
-            y += 28;
-            g.DrawString($"TỔNG HÓA ĐƠN: {tongTien:N0} đ", fontSub, Brushes.Black, new PointF(colThanhTien, y), formatRight);
-            y += 30;
-
-            if (tienCoc > 0)
-            {
-                decimal conPhaiThu = Math.Max(0, tongTien - tienCoc);
-                g.DrawString($"Đã đặt cọc trước: - {tienCoc:N0} đ", fontHeader, Brushes.SeaGreen, new PointF(colThanhTien, y), formatRight);
-                y += 30;
-                g.DrawString($"CÒN PHẢI THANH TOÁN: {conPhaiThu:N0} đ", fontTitle, Brushes.Firebrick, new PointF(colThanhTien, y), formatRight);
-            }
-            else
-            {
-                g.DrawString($"THÀNH TIỀN THANH TOÁN: {tongTien:N0} đ", fontTitle, Brushes.Firebrick, new PointF(colThanhTien, y), formatRight);
-            }
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center
         };
 
-        using var preview = new PrintPreviewDialog
+        using var formatLeft = new StringFormat
         {
-            Document = pd,
-            Width = 850,
-            Height = 700,
-            StartPosition = FormStartPosition.CenterScreen
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Center,
+            Trimming = StringTrimming.EllipsisCharacter
         };
-        preview.ShowDialog();
+
+        using var formatRight = new StringFormat
+        {
+            Alignment = StringAlignment.Far,
+            LineAlignment = StringAlignment.Center,
+            Trimming = StringTrimming.EllipsisCharacter
+        };
+
+        // =====================================
+        // 1. TIÊU ĐỀ HÓA ĐƠN
+        // =====================================
+
+        g.DrawString(
+            "NHÀ HÀNG HƯƠNG VIỆT",
+            fontTitle,
+            Brushes.Black,
+            new RectangleF(left, y, width, 30),
+            formatCenter);
+
+        y += 32;
+
+        g.DrawString(
+            "HÓA ĐƠN THANH TOÁN",
+            fontSub,
+            Brushes.DarkRed,
+            new RectangleF(left, y, width, 24),
+            formatCenter);
+
+        y += 30;
+
+        g.DrawString(
+            $"Bàn: {tenBan}",
+            fontNormal,
+            Brushes.Black,
+            new RectangleF(left, y, width * 0.45F, 22),
+            formatLeft);
+
+        g.DrawString(
+            $"Thời gian: {DateTime.Now:dd/MM/yyyy HH:mm}",
+            fontNormal,
+            Brushes.Black,
+            new RectangleF(
+                left + width * 0.45F,
+                y,
+                width * 0.55F,
+                22),
+            formatRight);
+
+        y += 28;
+
+        g.DrawLine(
+            Pens.Gray,
+            left,
+            y,
+            right,
+            y);
+
+        y += 10;
+
+        // =====================================
+        // 2. XÁC ĐỊNH KÍCH THƯỚC CÁC CỘT
+        // =====================================
+
+        float colTenMon = width * 0.44F;
+        float colSL = width * 0.10F;
+        float colGia = width * 0.21F;
+        float colThanhTien =
+            width - colTenMon - colSL - colGia;
+
+        float xTenMon = left;
+        float xSL = xTenMon + colTenMon;
+        float xGia = xSL + colSL;
+        float xThanhTien = xGia + colGia;
+
+        const float headerHeight = 26;
+        const float rowHeight = 27;
+
+        // =====================================
+        // 3. TIÊU ĐỀ BẢNG MÓN ĂN
+        // =====================================
+
+        g.FillRectangle(
+            Brushes.Gainsboro,
+            left,
+            y,
+            width,
+            headerHeight);
+
+        g.DrawString(
+            "Tên món",
+            fontHeader,
+            Brushes.Black,
+            new RectangleF(
+                xTenMon + 4,
+                y,
+                colTenMon - 8,
+                headerHeight),
+            formatLeft);
+
+        g.DrawString(
+            "SL",
+            fontHeader,
+            Brushes.Black,
+            new RectangleF(
+                xSL,
+                y,
+                colSL - 4,
+                headerHeight),
+            formatRight);
+
+        g.DrawString(
+            "Đơn giá",
+            fontHeader,
+            Brushes.Black,
+            new RectangleF(
+                xGia,
+                y,
+                colGia - 4,
+                headerHeight),
+            formatRight);
+
+        g.DrawString(
+            "Thành tiền",
+            fontHeader,
+            Brushes.Black,
+            new RectangleF(
+                xThanhTien,
+                y,
+                colThanhTien - 4,
+                headerHeight),
+            formatRight);
+
+        y += headerHeight;
+
+        g.DrawLine(
+            Pens.Gray,
+            left,
+            y,
+            right,
+            y);
+
+        // =====================================
+        // 4. DANH SÁCH MÓN ĂN
+        // =====================================
+
+        while (currentIndex < items.Count)
+        {
+            // Dành chỗ cho phần tổng tiền cuối hóa đơn
+            if (y + rowHeight > bounds.Bottom - 120)
+            {
+                e.HasMorePages = true;
+                return;
+            }
+
+            var item = items[currentIndex];
+
+            // Tô nền xen kẽ giúp dễ đọc
+            if (currentIndex % 2 == 1)
+            {
+                g.FillRectangle(
+                    Brushes.WhiteSmoke,
+                    left,
+                    y,
+                    width,
+                    rowHeight);
+            }
+
+            // Tên món
+            g.DrawString(
+                item.TenMon,
+                fontNormal,
+                Brushes.Black,
+                new RectangleF(
+                    xTenMon + 4,
+                    y,
+                    colTenMon - 8,
+                    rowHeight),
+                formatLeft);
+
+            // Số lượng
+            g.DrawString(
+                item.SoLuong,
+                fontNormal,
+                Brushes.Black,
+                new RectangleF(
+                    xSL,
+                    y,
+                    colSL - 4,
+                    rowHeight),
+                formatRight);
+
+            // Đơn giá
+            g.DrawString(
+                item.Gia + " đ",
+                fontNormal,
+                Brushes.Black,
+                new RectangleF(
+                    xGia,
+                    y,
+                    colGia - 4,
+                    rowHeight),
+                formatRight);
+
+            // Thành tiền
+            g.DrawString(
+                item.ThanhTien + " đ",
+                fontNormal,
+                Brushes.Black,
+                new RectangleF(
+                    xThanhTien,
+                    y,
+                    colThanhTien - 4,
+                    rowHeight),
+                formatRight);
+
+            y += rowHeight;
+
+            g.DrawLine(
+                Pens.LightGray,
+                left,
+                y,
+                right,
+                y);
+
+            currentIndex++;
+        }
+
+        // =====================================
+        // 5. TỔNG KẾT HÓA ĐƠN
+        // =====================================
+
+        y += 10;
+
+        g.DrawLine(
+            Pens.Gray,
+            left,
+            y,
+            right,
+            y);
+
+        y += 12;
+
+        float labelWidth = width * 0.62F;
+        float valueWidth = width - labelWidth;
+
+        // Tổng hóa đơn
+        g.DrawString(
+            "TỔNG HÓA ĐƠN:",
+            fontSub,
+            Brushes.Black,
+            new RectangleF(
+                left,
+                y,
+                labelWidth,
+                25),
+            formatLeft);
+
+        g.DrawString(
+            $"{tongTien:N0} đ",
+            fontSub,
+            Brushes.Black,
+            new RectangleF(
+                left + labelWidth,
+                y,
+                valueWidth,
+                25),
+            formatRight);
+
+        y += 29;
+
+        // Tiền đặt cọc và số tiền còn lại
+        if (tienCoc > 0)
+        {
+            decimal conPhaiThu = Math.Max(
+                0,
+                tongTien - tienCoc);
+
+            g.DrawString(
+                "Đã đặt cọc trước:",
+                fontNormal,
+                Brushes.SeaGreen,
+                new RectangleF(
+                    left,
+                    y,
+                    labelWidth,
+                    23),
+                formatLeft);
+
+            g.DrawString(
+                $"- {tienCoc:N0} đ",
+                fontNormal,
+                Brushes.SeaGreen,
+                new RectangleF(
+                    left + labelWidth,
+                    y,
+                    valueWidth,
+                    23),
+                formatRight);
+
+            y += 26;
+
+            g.DrawString(
+                "CÒN PHẢI THANH TOÁN:",
+                fontTotal,
+                Brushes.Firebrick,
+                new RectangleF(
+                    left,
+                    y,
+                    labelWidth,
+                    28),
+                formatLeft);
+
+            g.DrawString(
+                $"{conPhaiThu:N0} đ",
+                fontTotal,
+                Brushes.Firebrick,
+                new RectangleF(
+                    left + labelWidth,
+                    y,
+                    valueWidth,
+                    28),
+                formatRight);
+        }
+        else
+        {
+            g.DrawString(
+                "THÀNH TIỀN THANH TOÁN:",
+                fontTotal,
+                Brushes.Firebrick,
+                new RectangleF(
+                    left,
+                    y,
+                    labelWidth,
+                    28),
+                formatLeft);
+
+            g.DrawString(
+                $"{tongTien:N0} đ",
+                fontTotal,
+                Brushes.Firebrick,
+                new RectangleF(
+                    left + labelWidth,
+                    y,
+                    valueWidth,
+                    28),
+                formatRight);
+        }
+
+        y += 38;
+
+        // =====================================
+        // 6. LỜI CẢM ƠN
+        // =====================================
+
+        g.DrawString(
+            "Cảm ơn Quý khách và hẹn gặp lại!",
+            fontFooter,
+            Brushes.DimGray,
+            new RectangleF(
+                left,
+                y,
+                width,
+                22),
+            formatCenter);
+
+        e.HasMorePages = false;
+    };
+
+    // =====================================
+    // 7. XEM TRƯỚC HÓA ĐƠN
+    // =====================================
+
+    using var preview = new PrintPreviewDialog
+    {
+        Document = pd,
+        Width = 1000,
+        Height = 750,
+        StartPosition = FormStartPosition.CenterScreen
+    };
+
+    preview.ShowDialog();
     }
 }
+
