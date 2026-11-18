@@ -24,9 +24,13 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-brand sticky-top hv-navbar">
   <div class="container">
-    <a class="navbar-brand hv-brand" asp-controller="Home" asp-action="Index">
-      <span>Hương Việt</span>
-    </a>
+    <a class="navbar-brand hv-brand d-flex align-items-center gap-2"
+   asp-controller="Home" asp-action="Index">
+    <img src="~/images/logo-huong-viet.svg"
+         alt="Logo Hương Việt"
+         class="hv-brand-logo" />
+    <span>Hương Việt</span>
+</a>
     <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
       <span class="navbar-toggler-icon"></span>
     </button>
