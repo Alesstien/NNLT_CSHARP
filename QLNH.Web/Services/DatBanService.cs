@@ -404,6 +404,13 @@ public class DatBanService
 
     public async Task DongBoSangWinFormsAsync(DatBan b)
     {
+        // Phiếu đã hủy và đã bị xóa ở Admin thì không tạo lại.
+        if (b.TrangThai == TrangThaiDatBan.DaHuy
+            && !await _appDb.DatBans.AnyAsync(
+                x => x.MaDatBan == b.MaDatBan))
+        {
+            return;
+        }
         var kvTen = b.KhuVuc?.Ten
             ?? await _db.KhuVucs.Where(k => k.Id == b.KhuVucId).Select(k => k.Ten).FirstOrDefaultAsync()
             ?? "Khu vực Web";
