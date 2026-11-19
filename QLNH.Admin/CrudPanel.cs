@@ -27,6 +27,11 @@ public class CrudPanel<T> : UserControl where T : class, new()
     private readonly Action<DataGridView, AppDbContext>? _configure;
     private readonly bool _canEdit;
 
+    //Thêm biến chặn sự kiện và quyền xác nhận cọc
+    private bool _dangTai;
+    private bool _dangXuLyTrangThai;
+    private readonly bool _duocXacNhanCoc;
+
     private sealed class ThongTinCocWeb
     {
         public decimal TienCoc { get; init; }
@@ -44,6 +49,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
         _query = query;
         _configure = configure;
         _canEdit = canEdit;
+        _duocXacNhanCoc = canVerifyDeposit;
         Dock = DockStyle.Fill;
 
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
@@ -209,46 +215,175 @@ public class CrudPanel<T> : UserControl where T : class, new()
         }
     }
 
-    private void Grid_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        private void Grid_CellValueChanged(
+        object? sender,
+        DataGridViewCellEventArgs e)
     {
-        if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
-        var colName = _grid.Columns[e.ColumnIndex].Name;
-        if (colName == "ConPhucVu" && _grid.Rows[e.RowIndex].DataBoundItem is MonAn mon && mon.Id > 0 && !string.IsNullOrWhiteSpace(mon.TenMon) && mon.Gia >= 0)
+        if (_dangTai
+            || _dangXuLyTrangThai
+            || e.RowIndex < 0
+            || e.ColumnIndex < 0)
+        {
+            return;
+        }
+
+        var tenCot = _grid.Columns[e.ColumnIndex].Name;
+
+        // Giữ chức năng cập nhật món ăn.
+        if (tenCot == "ConPhucVu"
+            && _grid.Rows[e.RowIndex].DataBoundItem is MonAn mon
+            && mon.Id > 0
+            && !string.IsNullOrWhiteSpace(mon.TenMon)
+            && mon.Gia >= 0)
         {
             try
             {
-                KiemTraBanTruocKhiLuu();
+                _grid.EndEdit();
                 _db.SaveChanges();
                 DongBoMonAnSangWeb();
-            }
-            catch { }
-        }
-        else if (colName == "TrangThai" && _grid.Rows[e.RowIndex].DataBoundItem is DatBan dbItem && dbItem.Id > 0 && !string.IsNullOrWhiteSpace(dbItem.TenKhach))
-        {
-            try
-            {
-                if (dbItem.TrangThai == "Đã xác nhận" && !KiemTraCocDaXacMinh(dbItem))
-                {
-                    var property = _db.Entry(dbItem).Property(d => d.TrangThai);
-                    dbItem.TrangThai = property.OriginalValue ?? "Chờ xác nhận";
-                    _grid.Refresh();
-                    return;
-                }
-
-                KiemTraBanTruocKhiLuu();
-                _db.SaveChanges();
-                DongBoDatBanSangWeb();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Không thể cập nhật trạng thái đặt bàn.\n" + ex.GetBaseException().Message,
-                    "Lỗi cập nhật",
+                    ex.GetBaseException().Message,
+                    "Lỗi cập nhật món ăn");
+            }
+
+            return;
+        }
+
+        if (tenCot != nameof(DatBan.TrangThai)
+            || _grid.Rows[e.RowIndex].DataBoundItem
+                is not DatBan phieu
+            || phieu.Id <= 0)
+        {
+            return;
+        }
+
+        var trangThaiMoi = _grid.Rows[e.RowIndex]
+            .Cells[e.ColumnIndex].Value?.ToString()
+            ?? "Chờ xác nhận";
+
+        var trangThaiCu = _db.Entry(phieu)
+            .Property(x => x.TrangThai).OriginalValue;
+
+        if (trangThaiMoi == trangThaiCu)
+        {
+            return;
+        }
+
+        _dangXuLyTrangThai = true;
+
+        BeginInvoke(new Action(() =>
+        {
+            try
+            {
+                _grid.EndEdit();
+
+                ((CurrencyManager)BindingContext[_list])
+                    .EndCurrentEdit();
+
+                // Trả entity về giá trị cũ trước khi hỏi Yes/No.
+                phieu.TrangThai = trangThaiCu;
+
+                if (trangThaiMoi == "Đã xác nhận")
+                {
+                    DuyetVaXacNhanCoc(phieu);
+                }
+                else if (trangThaiMoi == "Đã đến")
+                {
+                    MessageBox.Show(
+                        "Hãy dùng nút 'Bắt đầu phục vụ' " +
+                        "để tiếp nhận khách.",
+                        "Thông báo");
+                }
+                else
+                {
+                    LuuTrangThaiDatBan(phieu, trangThaiMoi);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.GetBaseException().Message,
+                    "Không thể cập nhật trạng thái",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
+            }
+            finally
+            {
                 Tai();
+                _dangXuLyTrangThai = false;
+            }
+        }));
+    }
+
+        private void LuuTrangThaiDatBan(
+        DatBan phieu,
+        string trangThaiMoi)
+    {
+        if (trangThaiMoi != "Chờ xác nhận"
+            && trangThaiMoi != "Đã hủy")
+        {
+            throw new InvalidOperationException(
+                "Trạng thái không hợp lệ.");
+        }
+
+        using var db = Program.NewDb();
+
+        using var transaction =
+            db.Database.BeginTransaction(IsolationLevel.Serializable);
+
+        var row = db.DatBans.Single(x => x.Id == phieu.Id);
+
+        if (row.BatDauPhucVuLuc != null
+            || row.TrangThai == "Đã đến")
+        {
+            throw new InvalidOperationException(
+                "Phiếu đã tiếp nhận phục vụ. Hãy xử lý tại POS.");
+        }
+
+        if (row.TrangThai != phieu.TrangThai)
+        {
+            throw new InvalidOperationException(
+                "Phiếu đã thay đổi ở nơi khác. Hãy tải lại.");
+        }
+
+        row.TrangThai = trangThaiMoi;
+
+        if (!string.IsNullOrWhiteSpace(row.MaDatBan))
+        {
+            var trangThaiWeb = trangThaiMoi == "Đã hủy"
+                ? "Đã hủy"
+                : "Đang chờ duyệt";
+
+            db.Database.ExecuteSqlInterpolated($@"
+                UPDATE dbo.Web_DatBan
+                SET TrangThai = {trangThaiWeb},
+                    NgayCapNhat = SYSDATETIME()
+                WHERE MaDatBan = {row.MaDatBan};
+            ");
+
+            var donHangs = db.DonHangs
+                .Where(x => x.MaDatBan == row.MaDatBan)
+                .ToList();
+
+            foreach (var don in donHangs)
+            {
+                if (don.TrangThai == TrangThaiDon.DaThanhToan)
+                {
+                    throw new InvalidOperationException(
+                        "Đơn đã thanh toán. Không thể đổi trạng thái.");
+                }
+
+                don.TrangThai = trangThaiMoi == "Đã hủy"
+                    ? TrangThaiDon.DaHuy
+                    : TrangThaiDon.Moi;
             }
         }
+
+        db.SaveChanges();
+        transaction.Commit();
     }
 
     private void Grid_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
@@ -282,15 +417,6 @@ public class CrudPanel<T> : UserControl where T : class, new()
     {
         if (e.RowIndex < 0 || e.ColumnIndex < 0 || !_grid.IsCurrentCellInEditMode) return;
         var colName = _grid.Columns[e.ColumnIndex].Name;
-
-        if (colName == nameof(DatBan.TrangThai)
-            && _grid.Rows[e.RowIndex].DataBoundItem is DatBan datBan
-            && string.Equals(e.FormattedValue?.ToString(), "Đã xác nhận", StringComparison.OrdinalIgnoreCase)
-            && !KiemTraCocDaXacMinh(datBan))
-        {
-            e.Cancel = true;
-            return;
-        }
 
         if (colName == "Gia")
         {
@@ -439,155 +565,46 @@ public class CrudPanel<T> : UserControl where T : class, new()
         return $"{noiDung} | {nhanCoc}";
     }
 
-    private void XacNhanCoc()
+        private void XacNhanCoc()
     {
-        if (_grid.CurrentRow?.DataBoundItem is not DatBan phieu)
+        if (_dangTai || _dangXuLyTrangThai)
         {
-            MessageBox.Show(
-                "Hãy chọn phiếu đặt bàn Website cần xác nhận cọc.",
-                "Chưa chọn phiếu",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
             return;
         }
 
-        var maDatBan = phieu.MaDatBan?.Trim();
-        if (string.IsNullOrWhiteSpace(maDatBan) ||
-            !maDatBan.StartsWith("HV-", StringComparison.OrdinalIgnoreCase))
+        if (_grid.CurrentRow?.DataBoundItem is not DatBan phieu)
         {
-            MessageBox.Show(
-                "Chức năng này chỉ áp dụng cho phiếu đặt bàn được tạo từ Website (mã HV-...).",
-                "Không phải phiếu Web",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            MessageBox.Show("Hãy chọn phiếu đặt bàn.");
             return;
         }
+
+        _dangXuLyTrangThai = true;
 
         try
         {
-            var thongTin = DocThongTinCocWeb(maDatBan);
-            if (thongTin == null)
-            {
-                MessageBox.Show(
-                    "Không tìm thấy phiếu tương ứng trong Web_DatBan.",
-                    "Không tìm thấy phiếu",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
+            _grid.EndEdit();
 
-            if (thongTin.DaThanhToanCoc)
-            {
-                MessageBox.Show(
-                    "Khoản cọc của phiếu này đã được xác minh trước đó. Không thể xác nhận lần thứ hai.",
-                    "Cọc đã được xác minh",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-                Tai();
-                return;
-            }
+            ((CurrencyManager)BindingContext[_list])
+                .EndCurrentEdit();
 
-            if (!string.Equals(thongTin.TrangThai, "Đang chờ duyệt", StringComparison.Ordinal))
-            {
-                MessageBox.Show(
-                    $"Phiếu hiện ở trạng thái '{thongTin.TrangThai}'.\nChỉ xác nhận cọc cho phiếu đang ở trạng thái 'Đang chờ duyệt'.",
-                    "Trạng thái không hợp lệ",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
+            // Dùng trạng thái đã lưu làm cơ sở kiểm tra.
+            phieu.TrangThai = _db.Entry(phieu)
+                .Property(x => x.TrangThai).OriginalValue;
 
-            if (thongTin.TienCoc <= 0 || string.IsNullOrWhiteSpace(thongTin.MaGiaoDich))
-            {
-                MessageBox.Show(
-                    "Phiếu chưa có số tiền cọc hợp lệ hoặc chưa có mã giao dịch. Không thể xác nhận.",
-                    "Thông tin thanh toán chưa đầy đủ",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
-            var xacNhan = MessageBox.Show(
-                $"Chỉ chọn Có sau khi đã kiểm tra giao dịch thực tế trong tài khoản ngân hàng của nhà hàng.\n\n" +
-                $"Mã đặt bàn: {maDatBan}\n" +
-                $"Số tiền cần nhận: {thongTin.TienCoc:N0} đ\n" +
-                $"Mã giao dịch/nội dung chuyển khoản: {thongTin.MaGiaoDich}\n\n" +
-                "Bạn xác nhận nhà hàng đã thực sự nhận đủ khoản tiền trên?",
-                "Đối soát tiền cọc",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning,
-                MessageBoxDefaultButton.Button2);
-
-            if (xacNhan != DialogResult.Yes)
-                return;
-
-            using var transaction = _db.Database.BeginTransaction(IsolationLevel.Serializable);
-            var dbTransaction = transaction.GetDbTransaction();
-
-            // Khóa bản ghi và đọc lại để ngăn hai nhân viên xác nhận cùng một giao dịch.
-            var thongTinHienTai = DocThongTinCocWeb(maDatBan, dbTransaction, khoaBanGhi: true);
-            if (thongTinHienTai == null ||
-                thongTinHienTai.DaThanhToanCoc ||
-                !string.Equals(thongTinHienTai.TrangThai, "Đang chờ duyệt", StringComparison.Ordinal) ||
-                thongTinHienTai.TienCoc != thongTin.TienCoc ||
-                !string.Equals(thongTinHienTai.MaGiaoDich, thongTin.MaGiaoDich, StringComparison.Ordinal))
-            {
-                transaction.Rollback();
-                MessageBox.Show(
-                    "Thông tin phiếu đã thay đổi hoặc khoản cọc đã được xác minh bởi người khác. Hãy bấm 'Tải lại' để cập nhật danh sách.",
-                    "Dữ liệu đã thay đổi",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
-            var soDongCapNhat = _db.Database.ExecuteSqlInterpolated($@"
-                UPDATE dbo.Web_DatBan
-                SET DaThanhToanCoc = 1,
-                    NgayThanhToan = SYSDATETIME(),
-                    NgayCapNhat = SYSDATETIME()
-                WHERE MaDatBan = {maDatBan}
-                  AND DaThanhToanCoc = 0
-                  AND TrangThai = N'Đang chờ duyệt'
-                  AND TienCoc = {thongTin.TienCoc}
-                  AND MaGiaoDich = {thongTin.MaGiaoDich};");
-
-            if (soDongCapNhat != 1)
-                throw new InvalidOperationException("Không thể cập nhật trạng thái cọc. Có thể phiếu đã được xử lý ở nơi khác.");
-
-            var datBanWinForms = _db.DatBans.FirstOrDefault(d => d.MaDatBan == maDatBan);
-            if (datBanWinForms == null)
-                throw new InvalidOperationException("Đã xác minh trên Website nhưng không tìm thấy phiếu tương ứng trong bảng DatBan của WinForms.");
-
-            datBanWinForms.GhiChu = CapNhatGhiChuCocDaXacMinh(datBanWinForms.GhiChu, thongTin.TienCoc);
-
-            var donHang = _db.DonHangs.FirstOrDefault(d => d.MaDatBan == maDatBan);
-            if (donHang == null)
-                throw new InvalidOperationException("Không tìm thấy đơn hàng WinForms liên kết với phiếu Web. Không thể đồng bộ khoản cọc cho POS.");
-
-            donHang.GhiChu = CapNhatGhiChuCocDaXacMinh(donHang.GhiChu, thongTin.TienCoc);
-
-            _db.SaveChanges();
-            transaction.Commit();
-
-            MessageBox.Show(
-                $"Đã xác minh khoản cọc {thongTin.TienCoc:N0} đ cho phiếu {maDatBan}.\n\n" +
-                "POS đã được cập nhật để trừ khoản cọc này khi thanh toán.\n" +
-                "Bạn có thể chuyển trạng thái phiếu sang 'Đã xác nhận' sau khi kiểm tra lịch bàn.",
-                "Xác nhận cọc thành công",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-
-            Tai();
+            DuyetVaXacNhanCoc(phieu);
         }
         catch (Exception ex)
         {
             MessageBox.Show(
-                "Không thể xác nhận cọc. Mọi thay đổi trong transaction đã được hủy.\n\n" +
                 ex.GetBaseException().Message,
-                "Lỗi xác nhận cọc",
+                "Không thể xác nhận cọc",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
+        }
+        finally
+        {
+            Tai();
+            _dangXuLyTrangThai = false;
         }
     }
 
@@ -619,31 +636,59 @@ public class CrudPanel<T> : UserControl where T : class, new()
     }
 
     public void Tai()
-    {
-        try
         {
-            _grid.CancelEdit();
-            _grid.EndEdit();
-            foreach (var e in _db.ChangeTracker.Entries().ToList()) e.State = EntityState.Detached;
-            _configure?.Invoke(_grid, _db);
-            var q = _query != null ? _query(_db) : _db.Set<T>();
-            _list.Clear();
-            foreach (var x in q.AsNoTracking().ToList())
+            _dangTai = true;
+
+            try
             {
-                if (x is DatBan dbItem && dbItem.TrangThai == "Đã huỷ")
+                _grid.CancelEdit();
+
+                _db.ChangeTracker.Clear();
+
+                _configure?.Invoke(_grid, _db);
+
+                var q = _query != null
+                    ? _query(_db)
+                    : _db.Set<T>();
+
+                _list.RaiseListChangedEvents = false;
+
+                try
                 {
-                    dbItem.TrangThai = "Đã hủy";
+                    _list.Clear();
+
+                    foreach (var x in q.AsNoTracking().ToList())
+                    {
+                        if (x is DatBan phieu && phieu.TrangThai == "Đã huỷ")
+                        {
+                            phieu.TrangThai = "Đã hủy";
+                        }
+
+                        _db.Attach(x);
+                        _list.Add(x);
+                    }
                 }
-                _db.Attach(x);
-                _list.Add(x);
+                finally
+                {
+                    _list.RaiseListChangedEvents = true;
+                    _list.ResetBindings();
+                }
+
+                _txtSearch.Clear();
             }
-            _txtSearch.Clear();
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.GetBaseException().Message,
+                    "Lỗi tải dữ liệu",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _dangTai = false;
+            }
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.GetBaseException().Message, "Lỗi tải dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
 
     private string TaoMaUuDaiMoi()
     {
@@ -870,20 +915,32 @@ public class CrudPanel<T> : UserControl where T : class, new()
         try
         {
             KiemTraBanTruocKhiLuu();
+            _db.ChangeTracker.DetectChanges();
+
+            // Lấy những phiếu mới thêm hoặc vừa chỉnh sửa,
+            // trước khi gọi SaveChanges().
+            var phieuCanDongBo = _db.ChangeTracker
+                .Entries<DatBan>()
+                .Where(e =>
+                    e.State == EntityState.Added
+                    || e.State == EntityState.Modified)
+                .Select(e => e.Entity)
+                .ToList();
+
             _db.SaveChanges();
 
             if (typeof(T) == typeof(MonAn) || typeof(T) == typeof(DanhMuc))
-            {
-                DongBoMonAnSangWeb();
-            }
-            else if (typeof(T) == typeof(Ban))
-            {
-                DongBoBanSangWeb();
-            }
-            else if (typeof(T) == typeof(DatBan))
-            {
-                DongBoDatBanSangWeb();
-            }
+                {
+                    DongBoMonAnSangWeb();
+                }
+                else if (typeof(T) == typeof(Ban))
+                {
+                    DongBoBanSangWeb();
+                }
+                else if (typeof(T) == typeof(DatBan))
+                {
+                    DongBoDatBanSangWeb(phieuCanDongBo);
+                }
 
             var thongBao = typeof(T) == typeof(WebUuDai)
                 ? "Đã lưu thay đổi mã ưu đãi thành công."
@@ -960,9 +1017,9 @@ public class CrudPanel<T> : UserControl where T : class, new()
         catch { }
     }
 
-    private void DongBoDatBanSangWeb()
+    private void DongBoDatBanSangWeb( IEnumerable<DatBan> danhSachCanDongBo)
     {
-        foreach (var item in _list.OfType<DatBan>())
+        foreach (var item in danhSachCanDongBo)
         {
             if (item.TrangThai == "Đã đến")
                 continue;
@@ -995,7 +1052,12 @@ public class CrudPanel<T> : UserControl where T : class, new()
                         "IF OBJECT_ID('Web_DatBan', 'U') IS NOT NULL UPDATE Web_DatBan SET HoTen = {0}, SoDienThoai = {1}, NgayGio = {2}, SoKhach = {3}, TrangThai = {4}, NgayCapNhat = GETDATE() WHERE MaDatBan = {5}",
                         item.TenKhach, item.SoDienThoai, item.NgayGio, item.SoNguoi, ttWeb, ma);
                 }
-                catch { }
+                catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"Không đồng bộ được phiếu {ma} lên Web.",
+                            ex);
+                    }
             }
             else
             {
@@ -1023,19 +1085,169 @@ public class CrudPanel<T> : UserControl where T : class, new()
             }
         }
     }
-
-    private void Xoa()
-    {
-        if (_grid.CurrentRow?.DataBoundItem is not T item) return;
-
-        if (_db.Entry(item).State == EntityState.Added)
+        private void XoaDatBan(DatBan phieu)
         {
-            _db.Entry(item).State = EntityState.Detached;
-            _list.Remove(item);
-            return;
-        }
+            if (_dangTai || _dangXuLyTrangThai)
+            {
+                return;
+            }
 
-        if (item is DatBan dbItem && (dbItem.BatDauPhucVuLuc != null || dbItem.TrangThai == "Đã đến"))
+            if (!_duocXacNhanCoc)
+            {
+                MessageBox.Show(
+                    "Chỉ Admin được xóa phiếu đặt bàn.",
+                    "Không có quyền",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
+            var ketQua = MessageBox.Show(
+                $"Bạn có chắc muốn xóa phiếu này?\n\n" +
+                $"ID: {phieu.Id}\n" +
+                $"Mã đặt bàn: {phieu.MaDatBan}\n" +
+                $"Khách hàng: {phieu.TenKhach}\n\n" +
+                "Nếu còn dòng khác cùng mã: chỉ xóa dòng được chọn.\n" +
+                "Nếu đây là dòng cuối cùng: phiếu Web chuyển sang Đã hủy.\n" +
+                "Lịch sử tiền cọc và hóa đơn vẫn được giữ lại.",
+                "Xác nhận xóa đặt bàn",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+
+            if (ketQua != DialogResult.Yes)
+            {
+                return;
+            }
+
+            _dangXuLyTrangThai = true;
+
+            try
+            {
+                // Dùng context riêng để không lưu nhầm các ô khác đang sửa.
+                using var db = Program.NewDb();
+
+                using var transaction = db.Database.BeginTransaction(
+                    IsolationLevel.Serializable);
+
+                // Xóa theo ID, không xóa hàng loạt theo mã đặt bàn.
+                var row = db.DatBans.SingleOrDefault(
+                    x => x.Id == phieu.Id);
+
+                if (row == null)
+                {
+                    throw new InvalidOperationException(
+                        "Phiếu không còn tồn tại. Hãy tải lại danh sách.");
+                }
+
+                if (row.BatDauPhucVuLuc != null
+                    || row.TrangThai == "Đã đến")
+                {
+                    throw new InvalidOperationException(
+                        "Phiếu đã bắt đầu phục vụ. " +
+                        "Không thể xóa tại đây, hãy xử lý tại POS.");
+                }
+
+                var ma = row.MaDatBan;
+
+                // Kiểm tra có dòng khác cùng mã hay không.
+                var conDongKhacCungMa =
+                    !string.IsNullOrWhiteSpace(ma)
+                    && db.DatBans.Any(x =>
+                        x.MaDatBan == ma
+                        && x.Id != row.Id);
+
+                // Chỉ hủy dữ liệu liên kết khi xóa dòng cuối cùng.
+                if (!conDongKhacCungMa
+                    && !string.IsNullOrWhiteSpace(ma))
+                {
+                    var donHangs = db.DonHangs
+                        .Where(x => x.MaDatBan == ma)
+                        .ToList();
+
+                    if (donHangs.Any(x =>
+                        x.TrangThai == TrangThaiDon.DaThanhToan))
+                    {
+                        throw new InvalidOperationException(
+                            "Mã đặt bàn này đã có hóa đơn thanh toán. " +
+                            "Không thể xóa phiếu cuối cùng vì cần giữ lịch sử.");
+                    }
+
+                    db.Database.ExecuteSqlInterpolated($@"
+                        UPDATE dbo.Web_DatBan
+                        SET TrangThai = N'Đã hủy',
+                            LyDoHuy = N'Admin xóa phiếu trên WinForms',
+                            NgayCapNhat = SYSDATETIME()
+                        WHERE MaDatBan = {ma};
+                    ");
+
+                    foreach (var don in donHangs)
+                    {
+                        don.TrangThai = TrangThaiDon.DaHuy;
+                    }
+                }
+
+                db.DatBans.Remove(row);
+
+                db.SaveChanges();
+                transaction.Commit();
+
+                MessageBox.Show(
+                    conDongKhacCungMa
+                        ? "Đã xóa dòng được chọn. Phiếu Web được giữ nguyên."
+                        : "Đã xóa phiếu Admin. Nếu có phiếu Web liên kết, " +
+                        "phiếu đó đã được chuyển sang Đã hủy.",
+                    "Thành công",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Không thể xóa phiếu đặt bàn.\n\n" +
+                    ex.GetBaseException().Message,
+                    "Lỗi xóa",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Tai();
+                _dangXuLyTrangThai = false;
+            }
+        }
+    private void Xoa()
+        {
+            if (_dangTai || _dangXuLyTrangThai)
+            {
+                return;
+            }
+
+            if (_grid.CurrentRow?.DataBoundItem is not T item)
+            {
+                MessageBox.Show(
+                    "Hãy chọn dòng cần xóa.",
+                    "Chưa chọn dữ liệu",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                return;
+            }
+
+            if (_db.Entry(item).State == EntityState.Added)
+            {
+                _db.Entry(item).State = EntityState.Detached;
+                _list.Remove(item);
+                return;
+            }
+
+            // Phiếu đặt bàn dùng luồng xóa riêng.
+            if (item is DatBan phieu)
+            {
+                XoaDatBan(phieu);
+                return;
+            }
         {
             MessageBox.Show("Phiếu đã tiếp nhận phục vụ, không thể xoá.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
@@ -1094,4 +1306,166 @@ public class CrudPanel<T> : UserControl where T : class, new()
         }
         cm?.ResumeBinding();
     }
+    private bool DuyetVaXacNhanCoc(DatBan phieu)
+{
+    if (!_duocXacNhanCoc)
+    {
+        throw new InvalidOperationException(
+            "Chỉ Admin được xác nhận cọc và duyệt đặt bàn.");
+    }
+
+    if (phieu.Id <= 0)
+    {
+        throw new InvalidOperationException(
+            "Hãy lưu phiếu đặt bàn trước khi duyệt.");
+    }
+
+    var ma = phieu.MaDatBan?.Trim();
+
+    if (string.IsNullOrWhiteSpace(ma))
+    {
+        throw new InvalidOperationException(
+            "Phiếu chưa có mã đặt bàn.");
+    }
+
+    var thongTin = DocThongTinCocWeb(ma);
+
+    if (thongTin == null)
+    {
+        throw new InvalidOperationException(
+            "Không tìm thấy phiếu tương ứng trong Web_DatBan.");
+    }
+
+    if (thongTin.TrangThai != "Đang chờ duyệt"
+        && thongTin.TrangThai != "Đã xác nhận")
+    {
+        throw new InvalidOperationException(
+            $"Không thể duyệt phiếu đang ở trạng thái " +
+            $"'{thongTin.TrangThai}'.");
+    }
+
+    if (thongTin.TienCoc > 0
+        && string.IsNullOrWhiteSpace(thongTin.MaGiaoDich))
+    {
+        throw new InvalidOperationException(
+            "Phiếu có tiền cọc nhưng chưa có mã giao dịch.");
+    }
+
+    var ketQua = MessageBox.Show(
+        "Chỉ chọn Yes sau khi đã đối chiếu giao dịch thực tế " +
+        "trong tài khoản ngân hàng của nhà hàng.\n\n" +
+        $"Mã đặt bàn: {ma}\n" +
+        $"Khách hàng: {phieu.TenKhach}\n" +
+        $"Số tiền cọc: {thongTin.TienCoc:N0} đ\n" +
+        $"Mã giao dịch: {thongTin.MaGiaoDich}\n" +
+        $"Tình trạng cọc: " +
+        $"{(thongTin.DaThanhToanCoc ? "Đã xác minh" : "Chưa xác minh")}\n\n" +
+        "Xác nhận đã nhận đủ khoản cọc và duyệt đặt bàn?",
+        "Đối soát tiền cọc",
+        MessageBoxButtons.YesNo,
+        MessageBoxIcon.Warning,
+        MessageBoxDefaultButton.Button2);
+
+    if (ketQua != DialogResult.Yes)
+    {
+        return false;
+    }
+
+    // Context riêng để không lưu nhầm các ô khác đang chỉnh trên lưới.
+    using var db = Program.NewDb();
+
+    using var transaction =
+        db.Database.BeginTransaction(IsolationLevel.Serializable);
+
+    var danhSach = db.DatBans
+        .Where(x => x.MaDatBan == ma)
+        .ToList();
+
+    if (danhSach.Count != 1)
+    {
+        throw new InvalidOperationException(
+            "Mã đặt bàn đang bị trùng hoặc không còn tồn tại. " +
+            "Hãy xử lý dữ liệu trùng trước khi duyệt.");
+    }
+
+    var phieuDb = danhSach[0];
+
+    if (phieuDb.BatDauPhucVuLuc != null
+        || phieuDb.TrangThai == "Đã đến")
+    {
+        throw new InvalidOperationException(
+            "Phiếu đã bắt đầu phục vụ. Hãy xử lý tại POS.");
+    }
+
+    if (phieuDb.TrangThai != phieu.TrangThai)
+    {
+        throw new InvalidOperationException(
+            "Trạng thái đã thay đổi ở nơi khác. Hãy tải lại.");
+    }
+
+    // Chỉ cập nhật nếu thông tin vẫn đúng như lúc mở hộp thoại.
+    var soDong = db.Database.ExecuteSqlInterpolated($@"
+        UPDATE dbo.Web_DatBan
+        SET DaThanhToanCoc = 1,
+            NgayThanhToan =
+                COALESCE(NgayThanhToan, SYSDATETIME()),
+            TrangThai = N'Đã xác nhận',
+            NgayCapNhat = SYSDATETIME()
+        WHERE MaDatBan = {ma}
+          AND TrangThai = {thongTin.TrangThai}
+          AND TienCoc = {thongTin.TienCoc}
+          AND MaGiaoDich = {thongTin.MaGiaoDich}
+          AND DaThanhToanCoc = {thongTin.DaThanhToanCoc};
+    ");
+
+    if (soDong != 1)
+    {
+        throw new InvalidOperationException(
+            "Thông tin Web đã thay đổi. " +
+            "Hãy tải lại và đối soát lại khoản cọc.");
+    }
+
+    phieuDb.TrangThai = "Đã xác nhận";
+
+    phieuDb.GhiChu = CapNhatGhiChuCocDaXacMinh(
+        phieuDb.GhiChu,
+        thongTin.TienCoc);
+
+    var donHangs = db.DonHangs
+        .Where(x => x.MaDatBan == ma)
+        .ToList();
+
+    if (donHangs.Any(
+        x => x.TrangThai == TrangThaiDon.DaThanhToan))
+    {
+        throw new InvalidOperationException(
+            "Đơn hàng đã thanh toán, không thể duyệt lại.");
+    }
+
+    foreach (var don in donHangs)
+    {
+        don.TrangThai = TrangThaiDon.DaXacNhan;
+
+        don.GhiChu = CapNhatGhiChuCocDaXacMinh(
+            don.GhiChu,
+            thongTin.TienCoc);
+    }
+
+    if (phieuDb.BanId is int banId)
+    {
+        var ban = db.Bans.Find(banId);
+
+        if (ban != null && ban.TrangThai == "Trống")
+        {
+            ban.TrangThai = "Đã đặt";
+        }
+    }
+
+    db.SaveChanges();
+    transaction.Commit();
+
+    return true;
+}
+
+
 }
