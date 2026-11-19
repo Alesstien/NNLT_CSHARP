@@ -24,7 +24,7 @@ public class CartController : Controller
         _svc = svc;
     }
 
-    [Authorize]
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(int id, int soLuong = 1)
@@ -127,9 +127,12 @@ private async Task<List<CartLine>> LoadLines()
     [Authorize]
     public async Task<IActionResult> Index()
     {
+          if (User.Identity?.IsAuthenticated != true)
+        return View("Guest");
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
-            return Challenge();
+        return Challenge();
 
         await _svc.DongBoBanTuAdminAsync();
         var b = BookingDraft.Get(HttpContext.Session, userId);
