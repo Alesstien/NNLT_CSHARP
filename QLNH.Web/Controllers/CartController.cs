@@ -292,7 +292,8 @@ private async Task<List<CartLine>> LoadLines()
 
         HttpContext.Session.SetString(
             $"ma_gd_{uid}",
-            "HV" + DateTime.Now.ToString("yyMMddHHmmss"));
+            "HV" + DateTime.Now.ToString("yyMMddHHmmss")
+                + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant());
 
         var inp = new PaymentInput();
         if (!string.IsNullOrEmpty(uid))
@@ -347,6 +348,27 @@ private async Task<List<CartLine>> LoadLines()
             return View(vm);
         }
 
+        // Chống tạo trùng phiếu nếu lần gửi trước đã lưu Web thành công
+        // nhưng quá trình đồng bộ sang WinForms bị gián đoạn.
+        var datBanDaTao = await _auth.DatBans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d =>
+                d.UserId == userId && d.MaGiaoDich == vm.MaGiaoDich);
+
+        if (datBanDaTao != null)
+        {
+            await _svc.DongBoSangWinFormsAsync(datBanDaTao);
+
+            CartHelper.Clear(HttpContext.Session, userId);
+            BookingDraft.Clear(HttpContext.Session, userId);
+            HttpContext.Session.Remove($"giu_cho_{userId}");
+            HttpContext.Session.Remove($"ma_gd_{userId}");
+
+            return RedirectToAction(
+                nameof(Success),
+                new { id = datBanDaTao.Id });
+        }
+
         var webMons = await _auth.MucThucDons.AsNoTracking().ToListAsync();
         var b = vm.Booking;
         var bill = vm.Bill;
@@ -375,8 +397,13 @@ private async Task<List<CartLine>> LoadLines()
             PhuongThucThanhToan = inp.PhuongThuc,
             NganHang = inp.PhuongThuc == "VIETQR" ? inp.NganHang : null,
             MaGiaoDich = vm.MaGiaoDich,
-            DaThanhToanCoc = true,
-            NgayThanhToan = DateTime.Now,
+            // Nút "Tôi đã thanh toán" chỉ là thông báo của khách,
+            // không phải bằng chứng ngân hàng đã chuyển tiền thành công.
+            // Nhân viên chỉ đánh dấu đã nhận cọc sau khi đối soát giao dịch.
+            DaThanhToanCoc = false,
+            NgayThanhToan = null,
+            GiuChoDen = null,
+            NgayCapNhat = DateTime.Now,
             TrangThai = TrangThaiDatBan.ChoDuyet,
             Mons = vm.Lines.Select(l =>
             {
@@ -401,7 +428,7 @@ private async Task<List<CartLine>> LoadLines()
 
         await _svc.DongBoSangWinFormsAsync(datBan);
 
-        // Chỉ xóa dữ liệu của tài khoản vừa thanh toán.
+        // Chỉ xóa dữ liệu của tài khoản vừa gửi yêu cầu đặt bàn.
         CartHelper.Clear(HttpContext.Session, userId);
         BookingDraft.Clear(HttpContext.Session, userId);
 

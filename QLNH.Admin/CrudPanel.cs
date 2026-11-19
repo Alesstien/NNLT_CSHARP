@@ -1,6 +1,10 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
+using System.Data.Common;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using QLNH.Data;
 using QLNH.Data.Entities;
 
@@ -23,7 +27,19 @@ public class CrudPanel<T> : UserControl where T : class, new()
     private readonly Action<DataGridView, AppDbContext>? _configure;
     private readonly bool _canEdit;
 
-    public CrudPanel(Func<AppDbContext, IQueryable<T>>? query = null, Action<DataGridView, AppDbContext>? configure = null, bool canEdit = true)
+    private sealed class ThongTinCocWeb
+    {
+        public decimal TienCoc { get; init; }
+        public string MaGiaoDich { get; init; } = "";
+        public bool DaThanhToanCoc { get; init; }
+        public string TrangThai { get; init; } = "";
+    }
+
+    public CrudPanel(
+        Func<AppDbContext, IQueryable<T>>? query = null,
+        Action<DataGridView, AppDbContext>? configure = null,
+        bool canEdit = true,
+        bool canVerifyDeposit = false)
     {
         _query = query;
         _configure = configure;
@@ -57,6 +73,11 @@ public class CrudPanel<T> : UserControl where T : class, new()
 
         if (canEdit && typeof(T) == typeof(DatBan))
         {
+            if (canVerifyDeposit)
+            {
+                bar.Controls.Add(Btn("Xác nhận cọc", Color.SeaGreen, (_, _) => XacNhanCoc()));
+            }
+
             bar.Controls.Add(Btn("Bắt đầu phục vụ", Color.DarkOrange, (_, _) => BatDauPhucVu()));
         }
 
@@ -206,11 +227,27 @@ public class CrudPanel<T> : UserControl where T : class, new()
         {
             try
             {
+                if (dbItem.TrangThai == "Đã xác nhận" && !KiemTraCocDaXacMinh(dbItem))
+                {
+                    var property = _db.Entry(dbItem).Property(d => d.TrangThai);
+                    dbItem.TrangThai = property.OriginalValue ?? "Chờ xác nhận";
+                    _grid.Refresh();
+                    return;
+                }
+
                 KiemTraBanTruocKhiLuu();
                 _db.SaveChanges();
                 DongBoDatBanSangWeb();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Không thể cập nhật trạng thái đặt bàn.\n" + ex.GetBaseException().Message,
+                    "Lỗi cập nhật",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Tai();
+            }
         }
     }
 
@@ -246,6 +283,15 @@ public class CrudPanel<T> : UserControl where T : class, new()
         if (e.RowIndex < 0 || e.ColumnIndex < 0 || !_grid.IsCurrentCellInEditMode) return;
         var colName = _grid.Columns[e.ColumnIndex].Name;
 
+        if (colName == nameof(DatBan.TrangThai)
+            && _grid.Rows[e.RowIndex].DataBoundItem is DatBan datBan
+            && string.Equals(e.FormattedValue?.ToString(), "Đã xác nhận", StringComparison.OrdinalIgnoreCase)
+            && !KiemTraCocDaXacMinh(datBan))
+        {
+            e.Cancel = true;
+            return;
+        }
+
         if (colName == "Gia")
         {
             var raw = (e.FormattedValue?.ToString() ?? "").Trim();
@@ -262,6 +308,286 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 e.Cancel = true;
                 return;
             }
+        }
+    }
+
+    private ThongTinCocWeb? DocThongTinCocWeb(
+        string maDatBan,
+        DbTransaction? transaction = null,
+        bool khoaBanGhi = false)
+    {
+        var connection = _db.Database.GetDbConnection();
+        bool canClose = connection.State != ConnectionState.Open;
+
+        if (canClose)
+            connection.Open();
+
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = khoaBanGhi
+                ? @"SELECT TOP (1) TienCoc, MaGiaoDich, DaThanhToanCoc, TrangThai
+                    FROM dbo.Web_DatBan WITH (UPDLOCK, HOLDLOCK)
+                    WHERE MaDatBan = @MaDatBan;"
+                : @"SELECT TOP (1) TienCoc, MaGiaoDich, DaThanhToanCoc, TrangThai
+                    FROM dbo.Web_DatBan
+                    WHERE MaDatBan = @MaDatBan;";
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@MaDatBan";
+            parameter.Value = maDatBan;
+            command.Parameters.Add(parameter);
+
+            using var reader = command.ExecuteReader();
+            if (!reader.Read())
+                return null;
+
+            return new ThongTinCocWeb
+            {
+                TienCoc = reader.IsDBNull(0) ? 0m : Convert.ToDecimal(reader.GetValue(0)),
+                MaGiaoDich = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                DaThanhToanCoc = !reader.IsDBNull(2) && Convert.ToBoolean(reader.GetValue(2)),
+                TrangThai = reader.IsDBNull(3) ? "" : reader.GetString(3)
+            };
+        }
+        finally
+        {
+            if (canClose)
+                connection.Close();
+        }
+    }
+
+    private bool KiemTraCocDaXacMinh(DatBan datBan)
+    {
+        var maDatBan = datBan.MaDatBan?.Trim();
+        if (string.IsNullOrWhiteSpace(maDatBan))
+            return true; // Phiếu nội bộ chưa liên kết với phiếu Web.
+
+        bool laMaDatBanWeb = maDatBan.StartsWith("HV-", StringComparison.OrdinalIgnoreCase);
+
+        try
+        {
+            var thongTin = DocThongTinCocWeb(maDatBan);
+            if (thongTin == null)
+            {
+                if (!laMaDatBanWeb)
+                    return true; // Phiếu WinForms nội bộ không có bản ghi Web.
+
+                MessageBox.Show(
+                    $"Không tìm thấy phiếu {maDatBan} trong Web_DatBan.\nKhông thể xác nhận đặt bàn khi chưa kiểm tra được khoản cọc.",
+                    "Không tìm thấy phiếu Web",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (thongTin.DaThanhToanCoc)
+                return true;
+
+            MessageBox.Show(
+                $"Phiếu {maDatBan} chưa được xác minh tiền cọc.\n\n" +
+                "Hãy đối chiếu số tiền và mã giao dịch trên tài khoản ngân hàng, " +
+                "sau đó sử dụng nút 'Xác nhận cọc' trước khi chuyển trạng thái sang 'Đã xác nhận'.",
+                "Cọc chưa được xác minh",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            if (!laMaDatBanWeb)
+                return true;
+
+            MessageBox.Show(
+                "Không thể kiểm tra trạng thái cọc trên Website. Hệ thống sẽ không cho xác nhận phiếu này.\n\n" +
+                ex.GetBaseException().Message,
+                "Không kiểm tra được tiền cọc",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return false;
+        }
+    }
+
+    private static string CapNhatGhiChuCocDaXacMinh(string? ghiChu, decimal tienCoc)
+    {
+        const int doDaiToiDa = 300;
+        var noiDung = ghiChu ?? "";
+
+        // Xóa nhãn cọc cũ hoặc cọc đang chờ xác minh, rồi ghi đúng một nhãn POS nhận diện.
+        noiDung = Regex.Replace(
+            noiDung,
+            @"Cọc(?:\s+chờ\s+xác\s+minh)?\s*:\s*[\d\.,]+\s*đ?",
+            "",
+            RegexOptions.IgnoreCase);
+
+        noiDung = Regex.Replace(noiDung, @"\s*\|\s*\|+\s*", " | ");
+        noiDung = noiDung.Trim().Trim('|').Trim();
+
+        var nhanCoc = $"Cọc: {tienCoc:N0}đ";
+        if (string.IsNullOrWhiteSpace(noiDung))
+            return nhanCoc.Length <= doDaiToiDa ? nhanCoc : nhanCoc[..doDaiToiDa];
+
+        if (nhanCoc.Length >= doDaiToiDa)
+            return nhanCoc[..doDaiToiDa];
+
+        int doDaiNoiDungToiDa = doDaiToiDa - nhanCoc.Length - 3;
+
+        if (noiDung.Length > doDaiNoiDungToiDa)
+            noiDung = noiDung[..doDaiNoiDungToiDa].TrimEnd();
+
+        return $"{noiDung} | {nhanCoc}";
+    }
+
+    private void XacNhanCoc()
+    {
+        if (_grid.CurrentRow?.DataBoundItem is not DatBan phieu)
+        {
+            MessageBox.Show(
+                "Hãy chọn phiếu đặt bàn Website cần xác nhận cọc.",
+                "Chưa chọn phiếu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        var maDatBan = phieu.MaDatBan?.Trim();
+        if (string.IsNullOrWhiteSpace(maDatBan) ||
+            !maDatBan.StartsWith("HV-", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(
+                "Chức năng này chỉ áp dụng cho phiếu đặt bàn được tạo từ Website (mã HV-...).",
+                "Không phải phiếu Web",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        try
+        {
+            var thongTin = DocThongTinCocWeb(maDatBan);
+            if (thongTin == null)
+            {
+                MessageBox.Show(
+                    "Không tìm thấy phiếu tương ứng trong Web_DatBan.",
+                    "Không tìm thấy phiếu",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (thongTin.DaThanhToanCoc)
+            {
+                MessageBox.Show(
+                    "Khoản cọc của phiếu này đã được xác minh trước đó. Không thể xác nhận lần thứ hai.",
+                    "Cọc đã được xác minh",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                Tai();
+                return;
+            }
+
+            if (!string.Equals(thongTin.TrangThai, "Đang chờ duyệt", StringComparison.Ordinal))
+            {
+                MessageBox.Show(
+                    $"Phiếu hiện ở trạng thái '{thongTin.TrangThai}'.\nChỉ xác nhận cọc cho phiếu đang ở trạng thái 'Đang chờ duyệt'.",
+                    "Trạng thái không hợp lệ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (thongTin.TienCoc <= 0 || string.IsNullOrWhiteSpace(thongTin.MaGiaoDich))
+            {
+                MessageBox.Show(
+                    "Phiếu chưa có số tiền cọc hợp lệ hoặc chưa có mã giao dịch. Không thể xác nhận.",
+                    "Thông tin thanh toán chưa đầy đủ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var xacNhan = MessageBox.Show(
+                $"Chỉ chọn Có sau khi đã kiểm tra giao dịch thực tế trong tài khoản ngân hàng của nhà hàng.\n\n" +
+                $"Mã đặt bàn: {maDatBan}\n" +
+                $"Số tiền cần nhận: {thongTin.TienCoc:N0} đ\n" +
+                $"Mã giao dịch/nội dung chuyển khoản: {thongTin.MaGiaoDich}\n\n" +
+                "Bạn xác nhận nhà hàng đã thực sự nhận đủ khoản tiền trên?",
+                "Đối soát tiền cọc",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+
+            if (xacNhan != DialogResult.Yes)
+                return;
+
+            using var transaction = _db.Database.BeginTransaction(IsolationLevel.Serializable);
+            var dbTransaction = transaction.GetDbTransaction();
+
+            // Khóa bản ghi và đọc lại để ngăn hai nhân viên xác nhận cùng một giao dịch.
+            var thongTinHienTai = DocThongTinCocWeb(maDatBan, dbTransaction, khoaBanGhi: true);
+            if (thongTinHienTai == null ||
+                thongTinHienTai.DaThanhToanCoc ||
+                !string.Equals(thongTinHienTai.TrangThai, "Đang chờ duyệt", StringComparison.Ordinal) ||
+                thongTinHienTai.TienCoc != thongTin.TienCoc ||
+                !string.Equals(thongTinHienTai.MaGiaoDich, thongTin.MaGiaoDich, StringComparison.Ordinal))
+            {
+                transaction.Rollback();
+                MessageBox.Show(
+                    "Thông tin phiếu đã thay đổi hoặc khoản cọc đã được xác minh bởi người khác. Hãy bấm 'Tải lại' để cập nhật danh sách.",
+                    "Dữ liệu đã thay đổi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var soDongCapNhat = _db.Database.ExecuteSqlInterpolated($@"
+                UPDATE dbo.Web_DatBan
+                SET DaThanhToanCoc = 1,
+                    NgayThanhToan = SYSDATETIME(),
+                    NgayCapNhat = SYSDATETIME()
+                WHERE MaDatBan = {maDatBan}
+                  AND DaThanhToanCoc = 0
+                  AND TrangThai = N'Đang chờ duyệt'
+                  AND TienCoc = {thongTin.TienCoc}
+                  AND MaGiaoDich = {thongTin.MaGiaoDich};");
+
+            if (soDongCapNhat != 1)
+                throw new InvalidOperationException("Không thể cập nhật trạng thái cọc. Có thể phiếu đã được xử lý ở nơi khác.");
+
+            var datBanWinForms = _db.DatBans.FirstOrDefault(d => d.MaDatBan == maDatBan);
+            if (datBanWinForms == null)
+                throw new InvalidOperationException("Đã xác minh trên Website nhưng không tìm thấy phiếu tương ứng trong bảng DatBan của WinForms.");
+
+            datBanWinForms.GhiChu = CapNhatGhiChuCocDaXacMinh(datBanWinForms.GhiChu, thongTin.TienCoc);
+
+            var donHang = _db.DonHangs.FirstOrDefault(d => d.MaDatBan == maDatBan);
+            if (donHang == null)
+                throw new InvalidOperationException("Không tìm thấy đơn hàng WinForms liên kết với phiếu Web. Không thể đồng bộ khoản cọc cho POS.");
+
+            donHang.GhiChu = CapNhatGhiChuCocDaXacMinh(donHang.GhiChu, thongTin.TienCoc);
+
+            _db.SaveChanges();
+            transaction.Commit();
+
+            MessageBox.Show(
+                $"Đã xác minh khoản cọc {thongTin.TienCoc:N0} đ cho phiếu {maDatBan}.\n\n" +
+                "POS đã được cập nhật để trừ khoản cọc này khi thanh toán.\n" +
+                "Bạn có thể chuyển trạng thái phiếu sang 'Đã xác nhận' sau khi kiểm tra lịch bàn.",
+                "Xác nhận cọc thành công",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            Tai();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                "Không thể xác nhận cọc. Mọi thay đổi trong transaction đã được hủy.\n\n" +
+                ex.GetBaseException().Message,
+                "Lỗi xác nhận cọc",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
     }
 
@@ -467,6 +793,9 @@ public class CrudPanel<T> : UserControl where T : class, new()
             return;
         }
 
+        if (!KiemTraCocDaXacMinh(phieu))
+            return;
+
         using var db = Program.NewDb();
         using var tx = db.Database.BeginTransaction();
 
@@ -510,6 +839,17 @@ public class CrudPanel<T> : UserControl where T : class, new()
         if (!_grid.EndEdit()) return;
         foreach (var x in _list)
         {
+            if (x is DatBan datBan && datBan.TrangThai == "Đã xác nhận")
+            {
+                var entry = _db.Entry(datBan);
+                var statusProperty = entry.Property(d => d.TrangThai);
+                if (entry.State == EntityState.Modified && statusProperty.IsModified
+                    && !KiemTraCocDaXacMinh(datBan))
+                {
+                    return;
+                }
+            }
+
             if (x is MonAn mon && mon.Gia < 0)
             {
                 MessageBox.Show("- Giá phải từ 0 trở lên (không chấp nhận giá nhỏ hơn 0)", "Dữ liệu chưa hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);

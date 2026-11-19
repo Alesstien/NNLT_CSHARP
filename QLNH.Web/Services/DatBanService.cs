@@ -273,15 +273,22 @@ public class DatBanService
         b.PhuongThucThanhToan = r.PhuongThuc;
         b.NganHang = r.PhuongThuc == "VIETQR" && (r.NganHang == "VCB" || r.NganHang == "MB" || r.NganHang == "TIMO") ? r.NganHang : null;
         b.MaGiaoDich = "GD" + DateTime.Now.ToString("yyMMddHHmmss") + RandomCode(4);
-        b.DaThanhToanCoc = true;
-        b.NgayThanhToan = DateTime.Now;
+
+        // Khách hoàn tất bước khai báo/chuyển khoản trên giao diện không đồng nghĩa
+        // ngân hàng đã xác nhận tiền vào tài khoản nhà hàng.
+        // Chỉ nhân viên hoặc quy trình đối soát đáng tin cậy mới được đặt hai trường này.
+        b.DaThanhToanCoc = false;
+        b.NgayThanhToan = null;
         b.GiuChoDen = null;
         b.TrangThai = TrangThaiDatBan.ChoDuyet;
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
         await DongBoSangWinFormsAsync(b);
 
-        var sent = await _mail.SendAsync(b.Email, $"[Hương Việt] Đã nhận đặt bàn {b.MaDatBan}", NoiDungEmail(b, "Chúng tôi đã ghi nhận đặt cọc của bạn. Nhà hàng sẽ đối chiếu giao dịch và xác nhận trong thời gian sớm nhất."));
+        var sent = await _mail.SendAsync(
+            b.Email,
+            $"[Hương Việt] Đã tiếp nhận yêu cầu đặt bàn {b.MaDatBan}",
+            NoiDungEmail(b, "Nhà hàng đã tiếp nhận yêu cầu đặt bàn và thông tin giao dịch bạn cung cấp. Khoản đặt cọc hiện đang chờ đối soát; đơn chỉ được xác nhận thanh toán sau khi nhà hàng kiểm tra giao dịch thực tế."));
         return new KetQuaDatBan { DatBan = b, EmailDaGui = sent };
     }
 
@@ -315,6 +322,8 @@ public class DatBanService
         var b = await _db.DatBans.Include(x => x.KhuVuc).Include(x => x.Mons).FirstOrDefaultAsync(x => x.Id == id);
         if (b == null) return "Không tìm thấy đơn đặt bàn.";
         if (b.TrangThai != TrangThaiDatBan.ChoDuyet) return "Chỉ duyệt được đơn đang chờ duyệt.";
+        if (!b.DaThanhToanCoc)
+            return "Chưa thể xác nhận đặt bàn vì khoản cọc vẫn đang chờ nhà hàng đối soát.";
         b.TrangThai = TrangThaiDatBan.DaXacNhan;
         b.NgayCapNhat = DateTime.Now;
         await _db.SaveChangesAsync();
@@ -428,7 +437,12 @@ public class DatBanService
         var winDatBan = await _appDb.DatBans.FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
         var dip = string.IsNullOrWhiteSpace(b.DipDacBiet) ? "" : $" | {b.DipDacBiet}";
         var ghiChuKhach = string.IsNullOrWhiteSpace(b.GhiChu) ? "" : $" | {b.GhiChu}";
-        var ghiChuDatBan = $"{prefix} {kvTen}{dip} | Cọc: {b.TienCoc:N0}đ{ghiChuKhach}";
+        // OrdersPanel.TachTienCoc chỉ đọc chuỗi "Cọc:" để trừ tiền đã nhận.
+        // Với khoản chưa được đối soát, dùng nhãn khác để POS không hiểu nhầm là đã thu.
+        var moTaCoc = b.DaThanhToanCoc
+            ? $"Cọc: {b.TienCoc:N0}đ"
+            : $"Cọc chờ xác minh: {b.TienCoc:N0}đ";
+        var ghiChuDatBan = $"{prefix} {kvTen}{dip} | {moTaCoc}{ghiChuKhach}";
         if (ghiChuDatBan.Length > 300) ghiChuDatBan = ghiChuDatBan[..300];
 
         if (winDatBan == null)
@@ -460,7 +474,7 @@ public class DatBanService
         var winDon = await _appDb.DonHangs
             .Include(d => d.ChiTiets)
             .FirstOrDefaultAsync(d => d.MaDatBan == b.MaDatBan);
-        var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | Cọc: {b.TienCoc:N0}đ | Còn lại: {b.ConLai:N0}đ";
+        var ghiChuDon = $"{prefix} {kvTen} ({b.SoKhach} khách{(b.SoBan > 1 ? $", {b.SoBan} bàn" : "")}) | {moTaCoc} | Còn lại: {b.ConLai:N0}đ";
         if (ghiChuDon.Length > 300) ghiChuDon = ghiChuDon[..300];
 
         if (winDon == null)
@@ -552,6 +566,12 @@ public class DatBanService
         if (string.IsNullOrEmpty(tenDangNhap)) return;
         if (tenDangNhap.Length > 50) tenDangNhap = tenDangNhap[..50];
 
+        // DbSeeder có thể gọi đồng bộ tài khoản mà không có mật khẩu rõ.
+        // Không tạo tài khoản đăng nhập POS mới bằng một mật khẩu mặc định dùng chung.
+        var tk = await _appDb.TaiKhoans.FirstOrDefaultAsync(t => t.TenDangNhap == tenDangNhap);
+        if (tk == null && string.IsNullOrWhiteSpace(plainPassword))
+            return;
+
         var roleName = laAdmin ? "Admin" : "KhachHang";
         var role = await _appDb.VaiTros.FirstOrDefaultAsync(v => v.TenVaiTro == roleName);
         if (role == null)
@@ -561,15 +581,15 @@ public class DatBanService
             await _appDb.SaveChangesAsync();
         }
 
-        var tk = await _appDb.TaiKhoans.FirstOrDefaultAsync(t => t.TenDangNhap == tenDangNhap);
         var active = hoatDong ?? !(u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
         if (tk == null)
         {
+            // Chỉ tạo tài khoản POS mới khi người gọi cung cấp mật khẩu hợp lệ.
             tk = new QLNH.Data.Entities.TaiKhoan
             {
                 TenDangNhap = tenDangNhap,
                 HoTen = string.IsNullOrWhiteSpace(u.HoTen) ? tenDangNhap : u.HoTen.Trim(),
-                MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword ?? "Khach@123"),
+                MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword!),
                 VaiTroId = role.Id,
                 HoatDong = active
             };
@@ -578,12 +598,13 @@ public class DatBanService
         else
         {
             if (!string.IsNullOrWhiteSpace(u.HoTen)) tk.HoTen = u.HoTen.Trim();
-            if (!string.IsNullOrEmpty(plainPassword)) tk.MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword);
+            if (!string.IsNullOrWhiteSpace(plainPassword))
+                tk.MatKhauHash = QLNH.Data.Services.PasswordHasher.Hash(plainPassword);
             if (hoatDong.HasValue) tk.HoatDong = hoatDong.Value;
         }
+
         await _appDb.SaveChangesAsync();
     }
-
     private static KetQuaDatBan Loi(string msg, string? ma = null) => new() { Loi = msg, MaLoi = ma };
 
     private async Task<string> TaoMaAsync()
@@ -606,6 +627,17 @@ public class DatBanService
     private static string NoiDungEmail(DatBan b, string loiNhan)
     {
         string E(string? s) => WebUtility.HtmlEncode(s ?? "");
+        var trangThaiCoc = b.DaThanhToanCoc
+            ? "Đã được nhà hàng xác minh"
+            : "Chờ nhà hàng đối soát";
+        var nhanTienCoc = b.DaThanhToanCoc
+            ? "Tiền cọc đã xác minh"
+            : "Tiền cọc khách khai báo";
+        var ngayThanhToan = b.NgayThanhToan?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa xác minh";
+        var nhanConLai = b.DaThanhToanCoc
+            ? "Còn lại sau khi trừ cọc đã xác minh"
+            : "Còn lại nếu khoản cọc được xác minh";
+
         return $@"<div style=""font-family:Segoe UI,Arial,sans-serif;max-width:520px"">
 <h2 style=""color:#b3261e"">Nhà hàng Hương Việt</h2>
 <p>Xin chào <b>{E(b.HoTen)}</b>,</p><p>{E(loiNhan)}</p>
@@ -615,9 +647,11 @@ public class DatBanService
 <tr><td>Số khách</td><td>{b.SoKhach}</td></tr>
 <tr><td>Khu vực</td><td>{E(b.KhuVuc?.Ten)}</td></tr>
 <tr><td>Tổng hóa đơn ước tính</td><td>{b.TongHoaDon:N0} đ</td></tr>
-<tr><td>Tiền cọc đã thanh toán</td><td>{b.TienCoc:N0} đ</td></tr>
-<tr><td>Còn lại trả tại nhà hàng</td><td>{b.ConLai:N0} đ</td></tr>
-<tr><td>Trạng thái</td><td><b>{E(b.TrangThai)}</b></td></tr>
+<tr><td>{nhanTienCoc}</td><td>{b.TienCoc:N0} đ</td></tr>
+<tr><td>Trạng thái đối soát cọc</td><td>{trangThaiCoc}</td></tr>
+<tr><td>Thời điểm xác minh</td><td>{ngayThanhToan}</td></tr>
+<tr><td>{nhanConLai}</td><td>{b.ConLai:N0} đ</td></tr>
+<tr><td>Trạng thái đặt bàn</td><td><b>{E(b.TrangThai)}</b></td></tr>
 </table></div>";
     }
 }

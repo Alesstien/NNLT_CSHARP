@@ -8,7 +8,11 @@ namespace QLNH_Web.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(AuthDbContext db, UserManager<AppUser> users, IConfiguration cfg, DatBanService? svc = null)
+    public static async Task SeedAsync(
+        AuthDbContext db,
+        UserManager<AppUser> users,
+        IConfiguration cfg,
+        DatBanService? svc = null)
     {
         if (!await db.KhuVucs.AnyAsync())
         {
@@ -39,7 +43,10 @@ public static class DbSeeder
                 new MucThucDon { ThuTu = 7, DanhMuc = rv, Emoji = "", Ten = "Champagne Dom Pérignon Vintage", Gia = 7_900_000, MoTa = "Champagne Pháp hảo hạng, bọt mịn lâu tan, hương bánh brioche." },
                 new MucThucDon { ThuTu = 8, DanhMuc = tm, Emoji = "", Ten = "Bánh Soufflé Sô-cô-la Bỉ & Gelato", Gia = 280_000, MoTa = "Soufflé Valrhona 70% cacao nướng nóng, ăn kèm gelato vani." });
         }
-        var wagyu = await db.MucThucDons.FirstOrDefaultAsync(m => m.Ten == "Thịt Bò Wagyu A5 Nướng Đá Muối");
+
+        var wagyu = await db.MucThucDons
+            .FirstOrDefaultAsync(m => m.Ten == "Thịt Bò Wagyu A5 Nướng Đá Muối");
+
         if (wagyu != null)
         {
             wagyu.Ten = "Thịt Bò Wagyu A5 Nướng Đá Núi Lửa";
@@ -52,14 +59,67 @@ public static class DbSeeder
                 new UuDai { Ma = "WELCOME10", MoTa = "Giảm 10% tổng hóa đơn cho khách mới", PhanTramGiam = 10, GiamToiDa = 500_000 },
                 new UuDai { Ma = "AURAVIP", MoTa = "Ưu đãi hội viên VIP: giảm 15% tổng hóa đơn", PhanTramGiam = 15, GiamToiDa = 2_000_000 });
         }
+
         await db.SaveChangesAsync();
 
-        var email = cfg["AdminSeed:Email"] ?? "admin@aura.vn";
-        if (await users.FindByEmailAsync(email) == null)
+        // Chỉ tạo tài khoản Admin Website khi được cấu hình rõ ràng.
+        // Không sử dụng email hoặc mật khẩu mặc định trong mã nguồn.
+        var adminEmail = cfg["AdminSeed:Email"]?.Trim();
+        var adminPassword = cfg["AdminSeed:Password"];
+
+        var coEmailAdmin = !string.IsNullOrWhiteSpace(adminEmail);
+        var coMatKhauAdmin = !string.IsNullOrWhiteSpace(adminPassword);
+
+        if (coEmailAdmin != coMatKhauAdmin)
         {
-            var admin = new AppUser { UserName = email, Email = email, EmailConfirmed = true, PhoneNumber = "0900000000", HoTen = "Quản trị viên" };
-            var r = await users.CreateAsync(admin, cfg["AdminSeed:Password"] ?? "Admin@123");
-            if (r.Succeeded) await users.AddToRoleAsync(admin, AccountController.RoleAdmin);
+            throw new InvalidOperationException(
+                "Cấu hình AdminSeed chưa đầy đủ. Cần cung cấp đồng thời AdminSeed:Email và AdminSeed:Password.");
+        }
+
+        if (coEmailAdmin && coMatKhauAdmin)
+        {
+            var admin = await users.FindByEmailAsync(adminEmail!);
+
+            if (admin == null)
+            {
+                admin = new AppUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    EmailConfirmed = true,
+                    PhoneNumber = cfg["AdminSeed:PhoneNumber"],
+                    HoTen = cfg["AdminSeed:FullName"]?.Trim() is { Length: > 0 } fullName
+                        ? fullName
+                        : "Quản trị viên"
+                };
+
+                var createResult = await users.CreateAsync(admin, adminPassword!);
+
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(
+                        "; ",
+                        createResult.Errors.Select(e => $"{e.Code}: {e.Description}"));
+
+                    throw new InvalidOperationException(
+                        $"Không thể tạo tài khoản Admin Website: {errors}");
+                }
+            }
+
+            if (!await users.IsInRoleAsync(admin, AccountController.RoleAdmin))
+            {
+                var roleResult = await users.AddToRoleAsync(admin, AccountController.RoleAdmin);
+
+                if (!roleResult.Succeeded)
+                {
+                    var errors = string.Join(
+                        "; ",
+                        roleResult.Errors.Select(e => $"{e.Code}: {e.Description}"));
+
+                    throw new InvalidOperationException(
+                        $"Không thể gán quyền Admin cho tài khoản Website: {errors}");
+                }
+            }
         }
 
         if (svc != null)
@@ -73,10 +133,13 @@ public static class DbSeeder
                 await svc.DongBoTaiKhoanSangWinFormsAsync(u, null, null, isAdmin);
             }
 
-            var webDatBans = await db.DatBans.Include(d => d.KhuVuc).Include(d => d.Mons)
+            var webDatBans = await db.DatBans
+                .Include(d => d.KhuVuc)
+                .Include(d => d.Mons)
                 .Where(d => d.TrangThai != TrangThaiDatBan.ChoCoc)
                 .OrderBy(d => d.Id)
                 .ToListAsync();
+
             foreach (var b in webDatBans)
             {
                 await svc.DongBoSangWinFormsAsync(b);

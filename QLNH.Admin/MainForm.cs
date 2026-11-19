@@ -28,9 +28,10 @@ public class MainForm : Form
         var pnlOrders = new OrdersPanel();
         var pnlPos = new PosPanel();
 
-        var pnlDatBan = new CrudPanel<DatBan>(
-            q => q.DatBans.OrderByDescending(d => d.Id),
-            CauHinhDatBan);
+       var pnlDatBan = new CrudPanel<DatBan>(
+    q => q.DatBans.OrderByDescending(d => d.Id),
+    CauHinhDatBan,
+    canVerifyDeposit: isAdmin);
 
         AddTab(tabs, "Đơn hàng", pnlOrders);
         AddTab(tabs, "Bán tại bàn (POS)", pnlPos);
