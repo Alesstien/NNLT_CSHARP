@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Giỏ hàng & Đặt bàn";
+}
+
+<div id="cart-page-container">
+    <h3 class="mb-3">Giỏ hàng &amp; Đặt bàn</h3>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <h5>Món đã chọn</h5>
+            <div class="alert alert-info">
+                Vui lòng đăng nhập để sử dụng giỏ hàng.
+            </div>
+            <a asp-controller="Menu" asp-action="Index"
+               class="btn btn-outline-secondary">Xem thực đơn</a>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Thông tin đặt bàn</h5>
+                    <a asp-controller="Account" asp-action="Login"
+                       asp-route-returnUrl="@Url.Action("Index", "Cart")"
+                       class="btn btn-primary">Đăng nhập</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
