@@ -22,7 +22,12 @@ public class CrudPanel<T> : UserControl where T : class, new()
         SelectionMode = DataGridViewSelectionMode.FullRowSelect,
         BackgroundColor = Color.White
     };
-    private readonly TextBox _txtSearch = new() { Width = 220, PlaceholderText = "Tìm kiếm..." };
+    private readonly TextBox _txtSearch = new()
+    {
+        Width = 200,
+        PlaceholderText = "Tìm kiếm...",
+        Margin = new Padding(0, 5, 8, 6)
+    };    
     private readonly Func<AppDbContext, IQueryable<T>>? _query;
     private readonly Action<DataGridView, AppDbContext>? _configure;
     private readonly bool _canEdit;
@@ -40,6 +45,100 @@ public class CrudPanel<T> : UserControl where T : class, new()
         public string TrangThai { get; init; } = "";
     }
 
+    private void CanChinhGiaoDienDatBan()
+{
+    if (typeof(T) != typeof(DatBan))
+    {
+        return;
+    }
+
+    _grid.BorderStyle = BorderStyle.None;
+    _grid.BackgroundColor = Color.White;
+
+    _grid.RowHeadersVisible = false;
+    _grid.AllowUserToResizeRows = false;
+    _grid.AutoSizeColumnsMode =
+        DataGridViewAutoSizeColumnsMode.Fill;
+
+    _grid.ColumnHeadersHeightSizeMode =
+        DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+
+    _grid.ColumnHeadersDefaultCellStyle.WrapMode =
+        DataGridViewTriState.True;
+
+    _grid.DefaultCellStyle.Padding =
+        new Padding(4, 3, 4, 3);
+
+    _grid.AutoSizeRowsMode =
+        DataGridViewAutoSizeRowsMode.DisplayedCells;
+
+    _grid.AlternatingRowsDefaultCellStyle.BackColor =
+        Color.FromArgb(245, 247, 250);
+
+    void ChinhCot(
+        string ten,
+        string tieuDe,
+        float tiLe,
+        int rongToiThieu)
+    {
+        var cot = _grid.Columns[ten];
+
+        if (cot == null)
+        {
+            return;
+        }
+
+        cot.HeaderText = tieuDe;
+
+        // Ghi đè AllCells và độ rộng của cột ComboBox.
+        cot.AutoSizeMode =
+            DataGridViewAutoSizeColumnMode.Fill;
+
+        cot.FillWeight = tiLe;
+        cot.MinimumWidth = rongToiThieu;
+    }
+
+    ChinhCot("MaDatBan", "Mã đặt bàn", 100, 110);
+    ChinhCot("TenKhach", "Tên khách", 140, 140);
+    ChinhCot("SoDienThoai", "Điện thoại", 100, 110);
+    ChinhCot("NgayGio", "Ngày giờ", 125, 145);
+    ChinhCot("BatDauPhucVuLuc", "Bắt đầu phục vụ", 115, 135);
+    ChinhCot("SoNguoi", "Số người", 60, 65);
+    ChinhCot("BanId", "Bàn", 80, 90);
+    ChinhCot("TrangThai", "Trạng thái", 115, 135);
+    ChinhCot("GhiChu", "Ghi chú", 200, 180);
+
+    var cotId = _grid.Columns["Id"];
+
+    if (cotId != null)
+    {
+        cotId.Visible = false;
+    }
+
+    var cotNgayGio = _grid.Columns["NgayGio"];
+
+    if (cotNgayGio != null)
+    {
+        cotNgayGio.DefaultCellStyle.Format =
+            "dd/MM/yyyy HH:mm";
+    }
+
+    var cotBatDau = _grid.Columns["BatDauPhucVuLuc"];
+
+    if (cotBatDau != null)
+    {
+        cotBatDau.DefaultCellStyle.Format =
+            "dd/MM/yyyy HH:mm";
+    }
+
+    var cotGhiChu = _grid.Columns["GhiChu"];
+
+    if (cotGhiChu != null)
+    {
+        cotGhiChu.DefaultCellStyle.WrapMode =
+            DataGridViewTriState.True;
+    }
+    }
     public CrudPanel(
         Func<AppDbContext, IQueryable<T>>? query = null,
         Action<DataGridView, AppDbContext>? configure = null,
@@ -52,8 +151,17 @@ public class CrudPanel<T> : UserControl where T : class, new()
         _duocXacNhanCoc = canVerifyDeposit;
         Dock = DockStyle.Fill;
 
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 42, Padding = new Padding(6) };
-        var btnAdd = Btn("Thêm dòng", Color.SeaGreen, (_, _) => Them());
+        var bar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
+            Padding = new Padding(8),
+            Margin = new Padding(0),
+            BackColor = Color.WhiteSmoke
+        };        var btnAdd = Btn("Thêm dòng", Color.SeaGreen, (_, _) => Them());
         var btnSave = Btn("Lưu thay đổi", Color.SteelBlue, (_, _) => Luu());
         var btnDel = Btn("Xóa", Color.Firebrick, (_, _) => Xoa());
         if (typeof(T) == typeof(WebUuDai))
@@ -279,9 +387,11 @@ public class CrudPanel<T> : UserControl where T : class, new()
             try
             {
                 _grid.EndEdit();
+                (BindingContext?[_list] as CurrencyManager)
+                    ?.EndCurrentEdit();
 
-                ((CurrencyManager)BindingContext[_list])
-                    .EndCurrentEdit();
+// Trả entity về giá trị cũ trước khi hỏi Yes/No.
+phieu.TrangThai = trangThaiCu;
 
                 // Trả entity về giá trị cũ trước khi hỏi Yes/No.
                 phieu.TrangThai = trangThaiCu;
@@ -583,10 +693,8 @@ public class CrudPanel<T> : UserControl where T : class, new()
         try
         {
             _grid.EndEdit();
-
-            ((CurrencyManager)BindingContext[_list])
-                .EndCurrentEdit();
-
+            (BindingContext?[_list] as CurrencyManager)
+            ?.EndCurrentEdit();
             // Dùng trạng thái đã lưu làm cơ sở kiểm tra.
             phieu.TrangThai = _db.Entry(phieu)
                 .Property(x => x.TrangThai).OriginalValue;
@@ -608,13 +716,29 @@ public class CrudPanel<T> : UserControl where T : class, new()
         }
     }
 
-    private static Button Btn(string text, Color c, EventHandler h)
-    {
-        var b = new Button { Text = text, AutoSize = true, BackColor = c, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand };
-        b.Click += h;
-        return b;
-    }
+            private static Button Btn(
+            string text,
+            Color c,
+            EventHandler h)
+        {
+            var b = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Padding = new Padding(10, 6, 10, 6),
+                Margin = new Padding(0, 0, 8, 6),
+                BackColor = c,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
 
+            b.FlatAppearance.BorderSize = 0;
+            b.Click += h;
+
+            return b;
+        }
     private void BuildColumns()
     {
         foreach (var p in typeof(T).GetProperties())
@@ -632,7 +756,9 @@ public class CrudPanel<T> : UserControl where T : class, new()
             _grid.Columns.Add(col);
         }
         _configure?.Invoke(_grid, _db);
+        CanChinhGiaoDienDatBan();
         _grid.DataSource = _list;
+        
     }
 
     public void Tai()
@@ -646,7 +772,7 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 _db.ChangeTracker.Clear();
 
                 _configure?.Invoke(_grid, _db);
-
+                CanChinhGiaoDienDatBan();
                 var q = _query != null
                     ? _query(_db)
                     : _db.Set<T>();
@@ -1248,11 +1374,6 @@ public class CrudPanel<T> : UserControl where T : class, new()
                 XoaDatBan(phieu);
                 return;
             }
-        {
-            MessageBox.Show("Phiếu đã tiếp nhận phục vụ, không thể xoá.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
         if (MessageBox.Show("Bạn có chắc muốn xoá dòng đã chọn?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         try
         {
