@@ -20,6 +20,9 @@ public class PaymentForm : Form
     private TextBox txtTienKhachDua = null!;
     private Label lblTienThua = null!;
     private Button btnXacNhan = null!;
+    // lblTongVal và lblCanThuVal cần truy cập khi cập nhật sau khi áp voucher
+    private Label lblTongVal = null!;
+    private Label lblCanThuVal = null!;
 
     public PaymentForm(
         decimal tongHoaDon,
@@ -41,96 +44,167 @@ public class PaymentForm : Form
 
     private void InitializeUI(string tenBan)
     {
+        bool coVoucher = !string.IsNullOrWhiteSpace(_maDaAp) || _tinhGiamGia != null;
+        int formHeight = coVoucher ? 480 : 420;
+
         this.Text = $"Thanh toán - {tenBan}";
-        this.Size = new Size(430, 410);
+        this.Size = new Size(440, formHeight);
         this.StartPosition = FormStartPosition.CenterParent;
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
         this.MinimizeBox = false;
         this.BackColor = Color.White;
+        this.Font = new Font("Segoe UI", 10F);
 
-        var lblTitle = new Label { Text = "CHI TIẾT THANH TOÁN", Font = new Font("Segoe UI", 14F, FontStyle.Bold), Dock = DockStyle.Top, TextAlign = ContentAlignment.MiddleCenter, Height = 48 };
+        // ── Header ──────────────────────────────────────────────
+        var pnlHeader = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 52,
+            BackColor = Color.FromArgb(26, 115, 232)
+        };
+        var lblTitle = new Label
+        {
+            Text = "CHI TIẾT THANH TOÁN",
+            Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+            ForeColor = Color.White,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        pnlHeader.Controls.Add(lblTitle);
 
-        var lblTongText = new Label { Text = "Tổng hóa đơn:", Font = new Font("Segoe UI", 11.5F), Location = new Point(30, 62), AutoSize = true };
-        var lblTongVal = new Label { Text = $"{_tongHoaDon:N0} đ", Font = new Font("Segoe UI", 12F, FontStyle.Bold), Location = new Point(200, 60), AutoSize = true };
+        // ── Các dòng thông tin ───────────────────────────────────
+        int col1 = 30, col2 = 215;
+        int y = 72;
 
-        var lblCocText = new Label { Text = "Đã đặt cọc trước:", Font = new Font("Segoe UI", 11.5F), Location = new Point(30, 98), AutoSize = true };
-        var lblCocVal = new Label { Text = $"- {_tienCoc:N0} đ", Font = new Font("Segoe UI", 12F, FontStyle.Bold), ForeColor = Color.SeaGreen, Location = new Point(200, 96), AutoSize = true };
+        var lblTongText = MakeLabel("Tổng hóa đơn:", col1, y, 11.5F);
+        lblTongVal = MakeLabel($"{_tongHoaDon:N0} đ", col2, y, 12F, FontStyle.Bold);
+        y += 38;
 
-        var lblCanThuText = new Label { Text = "Còn phải thu:", Font = new Font("Segoe UI", 12F, FontStyle.Bold), Location = new Point(30, 136), AutoSize = true };
-        var lblCanThuVal = new Label { Text = $"{_canThu:N0} đ", Font = new Font("Segoe UI", 15F, FontStyle.Bold), ForeColor = Color.Firebrick, Location = new Point(200, 132), AutoSize = true };
+        var lblCocText = MakeLabel("Đã đặt cọc trước:", col1, y, 11.5F);
+        var lblCocVal = MakeLabel($"- {_tienCoc:N0} đ", col2, y, 12F, FontStyle.Bold);
+        lblCocVal.ForeColor = Color.SeaGreen;
+        y += 38;
 
-        var lblKhachDuaText = new Label { Text = "Tiền khách đưa:", Font = new Font("Segoe UI", 11.5F), Location = new Point(30, 184), AutoSize = true };
-        txtTienKhachDua = new TextBox { Font = new Font("Segoe UI", 13F), Location = new Point(200, 180), Width = 180, Text = _canThu.ToString("0") };
+        // Đường kẻ ngang phân cách
+        var sep = new Panel { Location = new Point(col1, y), Size = new Size(370, 1), BackColor = Color.LightGray };
+        y += 10;
+
+        var lblCanThuText = MakeLabel("Còn phải thu:", col1, y, 12F, FontStyle.Bold);
+        lblCanThuVal = MakeLabel($"{_canThu:N0} đ", col2, y - 3, 15F, FontStyle.Bold);
+        lblCanThuVal.ForeColor = Color.Firebrick;
+        y += 48;
+
+        var lblKhachDuaText = MakeLabel("Tiền khách đưa:", col1, y, 11.5F);
+        txtTienKhachDua = new TextBox
+        {
+            Font = new Font("Segoe UI", 13F),
+            Location = new Point(col2, y - 3),
+            Width = 185,
+            Text = _canThu.ToString("0"),
+            BorderStyle = BorderStyle.FixedSingle
+        };
         txtTienKhachDua.TextChanged += TxtTienKhachDua_TextChanged;
         txtTienKhachDua.KeyPress += TxtTienKhachDua_KeyPress;
+        y += 44;
 
-        var lblTienThuaText = new Label { Text = "Tiền thối lại:", Font = new Font("Segoe UI", 11.5F), Location = new Point(30, 232), AutoSize = true };
-        lblTienThua = new Label { Text = "0 đ", Font = new Font("Segoe UI", 13F, FontStyle.Bold), ForeColor = Color.MediumSeaGreen, Location = new Point(200, 228), AutoSize = true };
+        var lblTienThuaText = MakeLabel("Tiền thối lại:", col1, y, 11.5F);
+        lblTienThua = MakeLabel("0 đ", col2, y, 13F, FontStyle.Bold);
+        lblTienThua.ForeColor = Color.MediumSeaGreen;
+        y += 44;
 
+        // ── Nút XÁC NHẬN ───────────────────────────────────────
+        int btnY = coVoucher ? y + 68 : y;
         btnXacNhan = new Button
         {
             Text = "XÁC NHẬN THANH TOÁN (ENTER)",
             Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
-            BackColor = Color.MediumSeaGreen,
+            BackColor = Color.FromArgb(52, 168, 83),
             ForeColor = Color.White,
-            Location = new Point(30, 285),
-            Size = new Size(350, 50),
+            Location = new Point(col1, btnY),
+            Size = new Size(370, 50),
             FlatStyle = FlatStyle.Flat,
             Cursor = Cursors.Hand
         };
         btnXacNhan.FlatAppearance.BorderSize = 0;
+        btnXacNhan.FlatAppearance.MouseOverBackColor = Color.FromArgb(39, 142, 65);
+        btnXacNhan.FlatAppearance.MouseDownBackColor = Color.FromArgb(27, 115, 48);
         btnXacNhan.Click += BtnXacNhan_Click;
 
         this.Controls.AddRange(new Control[]
         {
-            lblTitle,
+            pnlHeader,
             lblTongText, lblTongVal,
             lblCocText, lblCocVal,
+            sep,
             lblCanThuText, lblCanThuVal,
             lblKhachDuaText, txtTienKhachDua,
             lblTienThuaText, lblTienThua,
             btnXacNhan
         });
 
-        if (!string.IsNullOrWhiteSpace(_maDaAp) || _tinhGiamGia != null)
+        // ── Phần voucher (nếu có) ───────────────────────────────
+        if (coVoucher)
         {
-            ClientSize = new Size(430, 420);
-            btnXacNhan.Top = 345;
+            // Đường kẻ ngang trước voucher
+            var sepVoucher = new Panel
+            {
+                Location = new Point(col1, y - 4),
+                Size = new Size(370, 1),
+                BackColor = Color.LightGray
+            };
 
             var lblVoucher = new Label
             {
                 Text = string.IsNullOrWhiteSpace(_maDaAp)
-                    ? "Mã ưu đãi"
-                    : $"Đã áp dụng {_maDaAp} · Giảm {_giamDaAp:N0} đ",
-                Location = new Point(30, 270),
-                AutoSize = true
+                    ? "🎫  Mã ưu đãi"
+                    : $"✅  Đã áp dụng: {_maDaAp}  |  Giảm {_giamDaAp:N0} đ",
+                Location = new Point(col1, y + 4),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = string.IsNullOrWhiteSpace(_maDaAp)
+                    ? Color.FromArgb(70, 70, 70)
+                    : Color.SeaGreen
             };
+
+            Controls.Add(sepVoucher);
             Controls.Add(lblVoucher);
 
             if (string.IsNullOrWhiteSpace(_maDaAp) && _tinhGiamGia != null)
             {
+                int inputY = y + 30;
+
                 var txtVoucher = new TextBox
                 {
-                    Location = new Point(30, 293),
-                    Width = 230,
+                    Location = new Point(col1, inputY),
+                    Width = 235,
+                    Font = new Font("Segoe UI", 11F),
                     MaxLength = 30,
-                    CharacterCasing = CharacterCasing.Upper
+                    CharacterCasing = CharacterCasing.Upper,
+                    PlaceholderText = "Nhập mã ưu đãi..."
                 };
 
                 var btnApDung = new Button
                 {
                     Text = "Áp dụng",
-                    Location = new Point(270, 291),
-                    Width = 110
+                    Location = new Point(col1 + 240, inputY - 1),
+                    Size = new Size(130, 32),
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    BackColor = Color.FromArgb(52, 168, 83),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Cursor = Cursors.Hand
                 };
+                btnApDung.FlatAppearance.BorderSize = 0;
+                btnApDung.FlatAppearance.MouseOverBackColor = Color.FromArgb(39, 142, 65);
+                btnApDung.FlatAppearance.MouseDownBackColor = Color.FromArgb(27, 115, 48);
 
                 btnApDung.Click += (_, _) =>
                 {
                     var ma = txtVoucher.Text.Trim().ToUpperInvariant();
                     if (ma.Length == 0)
                     {
-                        MessageBox.Show("Hãy nhập mã ưu đãi.");
+                        MessageBox.Show("Hãy nhập mã ưu đãi.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
 
@@ -139,7 +213,7 @@ public class PaymentForm : Form
                         var giam = _tinhGiamGia(ma);
                         if (giam is not decimal soTien || soTien <= 0)
                         {
-                            MessageBox.Show("Mã không hợp lệ hoặc đơn không đủ điều kiện.");
+                            MessageBox.Show("Mã không hợp lệ hoặc đơn không đủ điều kiện.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
 
@@ -151,14 +225,17 @@ public class PaymentForm : Form
                         lblTongVal.Text = $"{_tongHoaDon:N0} đ";
                         lblCanThuVal.Text = $"{_canThu:N0} đ";
                         txtTienKhachDua.Text = _canThu.ToString("0");
-                        lblVoucher.Text = $"Đã áp dụng {ma} · Giảm {GiamGiaMoi:N0} đ";
+                        lblVoucher.Text = $"✅  Đã áp dụng: {ma}  |  Giảm {GiamGiaMoi:N0} đ";
+                        lblVoucher.ForeColor = Color.SeaGreen;
 
                         txtVoucher.Enabled = false;
                         btnApDung.Enabled = false;
+                        btnApDung.BackColor = Color.FromArgb(180, 180, 180);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Không kiểm tra được mã: " + ex.GetBaseException().Message);
+                        MessageBox.Show("Không kiểm tra được mã: " + ex.GetBaseException().Message,
+                            "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 };
 
@@ -168,6 +245,18 @@ public class PaymentForm : Form
         }
 
         this.AcceptButton = btnXacNhan;
+    }
+
+    // Helper tạo Label nhanh
+    private static Label MakeLabel(string text, int x, int y, float fontSize, FontStyle style = FontStyle.Regular)
+    {
+        return new Label
+        {
+            Text = text,
+            Font = new Font("Segoe UI", fontSize, style),
+            Location = new Point(x, y),
+            AutoSize = true
+        };
     }
 
     private void TxtTienKhachDua_KeyPress(object? sender, KeyPressEventArgs e)
