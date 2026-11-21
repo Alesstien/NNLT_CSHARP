@@ -38,7 +38,7 @@ public sealed class TuHuyDatBanWorker(
                             -- Lưu mã đặt bàn và bàn vật lý vừa được tự động hủy.
                             DECLARE @HetHan TABLE
                             (
-                                MaDatBan nvarchar(30) NOT NULL,
+                                MaDatBan nvarchar() NOT NULL,
                                 BanId int NULL
                             );
 
@@ -60,7 +60,7 @@ public sealed class TuHuyDatBanWorker(
                             WHERE d.TrangThai = N'Đã xác nhận'
                               AND d.BatDauPhucVuLuc IS NULL
                               AND NULLIF(LTRIM(RTRIM(d.MaDatBan)), N'') IS NOT NULL
-                              AND d.NgayGio <= DATEADD(MINUTE, -15, @BayGio)
+                              AND d.NgayGio <= DATEADD(SECOND, -15, @BayGio)
                               AND NOT EXISTS
                               (
                                   SELECT 1
