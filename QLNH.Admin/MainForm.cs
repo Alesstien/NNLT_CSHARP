@@ -19,7 +19,8 @@ public class MainForm : Form
     {
         bool isAdmin = user.VaiTro?.TenVaiTro == "Admin";
 
-        Text = $"Quản lý nhà hàng - {user.HoTen} ({user.VaiTro?.TenVaiTro})";
+        var modeTag = Program.IsCloudMode ? "[Cloud - MonsterASP]" : "[Localhost]";
+        Text = $"Quản lý nhà hàng - {user.HoTen} ({user.VaiTro?.TenVaiTro}) - {modeTag}";
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(900, 600);
 

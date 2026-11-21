@@ -13,7 +13,7 @@ public class LoginForm : Form
 
     public LoginForm()
     {
-        Text = "Đăng nhập - Quản lý nhà hàng";
+        Text = $"Đăng nhập - Quản lý nhà hàng ({(Program.IsCloudMode ? "Cloud" : "Local")})";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;

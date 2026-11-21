@@ -1,0 +1,628 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: light;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1182px" height="1142px" viewBox="0 0 1182 1142" id="ge-svg-w5S48Fpn_3pZIpqtw7_d" content="&lt;mxfile&gt;&lt;diagram id=&quot;lP12R-8FOvNdqd7gnrEh&quot; name=&quot;Page-1&quot;&gt;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&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <style type="text/css">
+        @supports (color: light-dark(#000, #fff)) { #ge-svg-w5S48Fpn_3pZIpqtw7_d { --ge-adaptive-bg: light-dark(#ffffff, var(--ge-dark-color, #121212)); --ge-adaptive-fg: light-dark(#000000, var(--ge-light-color, #ffffff)); } }
+    </style>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="0%" y2="100%" id="drawio-svg-H7_KBNx6jPi_qTgezQS6-gradient-light-dark_dae8fc_1d293b_-1-light-dark_7ea6e0_436697_-1-s-0">
+            <stop offset="0%" stop-color="#dae8fc" stop-opacity="1" style="stop-color: light-dark(rgb(218, 232, 252), rgb(29, 41, 59)); stop-opacity: 1;"/>
+            <stop offset="100%" stop-color="#7ea6e0" stop-opacity="1" style="stop-color: light-dark(rgb(126, 166, 224), rgb(67, 102, 151)); stop-opacity: 1;"/>
+        </linearGradient>
+    </defs>
+    <g>
+        <g data-cell-id="0">
+            <g data-cell-id="1">
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-1">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="0" y="0" width="540" height="1140" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-2">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="0" y="0" width="540" height="50" fill="url(#drawio-svg-H7_KBNx6jPi_qTgezQS6-gradient-light-dark_dae8fc_1d293b_-1-light-dark_7ea6e0_436697_-1-s-0)" stroke="#6c8ebf" pointer-events="all" style="fill: url(&quot;#drawio-svg-H7_KBNx6jPi_qTgezQS6-gradient-light-dark_dae8fc_1d293b_-1-light-dark_7ea6e0_436697_-1-s-0&quot;); stroke: light-dark(rgb(108, 142, 191), rgb(92, 121, 163));"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 538px; height: 1px; padding-top: 25px; margin-left: 1px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                QUY TRÌNH ĐĂNG NHẬP
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="270" y="29" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    QUY TRÌNH ĐĂNG NHẬP
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-4">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="125" y="90" width="360" height="50" rx="7.5" ry="7.5" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 358px; height: 1px; padding-top: 115px; margin-left: 126px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Người dùng nhập: Tên đăng nhập + Mật khẩu gốc
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="305" y="119" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Người dùng nhập: Tên đăng nhập + Mật khẩu gốc
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-6">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="155" y="210" width="300" height="70" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 298px; height: 1px; padding-top: 245px; margin-left: 156px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Đọc CSDL MatKhauHash lưu sẵn
+                                                <div>
+                                                    (Dạng: base64_salt $ base64_hash)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="305" y="242" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="305" y="242">
+                                        Đọc CSDL MatKhauHash lưu sẵn
+                                    </tspan>
+                                    <tspan x="305" y="256">
+                                        (Dạng: base64_salt $ base64_hash)
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-7">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 305 140 L 305 203.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 305 208.88 L 301.5 201.88 L 305 203.63 L 308.5 201.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-8">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="170" y="320" width="270" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 268px; height: 1px; padding-top: 340px; margin-left: 171px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Tách chuỗi lấy ra Salt và Hash kỳ vọng
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="305" y="344" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Tách chuỗi lấy ra Salt và Hash kỳ vọng
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-9">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 305 280 L 305 313.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 305 318.88 L 301.5 311.88 L 305 313.63 L 308.5 311.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-10">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="135" y="400" width="340" height="60" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 338px; height: 1px; padding-top: 430px; margin-left: 136px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Dùng thuật toán Rfc2898DeriveBytes.Pbkdf2:
+                                                <div>
+                                                    Băm mật khẩu vừa nhập với Salt đó qua 100.000 vòng
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="305" y="427" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="305" y="427">
+                                        Dùng thuật toán Rfc2898DeriveBytes.Pbkdf2:
+                                    </tspan>
+                                    <tspan x="305" y="441">
+                                        Băm mật khẩu vừa nhập với Salt đó qua 100.000 vòng
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-11">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 305 360 L 305 393.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 305 398.88 L 301.5 391.88 L 305 393.63 L 308.5 391.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-12">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 305 520 L 450 595 L 305 670 L 160 595 Z" fill="#dae8fc" stroke="#6c8ebf" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(218, 232, 252), rgb(29, 41, 59)); stroke: light-dark(rgb(108, 142, 191), rgb(92, 121, 163));"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 288px; height: 1px; padding-top: 595px; margin-left: 161px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                <div style="float:left;text-decoration:inherit;width:288px;height:146px;">
+                                                    <div data-shape-inside="1" contenteditable="false" style="float:left;width:144px;height:146px;shape-outside:polygon(97.31% 0.05%, 0.05% 50%, 97.31% 99.95%, 0.05% 99.95%, 0.05% 0.05%);shape-margin:2px;pointer-events:none;"></div>
+                                                    <div data-shape-inside="1" contenteditable="false" style="float:right;width:144px;height:146px;shape-outside:polygon(2.69% 0.05%, 99.95% 50%, 2.69% 99.95%, 99.95% 99.95%, 99.95% 0.05%);shape-margin:2px;pointer-events:none;"></div>
+                                                    <div data-shape-inside="1" contenteditable="false" style="height:51px;pointer-events:none;"></div>
+                                                    So sánh bằng CryptographicOperations.FixedTimeEquals
+                                                    <div>
+                                                        ( Chống Timing Attack)?
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="305" y="571" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="305" y="571"></tspan>
+                                    <tspan x="305" y="585"></tspan>
+                                    <tspan x="305" y="599">
+                                        So sánh bằng
+                                    </tspan>
+                                    <tspan x="305" y="613">
+                                        CryptographicOperations.FixedTimeEquals
+                                    </tspan>
+                                    <tspan x="305" y="627">
+                                        ( Chống Timing Attack)?
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-13">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 220 780 L 330 855 L 220 930 L 110 855 Z" fill="#dae8fc" stroke="#6c8ebf" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(218, 232, 252), rgb(29, 41, 59)); stroke: light-dark(rgb(108, 142, 191), rgb(92, 121, 163));"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 218px; height: 1px; padding-top: 855px; margin-left: 111px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                <div style="float:left;text-decoration:inherit;width:218px;height:146px;">
+                                                    <div data-shape-inside="1" contenteditable="false" style="float:left;width:109px;height:146px;shape-outside:polygon(97.31% 0.05%, 0.05% 50%, 97.31% 99.95%, 0.05% 99.95%, 0.05% 0.05%);shape-margin:2px;pointer-events:none;"></div>
+                                                    <div data-shape-inside="1" contenteditable="false" style="float:right;width:109px;height:146px;shape-outside:polygon(2.69% 0.05%, 99.95% 50%, 2.69% 99.95%, 99.95% 99.95%, 99.95% 0.05%);shape-margin:2px;pointer-events:none;"></div>
+                                                    <div data-shape-inside="1" contenteditable="false" style="height:59px;pointer-events:none;"></div>
+                                                    Tài khoản có đang bị khóa?
+                                                    <div>
+                                                        (HoatDong == false)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="220" y="838" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="220" y="838"></tspan>
+                                    <tspan x="220" y="852"></tspan>
+                                    <tspan x="220" y="866">
+                                        Tài khoản có đang bị khóa?
+                                    </tspan>
+                                    <tspan x="220" y="880">
+                                        (HoatDong == false)
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-14">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 232.5 632.5 L 232.5 725 L 220 725 L 220 773.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 220 778.88 L 216.5 771.88 L 220 773.63 L 223.5 771.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-15">
+                        <g>
+                            <g transform="scale(0.9999999999999999)">
+                                <switch>
+                                    <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 713px; margin-left: 233px;">
+                                            <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; background-color: #ffffff; ">
+                                                <div style="display: inline-block; font-size: 11px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; background-color: var(--ge-adaptive-bg, #ffffff); white-space: nowrap; ">
+                                                    Trùng khớp 100%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </foreignObject>
+                                    <text x="233" y="716" fill="#000000" font-family="Helvetica" font-size="11px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                        Trùng khớp 100%
+                                    </text>
+                                </switch>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-16">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="350" y="750" width="160" height="30" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 158px; height: 1px; padding-top: 765px; margin-left: 351px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Báo lỗi: Sai tên đăng nhập hoặc mật khẩu
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="430" y="762" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="430" y="762">
+                                        Báo lỗi: Sai tên đăng nhập
+                                    </tspan>
+                                    <tspan x="430" y="776">
+                                        hoặc mật khẩu
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-17">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 377.5 632.5 L 377.5 710 L 430 710 L 430 743.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 430 748.88 L 426.5 741.88 L 430 743.63 L 433.5 741.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-18">
+                        <g>
+                            <g transform="scale(0.9999999999999999)">
+                                <switch>
+                                    <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 711px; margin-left: 386px;">
+                                            <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; background-color: #ffffff; ">
+                                                <div style="display: inline-block; font-size: 11px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; background-color: var(--ge-adaptive-bg, #ffffff); white-space: nowrap; ">
+                                                    Không khớp
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </foreignObject>
+                                    <text x="386" y="714" fill="#000000" font-family="Helvetica" font-size="11px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                        Không khớp
+                                    </text>
+                                </switch>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-19">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="30" y="1060" width="210" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 208px; height: 1px; padding-top: 1080px; margin-left: 31px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Báo lỗi: Tài khoản của bạn đã bị khóa
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="135" y="1084" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Báo lỗi: Tài khoản của bạn đã bị khóa
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-20">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="270" y="1060" width="260" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 258px; height: 1px; padding-top: 1080px; margin-left: 271px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Đăng nhập thành công -&gt; Cấp Cookie phiên
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="400" y="1084" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Đăng nhập thành công -&gt; Cấp Cookie phiên
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-21">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 165 892.5 L 165 995 L 135 995 L 135 1053.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 135 1058.88 L 131.5 1051.88 L 135 1053.63 L 138.5 1051.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-22">
+                        <g>
+                            <g transform="scale(0.9999999999999999)">
+                                <switch>
+                                    <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 992px; margin-left: 165px;">
+                                            <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; background-color: #ffffff; ">
+                                                <div style="display: inline-block; font-size: 11px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; background-color: var(--ge-adaptive-bg, #ffffff); white-space: nowrap; ">
+                                                    Bị khóa
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </foreignObject>
+                                    <text x="165" y="995" fill="#000000" font-family="Helvetica" font-size="11px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                        Bị khóa
+                                    </text>
+                                </switch>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-23">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 275 892.5 L 275 995 L 400 995 L 400 1053.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 400 1058.88 L 396.5 1051.88 L 400 1053.63 L 403.5 1051.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-24">
+                        <g>
+                            <g transform="scale(0.9999999999999999)">
+                                <switch>
+                                    <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 1px; height: 1px; padding-top: 995px; margin-left: 319px;">
+                                            <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; background-color: #ffffff; ">
+                                                <div style="display: inline-block; font-size: 11px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; background-color: var(--ge-adaptive-bg, #ffffff); white-space: nowrap; ">
+                                                    Đang hoạt động
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </foreignObject>
+                                    <text x="319" y="999" fill="#000000" font-family="Helvetica" font-size="11px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                        Đang hoạt động
+                                    </text>
+                                </switch>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-25">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 305 460 L 305 513.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 305 518.88 L 301.5 511.88 L 305 513.63 L 308.5 511.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-26">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="650" y="10" width="530" height="550" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-27">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="650" y="0" width="530" height="50" fill="url(#drawio-svg-H7_KBNx6jPi_qTgezQS6-gradient-light-dark_dae8fc_1d293b_-1-light-dark_7ea6e0_436697_-1-s-0)" stroke="#6c8ebf" pointer-events="all" style="fill: url(&quot;#drawio-svg-H7_KBNx6jPi_qTgezQS6-gradient-light-dark_dae8fc_1d293b_-1-light-dark_7ea6e0_436697_-1-s-0&quot;); stroke: light-dark(rgb(108, 142, 191), rgb(92, 121, 163));"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 528px; height: 1px; padding-top: 25px; margin-left: 651px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                CƠ CHẾ KHÓA TÀI KHOẢN TỨC THÌ
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="915" y="29" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    CƠ CHẾ KHÓA TÀI KHOẢN TỨC THÌ
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-28">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="730" y="100" width="390" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 388px; height: 1px; padding-top: 120px; margin-left: 731px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Admin ở WinForms bấm 'Khóa tài khoản' của User
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="925" y="124" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Admin ở WinForms bấm 'Khóa tài khoản' của User
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-29">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="770" y="190" width="310" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 308px; height: 1px; padding-top: 210px; margin-left: 771px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Cập nhật bảng AspNetUsers: Khóa tài khoản
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="925" y="214" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Cập nhật bảng AspNetUsers: Khóa tài khoản
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-30">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="810" y="270" width="230" height="40" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 228px; height: 1px; padding-top: 290px; margin-left: 811px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Cập nhật SecurityStamp mới
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="925" y="294" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    Cập nhật SecurityStamp mới
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-31">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 925 140 L 925 183.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 925 188.88 L 921.5 181.88 L 925 183.63 L 928.5 181.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-32">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 925 230 L 925 263.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 925 268.88 L 921.5 261.88 L 925 263.63 L 928.5 261.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-33">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="760" y="370" width="330" height="50" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 328px; height: 1px; padding-top: 395px; margin-left: 761px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Web Middleware (SecurityStampValidator)
+                                                <div>
+                                                    quét định kỳ mỗi 1 phút
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="925" y="392" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="925" y="392">
+                                        Web Middleware (SecurityStampValidator)
+                                    </tspan>
+                                    <tspan x="925" y="406">
+                                        quét định kỳ mỗi 1 phút
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-34">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 925 310 L 925 363.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 925 368.88 L 921.5 361.88 L 925 363.63 L 928.5 361.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-35">
+                    <g transform="translate(0.5,0.5)">
+                        <rect x="795" y="460" width="260" height="60" fill="#ffffff" stroke="#000000" pointer-events="all" style="fill: var(--ge-adaptive-bg, #ffffff); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                    <g>
+                        <g transform="scale(0.9999999999999999)">
+                            <switch>
+                                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="101%" height="101%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 258px; height: 1px; padding-top: 490px; margin-left: 796px;">
+                                        <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
+                                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: var(--ge-adaptive-fg, #000000); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                                Nhận diện SecurityStamp lệch
+                                                <div>
+                                                    =&gt; Lập tức hủy Cookie phiên đăng nhập của User trên Web
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </foreignObject>
+                                <text x="925" y="480" fill="#000000" font-family="Helvetica" font-size="12px" text-anchor="middle" style="fill: var(--ge-adaptive-fg, #000000);">
+                                    <tspan x="925" y="480">
+                                        Nhận diện SecurityStamp lệch
+                                    </tspan>
+                                    <tspan x="925" y="494">
+                                        =&gt; Lập tức hủy Cookie phiên đăng nhập của
+                                    </tspan>
+                                    <tspan x="925" y="508">
+                                        User trên Web
+                                    </tspan>
+                                </text>
+                            </switch>
+                        </g>
+                    </g>
+                </g>
+                <g data-cell-id="5VHeIkB3K9AH4fgpE-q1-36">
+                    <g transform="translate(0.5,0.5)">
+                        <path d="M 925 420 L 925 453.63" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="stroke" style="stroke: var(--ge-adaptive-fg, #000000);"/>
+                        <path d="M 925 458.88 L 921.5 451.88 L 925 453.63 L 928.5 451.88 Z" fill="#000000" stroke="#000000" stroke-miterlimit="10" pointer-events="all" style="fill: var(--ge-adaptive-fg, #000000); stroke: var(--ge-adaptive-fg, #000000);"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+    <switch>
+        <g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/>
+        <a transform="translate(0,-5)" xlink:href="https://www.drawio.com/doc/faq/svg-export-text-problems" target="_blank">
+            <text text-anchor="middle" font-size="10px" x="50%" y="100%">
+                Text is not SVG - cannot display
+            </text>
+        </a>
+    </switch>
+</svg>

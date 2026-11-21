@@ -229,3 +229,21 @@ IF COL_LENGTH(N'dbo.DatBan', N'MaDatBan') IS NULL
 IF COL_LENGTH(N'dbo.DatBan', N'BatDauPhucVuLuc') IS NULL
     ALTER TABLE dbo.DatBan ADD BatDauPhucVuLuc DATETIME2 NULL;
 GO
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Web_UuDai')
+BEGIN
+    CREATE TABLE dbo.Web_UuDai (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        Ma NVARCHAR(30) NOT NULL UNIQUE,
+        MoTa NVARCHAR(200) NOT NULL,
+        PhanTramGiam INT NOT NULL DEFAULT 10,
+        GiamToiDa DECIMAL(18,0) NULL,
+        HanDung DATETIME2 NULL,
+        HoatDong BIT NOT NULL DEFAULT 1
+    );
+
+    INSERT INTO dbo.Web_UuDai (Ma, MoTa, PhanTramGiam, GiamToiDa, HoatDong)
+    VALUES ('WELCOME10', N'Giảm 10% cho khách mới', 10, 500000, 1),
+           ('AURAVIP', N'Ưu đãi VIP giảm 15%', 15, 2000000, 1);
+END;
+GO
